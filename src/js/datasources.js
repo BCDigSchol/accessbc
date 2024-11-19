@@ -22,7 +22,7 @@ function addMapData(map) {
       });
       map.addSource('reststop', {
           'type': 'geojson',
-          'data': '/src/geojson/reststop.geojson',
+          'data': 'src/geojson/reststop.geojson',
           'cluster': true,
           'clusterMaxZoom': 25,
           'clusterRadius': 20
