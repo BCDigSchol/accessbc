@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Accessible BC</title>
+<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.css" rel="stylesheet">
+<link href="/src/input.css" rel="stylesheet">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.0.1/mapbox-gl.js"></script>
+<script src="/src/js/mapcontrols.js"></script>
+<script src="/src/js/datasources.js"></script>
+<script src="/src/js/popups.js"></script>
+<script src="/src/js/sidebar.js"></script>
+</head>
+<body>
+
+<div id="map"></div>
+<div id="sidebar">
+  <div id="building-info">Click on a building to see details here.</div>
+</div>
+
+<div class="button-container">
+  <span style="font-family: 'Femilijen Grotesk', sans-serif; padding: 10px; font-size: 30px; font-weight: 500; color: #17343B">ACCESSIBLE BC</span>
+  <button id="about" class="menu-button">About</button>
+  <button id="home" class="menu-button">All Campus</button>
+  <button id="transportation" class="menu-button">Transportation</button>
+  <button id="navigation" class="menu-button">Navigating Campus</button>
+  <button id="resources" class="menu-button">Campus Resources</button>
+  <div class="search-bar-container">
+    <input type="text" class="search-bar" id = 'generic-search' placeholder="Search for resources...">
+    <div class="search-dropdown" id = 'generic-dropdown'></div>
+  </div>
+  <div class="search-bar-container">
+    <input type="text" class="search-bar" id = 'description-search' placeholder="Search for resources...">
+    <div class="search-dropdown" id = 'description-dropdown'></div>
+  </div>
+  <div id="legend">
+  </div>
+</div>
+
+<script>
+	mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNsbjRrc3F6ejAxNDUya3F1NjMzMmliMzIifQ.YCTLzh1KRXr4P-9djuAMkg';
+    const map = new mapboxgl.Map({
+        container: 'map',
+        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        style: 'mapbox://styles/mapbox/navigation-day-v1',
+        zoom: 15,
+        center: [-71.168819, 42.336193]
+    });
+
+    map.on('load', () => {
+    addMapControls(map);
+    createLegend('legend', legendData);
+    // Load map data and add controls
+    addMapData(map);
+    addPopupHandlers(map);
+    addSidebarHandlers(map);
+
+    // Example function calls to toggle visibility and update legend
+    function handleHomeClick() {
+        const allLayers = legendData.map(layer => layer.id);
+        setLayerVisibility(map, allLayers, 'visible');
+        updateLegend(allLayers, legendData);
+    }
+});
+
+    // Legend data for the map
+    const legendData = [
+        { id: 'bikerack', name: 'Bike Racks', icon: './icons/bike.png' },
+        { id: 'bluelight', name: 'Bluelights', color: '#0000ff' },
+        { id: 'elevators', name: 'Elevators', color: '#00ff00' },
+        { id: 'entrances', name: 'Entrances', color: '#ff00ff' },
+        { id: 'curbcuts', name: 'Curb Cuts', color: '#ffff00' },
+        { id: 'reststop', name: 'Rest Stops', color: '#51bbd6' },
+        { id: 'shuttlestop', name: 'Shuttle Stops', icon: './icons/shuttle.png' },
+        { id: 'paths', name: 'Paths', color: '#000000' }
+    ];
+
+//HANDLE BUTTON CLICKS
+// Function to set layer visibility
+  function setLayerVisibility(layers, visibility) {
+    layers.forEach(layerId => {
+      map.setLayoutProperty(layerId, 'visibility', visibility);
+    });
+  }
+
+  function handleHomeClick() {
+    // Ensure all layers are visible
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    setLayerVisibility(allLayers, 'visible');
+    updateLegend(allLayers, legendData);
+  }
+
+  function handleTransportationClick() {
+    // Ensure all layers are visible
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'buildings'];
+    setLayerVisibility(allLayers, 'visible');
+    // Toggle off non-transportation layers
+    const nottrans = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'paths'];
+    setLayerVisibility(nottrans, 'none');
+    updateLegend(['shuttlestop', 'bikerack'], legendData);
+      // Add Visitor Parking to the legend
+    const legend = document.getElementById('legend');
+    const visitorParkingItem = document.createElement('div');
+    visitorParkingItem.classList.add('legend-item');
+
+    const colorBox = document.createElement('div');
+    colorBox.classList.add('legend-color-box');
+    colorBox.style.backgroundColor = '#0000ff'; // Blue color
+    visitorParkingItem.appendChild(colorBox);
+
+    const label = document.createElement('span');
+    label.textContent = 'Visitor Parking';
+    visitorParkingItem.appendChild(label);
+
+    legend.appendChild(visitorParkingItem);
+  // Highlight buildings whose NAME field is either "Commonwealth Ave Garage" or "Beacon Street Parking Garage"
+    map.setPaintProperty('buildings', 'fill-color', [
+      'case',
+      ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
+      '#0000ff', // Blue color for highlighted buildings
+      '#888888' // Transparent for non-highlighted buildings
+    ]);
+    map.setPaintProperty('buildings', 'fill-opacity', [
+      'case',
+      ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
+      0.75,
+      0.5
+    ]);
+  }
+
+  function handleNavigationClick() {
+    // Ensure all layers are visible
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    setLayerVisibility(allLayers, 'visible');
+
+    const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop'];
+    setLayerVisibility(notnav, 'none');
+    updateLegend(['curbcuts', 'entrances', 'bluelight', 'paths'], legendData);
+  }
+
+  function handleResourcesClick() {
+    // Ensure all layers are visible
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    setLayerVisibility(allLayers, 'visible');
+
+    const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    setLayerVisibility(notres, 'none');
+    updateLegend(['reststop', 'elevators'], legendData);
+  }
+
+  //Add event listeners to buttons
+  document.getElementById('transportation').addEventListener('click', handleTransportationClick);
+  document.getElementById('navigation').addEventListener('click', handleNavigationClick);
+  document.getElementById('resources').addEventListener('click', handleResourcesClick);
+  document.getElementById('home').addEventListener('click', handleHomeClick);
+
+// BUILDING QUERYING
+const searchBar = document.getElementById('generic-search');
+const searchDropdown = document.getElementById('generic-dropdown');
+const options = ['Vending Machines', 'Cafes', 'Dining', 'Lactation Rooms', 'Single-use Restrooms', 'Group Seating', 'Individual Seating', 'Printing'];
+
+let highlightedFeatures = []; // Track highlighted features
+
+// Event listener for input in the search bar
+searchBar.addEventListener('input', function () {
+    updateDropdown(this.value);
+});
+
+// Event listener for focusing on the search bar
+searchBar.addEventListener('focus', function () {
+    updateDropdown('');  // Show all options on focus
+});
+
+// Update dropdown based on query
+function updateDropdown(query) {
+    searchDropdown.innerHTML = ''; // Clear previous results
+    const filteredOptions = options.filter(option => option.toLowerCase().includes(query.toLowerCase()));
+
+    if (filteredOptions.length > 0) {
+        searchDropdown.style.display = 'block'; // Show dropdown if there are results
+        filteredOptions.forEach(option => {
+            const div = document.createElement('div');
+            div.textContent = option;
+            div.addEventListener('click', () => {
+                handleSelection(option);
+            });
+            searchDropdown.appendChild(div);
+        });
+    } else {
+        searchDropdown.style.display = 'none'; // Hide dropdown if no results
+    }
+}
+
+// Handle selection from the dropdown
+function handleSelection(option) {
+    searchBar.value = option;
+    searchDropdown.style.display = 'none'; // Hide dropdown on selection
+    applyFilter(option); // Apply filter when an option is selected
+}
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', function (event) {
+    if (!searchBar.contains(event.target) && !searchDropdown.contains(event.target)) {
+        searchDropdown.style.display = 'none';
+    }
+});
+
+// Function to apply the selected filter
+// Apply filter based on the selected option
+function applyFilter(option) {
+    let filterField = '';
+    switch (option) {
+        case 'Lactation Rooms':
+            filterField = 'Lactation';
+            break;
+        case 'Single-use Restrooms':
+            filterField = 'Single_restroom';
+            break;
+        case 'Group Seating':
+            filterField = 'Seating_group';
+            break;
+        case 'Individual Seating':
+            filterField = 'Seating_ind';
+            break;
+        case 'Printing':
+            filterField = 'Printing';
+            break;
+        case 'Vending Machines':
+            filterField = 'Food_vend';
+            break;
+        case 'Cafes':
+            filterField = 'Food_cafe';
+            break;
+        case 'Dining':
+            filterField = 'Food_dining';
+            break;
+        default:
+            // Reset the filter if no matching option
+            map.setFilter('buildings-highlighted', ['==', ['get', 'dummy_field'], 'No']); // Use a dummy field to reset the filter
+            map.setLayoutProperty('buildings-highlighted', 'visibility', 'none'); // Hide layer if no match
+            return;
+    }
+
+
+  // Apply the filter to the buildings layer
+  map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
+
+  // Update the paint properties to dynamically reflect the chosen field
+  map.setPaintProperty('buildings-highlighted', 'fill-color', [
+      'case',
+      ['==', ['get', filterField], 'Yes'],
+      '#0000ff', // Blue color for highlighted buildings
+      'rgba(0, 0, 0, 0)' // Transparent for non-highlighted buildings
+  ]);
+  map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
+      'case',
+      ['==', ['get', filterField], 'Yes'],
+      0.75,
+      0
+  ]);
+
+  // Now make sure the highlight layer is visible after applying the filter
+  map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
+  }
+
+  // Clear highlight when clicking outside the buildings layer
+  map.on('click', (e) => {
+  // Query the clicked features for the buildings layer
+  const features = map.queryRenderedFeatures(e.point, { layers: ['buildings-highlighted'] });
+
+  if (features.length === 0) {
+      // User clicked away from a building, so hide the highlight layer
+      map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
+  } else {
+      // If clicking on a building, show the highlight
+      const selectedBuildingId = features[0].id;
+
+      // Show the highlight layer and filter to only the selected building
+      map.setFilter('buildings-highlighted', ['==', 'id', selectedBuildingId]);
+      map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
+  }
+  });
+
+//QUERYING BUILDING DESCRIPTIONS
+const descriptionSearchBar = document.getElementById('description-search');
+const descriptionDropdown = document.getElementById('description-dropdown');
+
+// Event listener for input in the description search bar
+descriptionSearchBar.addEventListener('input', function () {
+  updateDescriptionDropdown(this.value);
+});
+
+// Event listener for focusing on the description search bar
+descriptionSearchBar.addEventListener('focus', function () {
+  updateDescriptionDropdown('');  // Show all options on focus
+});
+
+// Update description dropdown based on query
+function updateDescriptionDropdown(query) {
+  descriptionDropdown.innerHTML = ''; // Clear previous results
+
+  // Query all building features
+  const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
+    sourceLayer: 'buildings-3cknrt'
+  });
+
+  // Collect all unique resources
+  const resources = new Set();
+  const excludedStrings = ['Student Resources:', 'Academic Programs:', 'Dining Options:'];
+
+  allFeatures.forEach(feature => {
+    const description = feature.properties.Description || '';
+    const resourceList = description.split('\n'); // Split by line breaks
+    resourceList.forEach(resource => {
+      if (!excludedStrings.includes(resource.trim()) && resource.toLowerCase().includes(query.toLowerCase())) {
+        resources.add(resource.trim());
+      }
+    });
+  });
+
+  if (resources.size > 0) {
+    descriptionDropdown.style.display = 'block'; // Show dropdown if there are results
+    resources.forEach(resource => {
+      const div = document.createElement('div');
+      div.textContent = resource;
+      div.addEventListener('click', () => {
+        handleResourceSelection(resource);
+      });
+      descriptionDropdown.appendChild(div);
+    });
+  } else {
+    descriptionDropdown.style.display = 'none'; // Hide dropdown if no results
+  }
+}
+
+// Handle selection from the description dropdown
+function handleResourceSelection(resource) {
+  descriptionSearchBar.value = resource;
+  descriptionDropdown.style.display = 'none'; // Hide dropdown on selection
+
+  // Query all building features
+  const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
+    sourceLayer: 'buildings-3cknrt'
+  });
+
+
+  // Find the building that contains the selected resource
+  const selectedFeature = allFeatures.find(feature => {
+    const description = feature.properties.Description || '';
+    console.log('Checking Feature:', feature); // Debugging: Log each feature being checked
+    console.log('Description:', description); // Debugging: Log the description of each feature
+    return description.includes(resource);
+  });
+
+  console.log('Selected Feature:', selectedFeature); // Debugging: Log the selected feature
+
+  if (selectedFeature) {
+        // Use the NAME or another unique property if `id` is unavailable
+        const featureName = selectedFeature.properties.NAME; // Adjust based on your data
+        console.log('Feature NAME:', featureName); // Debugging: Log the feature NAME
+
+        // Apply filter to highlight only the selected building
+        map.setFilter('buildings-highlighted', ['==', ['get', 'NAME'], featureName]);
+
+        // Dynamically set paint properties for highlight
+        map.setPaintProperty('buildings-highlighted', 'fill-color', [
+            'case',
+            ['==', ['get', 'NAME'], featureName],
+            '#0000ff', // Blue color for highlighted buildings
+            'rgba(0, 0, 0, 0)' // Transparent for non-highlighted buildings
+        ]);
+        map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
+            'case',
+            ['==', ['get', 'NAME'], featureName],
+            0.75,
+            0
+        ]);
+
+        // Make sure the highlight layer is visible
+        map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
+    } else {
+        // Reset highlight if no feature matches the resource
+        map.setFilter('buildings-highlighted', ['==', 'NAME', '']); // No match
+        map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
+    }
+};
+</script>
+
+</body>
+</html>

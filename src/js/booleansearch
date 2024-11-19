@@ -1,0 +1,126 @@
+// BUILDING QUERYING
+const searchBar = document.getElementById('generic-search');
+const searchDropdown = document.getElementById('generic-dropdown');
+const options = ['Vending Machines', 'Cafes', 'Dining', 'Lactation Rooms', 'Single-use Restrooms', 'Group Seating', 'Individual Seating', 'Printing'];
+
+let highlightedFeatures = []; // Track highlighted features
+
+// Event listener for input in the search bar
+searchBar.addEventListener('input', function () {
+    updateDropdown(this.value);
+});
+
+// Event listener for focusing on the search bar
+searchBar.addEventListener('focus', function () {
+    updateDropdown('');  // Show all options on focus
+});
+
+// Update dropdown based on query
+function updateDropdown(query) {
+    searchDropdown.innerHTML = ''; // Clear previous results
+    const filteredOptions = options.filter(option => option.toLowerCase().includes(query.toLowerCase()));
+
+    if (filteredOptions.length > 0) {
+        searchDropdown.style.display = 'block'; // Show dropdown if there are results
+        filteredOptions.forEach(option => {
+            const div = document.createElement('div');
+            div.textContent = option;
+            div.addEventListener('click', () => {
+                handleSelection(option);
+            });
+            searchDropdown.appendChild(div);
+        });
+    } else {
+        searchDropdown.style.display = 'none'; // Hide dropdown if no results
+    }
+}
+
+// Handle selection from the dropdown
+function handleSelection(option) {
+    searchBar.value = option;
+    searchDropdown.style.display = 'none'; // Hide dropdown on selection
+    applyFilter(option); // Apply filter when an option is selected
+}
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', function (event) {
+    if (!searchBar.contains(event.target) && !searchDropdown.contains(event.target)) {
+        searchDropdown.style.display = 'none';
+    }
+});
+
+// Function to apply the selected filter
+// Apply filter based on the selected option
+function applyFilter(option) {
+    let filterField = '';
+    switch (option) {
+        case 'Lactation Rooms':
+            filterField = 'Lactation';
+            break;
+        case 'Single-use Restrooms':
+            filterField = 'Single_restroom';
+            break;
+        case 'Group Seating':
+            filterField = 'Seating_group';
+            break;
+        case 'Individual Seating':
+            filterField = 'Seating_ind';
+            break;
+        case 'Printing':
+            filterField = 'Printing';
+            break;
+        case 'Vending Machines':
+            filterField = 'Food_vend';
+            break;
+        case 'Cafes':
+            filterField = 'Food_cafe';
+            break;
+        case 'Dining':
+            filterField = 'Food_dining';
+            break;
+        default:
+            // Reset the filter if no matching option
+            map.setFilter('buildings-highlighted', ['==', ['get', 'dummy_field'], 'No']); // Use a dummy field to reset the filter
+            map.setLayoutProperty('buildings-highlighted', 'visibility', 'none'); // Hide layer if no match
+            return;
+    }
+
+
+  // Apply the filter to the buildings layer
+  map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
+
+  // Update the paint properties to dynamically reflect the chosen field
+  map.setPaintProperty('buildings-highlighted', 'fill-color', [
+      'case',
+      ['==', ['get', filterField], 'Yes'],
+      '#0000ff', // Blue color for highlighted buildings
+      'rgba(0, 0, 0, 0)' // Transparent for non-highlighted buildings
+  ]);
+  map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
+      'case',
+      ['==', ['get', filterField], 'Yes'],
+      0.75,
+      0
+  ]);
+
+  // Now make sure the highlight layer is visible after applying the filter
+  map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
+  }
+
+  // Clear highlight when clicking outside the buildings layer
+  map.on('click', (e) => {
+  // Query the clicked features for the buildings layer
+  const features = map.queryRenderedFeatures(e.point, { layers: ['buildings-highlighted'] });
+
+  if (features.length === 0) {
+      // User clicked away from a building, so hide the highlight layer
+      map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
+  } else {
+      // If clicking on a building, show the highlight
+      const selectedBuildingId = features[0].id;
+
+      // Show the highlight layer and filter to only the selected building
+      map.setFilter('buildings-highlighted', ['==', 'id', selectedBuildingId]);
+      map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
+  }
+  });
