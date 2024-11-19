@@ -64,7 +64,7 @@ function addMapData(map) {
         }
       });
 
-    map.loadImage('./icons/bike.png', function(error, image) {
+    map.loadImage('src/icons/bike.png', function(error, image) {
         if (error) throw error;
       map.addImage('bike-icon', image);
       map.addLayer({
@@ -143,7 +143,7 @@ function addMapData(map) {
         }
       });
 
-      map.loadImage('./icons/shuttle.png', function(error, image) {
+      map.loadImage('src/icons/shuttle.png', function(error, image) {
         if (error) throw error;
       map.addImage('shuttle-icon', image);
       map.addLayer({
