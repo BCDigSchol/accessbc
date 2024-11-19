@@ -63,6 +63,7 @@ function addMapData(map) {
           'line-opacity': 0.5
         }
       });
+    map.setFilter('paths', ['==', ['get', 'highway'], 'steps']);
 
     map.loadImage('src/icons/bike.png', function(error, image) {
         if (error) throw error;
