@@ -143,7 +143,7 @@ function addMapData(map) {
         }
       });
 
-      map.loadImage('src/icons/shuttle.png', function(error, image) {
+      map.loadImage('/src/icons/shuttle.png', function(error, image) {
         if (error) throw error;
       map.addImage('shuttle-icon', image);
       map.addLayer({
