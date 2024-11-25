@@ -20,7 +20,7 @@
 </div>
 
 <div class="button-container">
-  <span style="font-family: 'Femilijen Grotesk', sans-serif; padding: 10px; font-size: 30px; font-weight: 500; color: #17343B">ACCESS BC</span>
+  <span style="font-family: 'Lato', 'Helvetica Neue', sans-serif; padding: 10px; font-size: 30px; font-weight: 500; color: #17343B">ACCESS BC</span>
   <button id="about" class="menu-button">About</button>
   <button id="home" class="menu-button">All Campus</button>
   <button id="transportation" class="menu-button">Transportation</button>
@@ -128,7 +128,18 @@
       0.75,
       0.5
     ]);
-  }
+    // Change navigation button color
+    document.getElementById('transportation').style.backgroundColor = '#b29d6c';
+
+    // Reset navigation button color when other buttons are clicked
+    document.querySelectorAll('.menu-button').forEach(button => {
+    if (button.id !== 'transportation') {
+      button.addEventListener('click', () => {
+      document.getElementById('transportation').style.backgroundColor = '';
+      });
+    }
+  });
+};
 
   function handleNavigationClick() {
     // Ensure all layers are visible
@@ -138,7 +149,18 @@
     const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop'];
     setLayerVisibility(notnav, 'none');
     updateLegend(['curbcuts', 'entrances', 'bluelight', 'paths'], legendData);
-  }
+    // Change navigation button color
+    document.getElementById('navigation').style.backgroundColor = '#b29d6c';
+    }
+
+    // Reset navigation button color when other buttons are clicked
+    document.querySelectorAll('.menu-button').forEach(button => {
+    if (button.id !== 'navigation') {
+      button.addEventListener('click', () => {
+      document.getElementById('navigation').style.backgroundColor = '';
+      });
+    }
+    });
 
   function handleResourcesClick() {
     // Ensure all layers are visible
@@ -148,6 +170,17 @@
     const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
     setLayerVisibility(notres, 'none');
     updateLegend(['reststop', 'elevators'], legendData);
+    // Change navigation button color
+    document.getElementById('resources').style.backgroundColor = '#b29d6c';
+
+    // Reset navigation button color when other buttons are clicked
+    document.querySelectorAll('.menu-button').forEach(button => {
+    if (button.id !== 'resources') {
+      button.addEventListener('click', () => {
+      document.getElementById('resources').style.backgroundColor = '';
+      });
+    }
+    });
   }
 
   //Add event listeners to buttons
