@@ -120,7 +120,7 @@
       'case',
       ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
       '#0000ff', // Blue color for highlighted buildings
-      '#888888' // Transparent for non-highlighted buildings
+      '#888888' // Default color for non-highlighted buildings
     ]);
     map.setPaintProperty('buildings', 'fill-opacity', [
       'case',
@@ -128,6 +128,16 @@
       0.75,
       0.5
     ]);
+    // Remove highlight from buildings when a different button is clicked
+    document.querySelectorAll('.menu-button').forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.id !== 'transportation') {
+          map.setPaintProperty('buildings', 'fill-color', '#888888'); // Reset to default color
+          map.setPaintProperty('buildings', 'fill-opacity', 0.5); // Reset to default opacity
+        }
+      });
+    });
+    
     // Change navigation button color
     document.getElementById('transportation').style.backgroundColor = '#b29d6c';
 
