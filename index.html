@@ -19,30 +19,38 @@
   <div id="building-info">Click on a building to see details here.</div>
 </div>
 
-<div class="button-container">
-  <span style="font-family: 'Lato', 'Helvetica Neue', sans-serif; padding: 10px; font-size: 30px; font-weight: 500; color: #17343B">ACCESS BC</span>
-  <button id="about" class="menu-button">About</button>
-  <button id="home" class="menu-button">All Campus</button>
-  <button id="transportation" class="menu-button">Transportation</button>
-  <button id="navigation" class="menu-button">Navigating Campus</button>
-  <button id="resources" class="menu-button">Campus Resources</button>
-  <div class="search-bar-container">
-    <input type="text" class="search-bar" id = 'generic-search' placeholder="Search for resources...">
-    <div class="search-dropdown" id = 'generic-dropdown'></div>
+<div class="menu-container">
+  <div class="menu-container">
+    <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
+      <div class="title-container" style="display: flex; flex-direction: column;">
+        <span class="main-title">Access BC</span>
+        <span class="sub-title">BETA VERSION | GIVE FEEDBACK</span>
+      </div>
+      <div class="button-container" style="display: flex; align-items: center;">
+        <button id="about" class="menu-button">About</button>
+        <button id="home" class="menu-button">All Campus</button>
+        <button id="transportation" class="menu-button">Transportation</button>
+        <button id="navigation" class="menu-button">Navigating Campus</button>
+        <button id="resources" class="menu-button">Campus Resources</button>
+        <div class="search-bar-container">
+          <input type="text" class="search-bar" id='generic-search' placeholder="Search for resources...">
+          <div class="search-dropdown" id='generic-dropdown'></div>
+        </div>
+        <div class="search-bar-container">
+          <input type="text" class="search-bar" id='description-search' placeholder="Search for resources...">
+          <div class="search-dropdown" id='description-dropdown'></div>
+        </div>
+      </div>
+    </div>
+    <div id="legend"></div>
   </div>
-  <div class="search-bar-container">
-    <input type="text" class="search-bar" id = 'description-search' placeholder="Search for resources...">
-    <div class="search-dropdown" id = 'description-dropdown'></div>
-  </div>
-  <div id="legend">
-  </div>
-</div>
+  
 
 <script>
 	mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNsbjRrc3F6ejAxNDUya3F1NjMzMmliMzIifQ.YCTLzh1KRXr4P-9djuAMkg';
     const map = new mapboxgl.Map({
         container: 'map',
-        // Choose from Mapbox's core styles, or make your own style with Mapbox Studio
+        // Choose</div> from Mapbox's core styles, or make your own style with Mapbox Studio
         // style: 'mapbox://styles/bcdsg-lec/cm3oo8x1p000b01sgf0dyfp2z',
         style: 'mapbox://styles/bcdsg-lec/cm3oohpoy00oc01r2hl6wgqwm',
         zoom: 15,
@@ -90,6 +98,17 @@
     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
     setLayerVisibility(allLayers, 'visible');
     updateLegend(allLayers, legendData);
+    // Change navigation button color
+    document.getElementById('home').style.backgroundColor = '#b29d6c';
+
+    // Reset navigation button color when other buttons are clicked
+    document.querySelectorAll('.menu-button').forEach(button => {
+    if (button.id !== 'home') {
+      button.addEventListener('click', () => {
+      document.getElementById('home').style.backgroundColor = '';
+      });
+    }
+    });
   }
 
   function handleTransportationClick() {
