@@ -84,6 +84,10 @@ body, html {
   transform: translateX(0); /* Slide in when visible */
 }
 
+#sidebar p{
+  margin-top: 1rem;
+}
+
 /* Header Menu */
 .menu-container {
   position: absolute;

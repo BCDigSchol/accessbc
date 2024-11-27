@@ -50,8 +50,6 @@
 	mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNsbjRrc3F6ejAxNDUya3F1NjMzMmliMzIifQ.YCTLzh1KRXr4P-9djuAMkg';
     const map = new mapboxgl.Map({
         container: 'map',
-        // Choose</div> from Mapbox's core styles, or make your own style with Mapbox Studio
-        // style: 'mapbox://styles/bcdsg-lec/cm3oo8x1p000b01sgf0dyfp2z',
         style: 'mapbox://styles/bcdsg-lec/cm3oohpoy00oc01r2hl6wgqwm',
         zoom: 15,
         center: [-71.168819, 42.336193]
@@ -447,7 +445,16 @@ function handleResourceSelection(resource) {
         map.setFilter('buildings-highlighted', ['==', 'NAME', '']); // No match
         map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
     }
+    // Hide dropdown if click is outside search bar or dropdown
+
 };
+
+document.addEventListener('click', function (event) {
+  if (!descriptionSearchBar.contains(event.target) && !descriptionDropdown.contains(event.target)) {
+    descriptionDropdown.style.display = 'none';
+  }
+  
+});
 </script>
 
 </body>
