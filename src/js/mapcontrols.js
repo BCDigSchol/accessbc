@@ -10,13 +10,14 @@ function addMapControls(map) {
 
 //CREATES AND DYNAMICALLY UPDATES LEGEND
 // Function to create the legend container and populate with initial data
-function createLegend(containerId, legendData) {
+function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear any existing legend content
 
    legendData.forEach(layer => {
         const item = document.createElement('div');
         item.classList.add('legend-item');
+        item.dataset.layerId = layer.id;
 
         if (layer.icon) {
             const icon = document.createElement('img');
@@ -35,40 +36,79 @@ function createLegend(containerId, legendData) {
         item.appendChild(label);
 
         legendContainer.appendChild(item);
+
+        item.addEventListener('click', () => {
+            const layerId = layer.id;
+            const visibility = map.getLayoutProperty(layerId, 'visibility');
+
+            if (!visibility) {
+                console.error(`Layer with ID "${layerId}" not found or visibility is not set.`);
+                return;
+            }
+
+            if (visibility === 'visible') {
+                map.setLayoutProperty(layerId, 'visibility', 'none');
+                item.classList.add('inactive'); // Add a class to indicate the layer is hidden
+            } else {
+                map.setLayoutProperty(layerId, 'visibility', 'visible');
+                item.classList.remove('inactive');
+            }
+        });
     });
 }
 //Dynamically update the legend based on the visible layers
 function updateLegend(visibleLayers, legendData) {
     const legendContainer = document.getElementById('legend');
-    legendContainer.innerHTML = '';
+    legendContainer.innerHTML = ''; // Clear existing content
 
     legendData.forEach(layer => {
-        if (visibleLayers.includes(layer.id)) {
-            const item = document.createElement('div');
-            item.classList.add('legend-item');
+        const item = document.createElement('div');
+        item.classList.add('legend-item');
+        item.dataset.layerId = layer.id;
 
-            if (layer.icon) {
-                const icon = document.createElement('img');
-                icon.src = layer.icon;
-                icon.style.width = '20px';
-                icon.style.height = '20px';
-                icon.style.marginRight = '5px';
-                item.appendChild(icon);
-            } else {
-                const colorBox = document.createElement('div');
-                colorBox.style.width = '20px';
-                colorBox.style.height = '20px';
-                colorBox.style.backgroundColor = layer.color;
-                colorBox.style.marginRight = '5px';
-                item.appendChild(colorBox);
-            }
+        // Check if layer is visible
+        const isVisible = visibleLayers.includes(layer.id);
 
-            const label = document.createElement('span');
-            label.textContent = layer.name;
-            item.appendChild(label);
-
-            legendContainer.appendChild(item);
+        if (layer.icon) {
+            const icon = document.createElement('img');
+            icon.src = layer.icon;
+            icon.style.width = '20px';
+            icon.style.height = '20px';
+            icon.style.marginRight = '5px';
+            item.appendChild(icon);
+        } else {
+            const colorBox = document.createElement('div');
+            colorBox.style.width = '20px';
+            colorBox.style.height = '20px';
+            colorBox.style.backgroundColor = layer.color;
+            colorBox.style.marginRight = '5px';
+            item.appendChild(colorBox);
         }
+
+        const label = document.createElement('span');
+        label.textContent = layer.name;
+        item.appendChild(label);
+
+        // Add 'inactive' class if the layer is not visible
+        if (!isVisible) {
+            item.classList.add('inactive');
+        }
+
+        // Add click event to toggle visibility
+        item.addEventListener('click', () => {
+            const layerId = layer.id;
+            const visibility = map.getLayoutProperty(layerId, 'visibility');
+
+            if (visibility === 'visible') {
+                map.setLayoutProperty(layerId, 'visibility', 'none');
+                item.classList.add('inactive');
+            } else {
+                map.setLayoutProperty(layerId, 'visibility', 'visible');
+                item.classList.remove('inactive');
+            }
+        });
+
+        legendContainer.appendChild(item);
     });
 }
 

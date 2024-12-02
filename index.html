@@ -193,9 +193,9 @@
     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
     setLayerVisibility(allLayers, 'visible');
 
-    const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop'];
+    const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop', 'curbcuts'];
     setLayerVisibility(notnav, 'none');
-    updateLegend(['curbcuts', 'entrances', 'bluelight', 'paths', 'accessiblepaths'], legendData);
+    updateLegend(['entrances', 'bluelight', 'paths', 'accessiblepaths'], legendData);
     // Change navigation button color
     document.getElementById('navigation').style.backgroundColor = '#b29d6c';
     }
@@ -207,8 +207,9 @@
       document.getElementById('navigation').style.backgroundColor = '';
       });
     }
-    });
+   });
 
+   
   function handleResourcesClick() {
     // Ensure all layers are visible
     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
@@ -228,6 +229,7 @@
       });
     }
     });
+    
   }
 
   //Add event listeners to buttons
