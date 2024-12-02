@@ -39,6 +39,10 @@ function addMapData(map) {
           'type': 'vector',
           'url': 'mapbox://bcdsg-lec.c2z0cfaj'
       });
+      map.addSource('accessiblepaths-b55sh1', {
+          'type': 'vector',
+          'url': 'mapbox://bcdsg-lec.ctxmzxxp'
+      });
       
     map.addLayer({
       id: 'buildings',
@@ -58,13 +62,29 @@ function addMapData(map) {
         'source-layer': 'paths_cleaned-1iqegh',
         layout: {},
         paint: {
-          'line-color': '#000000',
+          'line-color': '#FF0000',
           'line-width': 2,
-          'line-opacity': 0.5
         }
       });
     map.setFilter('paths', ['==', ['get', 'highway'], 'steps']);
-
+    map.addLayer({
+      id: 'accessiblepaths',
+      type: 'line',
+      source: 'accessiblepaths-b55sh1',
+      'source-layer': 'accessiblepaths-b55sh1',
+      layout: {},
+      paint: {
+      'line-color': [
+        'case',
+        ['==', ['get', 'Type'], 'Exterior'],
+        '#00ff00', // green
+        ['==', ['get', 'Type'], 'Interior'],
+        '#8b4513', // brown
+        '#000000' // default color
+      ],
+      'line-width': 2
+      }
+    });
     map.loadImage('src/icons/bike.png', function(error, image) {
         if (error) throw error;
       map.addImage('bike-icon', image);

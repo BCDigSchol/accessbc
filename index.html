@@ -97,7 +97,10 @@
         { id: 'curbcuts', name: 'Curb Cuts', color: '#ffff00' },
         { id: 'reststop', name: 'Seating', color: '#51bbd6' },
         { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png' },
-        { id: 'paths', name: 'Stairs', color: '#000000' }
+        { id: 'paths', name: 'Stairs', color: '#FF0000' },
+        { id: 'paths', name: 'Accessible Sidewalks'},
+        { id: 'accessiblepaths', name: 'Interior', color: '#00FF00' },
+        { id: 'accessiblepaths', name: 'Exterior', color: '#8b4513' }
     ];
 
 //HANDLE BUTTON CLICKS
@@ -110,7 +113,7 @@
 
   function handleHomeClick() {
     // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
     setLayerVisibility(allLayers, 'visible');
     updateLegend(allLayers, legendData);
     // Change navigation button color
@@ -131,7 +134,7 @@
     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'buildings'];
     setLayerVisibility(allLayers, 'visible');
     // Toggle off non-transportation layers
-    const nottrans = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'paths'];
+    const nottrans = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'paths', 'accessiblepaths'];
     setLayerVisibility(nottrans, 'none');
     updateLegend(['shuttlestop', 'bikerack'], legendData);
       // Add Visitor Parking to the legend
@@ -187,12 +190,12 @@
 
   function handleNavigationClick() {
     // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
     setLayerVisibility(allLayers, 'visible');
 
     const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop'];
     setLayerVisibility(notnav, 'none');
-    updateLegend(['curbcuts', 'entrances', 'bluelight', 'paths'], legendData);
+    updateLegend(['curbcuts', 'entrances', 'bluelight', 'paths', 'accessiblepaths'], legendData);
     // Change navigation button color
     document.getElementById('navigation').style.backgroundColor = '#b29d6c';
     }
@@ -211,7 +214,7 @@
     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
     setLayerVisibility(allLayers, 'visible');
 
-    const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+    const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
     setLayerVisibility(notres, 'none');
     updateLegend(['reststop', 'elevators'], legendData);
     // Change navigation button color
