@@ -9,7 +9,6 @@ body, html {
   margin: 0;
   padding: 0;
   font-family: 'Lato', 'Helvetica Neue', sans-serif;
-  overflow-x: hidden; /* Prevent horizontal scrolling */
 }
 
 /* Map Container */
@@ -98,7 +97,7 @@ body, html {
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.2);
-  z-index: 3; /* Ensure it stays above map elements */
+  z-index: 10; /* Ensure it stays above map elements */
   max-width: calc(100% - 26vw); /* Avoid overlap with sidebar */
   box-sizing: border-box;
   transition: all 0.3s ease;
@@ -147,7 +146,8 @@ body, html {
   flex-wrap: wrap; /* Allow items to wrap on smaller screens */
   padding: 0.5rem 1rem;
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
-  z-index: 2;
+  z-index: 100;
+  overflow: visible;
 }
 
 /* Title Section */
@@ -179,7 +179,8 @@ body, html {
 /* Navigation Links (Buttons) */
 .topnav button {
   display: block;
-  padding: 0.5rem;
+  padding: 0.7rem;
+  margin: 0.2rem;
   background: #A8100B;
   color: white;
   text-decoration: none;
@@ -198,22 +199,25 @@ body, html {
 
 /* Search Bar Styles */
 .search-bar-container {
+  position: relative;
   display: flex;
   align-items: center;
   margin-left: 1rem;
+  flex-grow: 1;
+  overflow: visible;
 }
 
 .search-bar {
   padding: 0.5rem;
   border: 0.1rem solid #ccc;
   border-radius: 0.5rem;
-  width: 100%; /* Make the search bar responsive */
+  width: 100%; /* Make the search bar fill the available space */
   max-width: 12rem; /* Set a max-width for large screens */
 }
 
 .search-dropdown {
   position: absolute;
-  top: 100%;
+  top: 100%; /* Dropdown appears below the search bar */
   left: 0;
   right: 0;
   background: white;
@@ -222,8 +226,8 @@ body, html {
   border-radius: 0.3rem;
   max-height: 10rem;
   overflow-y: auto;
-  display: none;
-  z-index: 2;
+  display: none; /* Initially hidden */
+  z-index: 1100; /* Ensure dropdown is above other content */
 }
 
 .search-dropdown div {
@@ -233,6 +237,10 @@ body, html {
 
 .search-dropdown div:hover {
   background: #f0f0f0;
+}
+
+.search-bar:focus + .search-dropdown {
+  display: block;
 }
 
 .topnav .icon {
