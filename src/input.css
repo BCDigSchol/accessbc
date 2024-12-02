@@ -91,7 +91,7 @@ body, html {
 /* Legend */
 #legend {
   position: absolute;
-  top: calc(15vh + 5rem); /* Adjust top position to ensure it doesn't overlap with the menu bar */
+  top: calc(2vh + 5rem);
   right: 1rem; /* Keep the legend within the map boundaries */
   background-color: white;
   color: black;
@@ -165,21 +165,22 @@ body, html {
 }
 
 /* Navigation Links (Buttons) */
-.topnav a {
+.topnav button {
   display: block;
-  padding: 0.5rem ;
+  padding: 0.5rem;
   background: #A8100B;
   color: white;
   text-decoration: none;
   text-align: center;
   border-radius: 0.5rem;
+  border: none; /* Remove border */
 }
 
-.topnav a:hover {
+.topnav button:hover {
   background: #8a0d09;
 }
 
-.topnav a.menu-button {
+.topnav button.menu-button {
   flex-shrink: 1;
 }
 
@@ -239,7 +240,7 @@ body, html {
 /* Responsive Styles */
 @media screen and (max-width: 600px) {
   /* Hide menu buttons initially */
-  .topnav a:not(:first-child),
+  .topnav button:not(:first-child),
   .search-bar-container {
     display: none;
   }
@@ -252,9 +253,11 @@ body, html {
     flex-direction: column;
   }
 
-  .topnav.responsive a {
+  .topnav.responsive button {
     display: block;
     text-align: left;
+    width: 100%;
+    border-radius: 0;
   }
 
   .topnav.responsive .search-bar-container {
