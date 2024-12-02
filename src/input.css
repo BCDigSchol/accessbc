@@ -101,6 +101,7 @@ body, html {
   z-index: 3; /* Ensure it stays above map elements */
   max-width: calc(100% - 26vw); /* Avoid overlap with sidebar */
   box-sizing: border-box;
+  transition: all 0.3s ease;
 }
 
 .legend-item {
@@ -281,5 +282,29 @@ body, html {
   .topnav.responsive .title-container {
     width: 100%;
     align-items: flex-start; /* Left-align titles in responsive mode */
+  }
+
+  #legend {
+    max-width: 80%; /* Reduce the width of the legend */
+    top: calc(6rem + 1vh); /* Position it closer to the top */
+    right: 1rem;
+    font-size: 0.9rem; /* Smaller font size */
+    padding: 0.2rem; /* Less padding */
+  }
+
+  .legend-item {
+    flex-direction: row; /* Adjust legend items to be more compact */
+    font-size: 0.7rem; /* Smaller text size for items */
+    margin-bottom: 1px; /* Reduce space between items */
+  }
+
+  .legend-icon,
+  .legend-color-box {
+    width: 10px; /* Smaller icons and color boxes */
+    height: 10px;
+  }
+
+  .legend-item.inactive {
+    background-color: #e0e0e0; /* Lighter grey background for inactive items */
   }
 }
