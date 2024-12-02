@@ -19,34 +19,51 @@
   <div id="building-info">Click on a building to see details here.</div>
 </div>
 
-<div class="menu-container">
-  <div class="menu-container">
-    <div class="header" style="display: flex; align-items: center; justify-content: space-between;">
-      <div class="title-container" style="display: flex; flex-direction: column;">
-        <span class="main-title">Access BC</span>
-        <span class="sub-title">BETA VERSION | GIVE FEEDBACK</span>
-      </div>
-      <div class="button-container" style="display: flex; align-items: center;">
-        <button id="about" class="menu-button">About</button>
-        <button id="home" class="menu-button">All Campus</button>
-        <button id="transportation" class="menu-button">Transportation</button>
-        <button id="navigation" class="menu-button">Navigating Campus</button>
-        <button id="resources" class="menu-button">Campus Resources</button>
-        <div class="search-bar-container">
-          <input type="text" class="search-bar" id='generic-search' placeholder="Search for resources...">
-          <div class="search-dropdown" id='generic-dropdown'></div>
-        </div>
-        <div class="search-bar-container">
-          <input type="text" class="search-bar" id='description-search' placeholder="Search for resources...">
-          <div class="search-dropdown" id='description-dropdown'></div>
-        </div>
-      </div>
-    </div>
-    <div id="legend"></div>
+<div class="topnav" id="myTopnav">
+  <!-- Title Section -->
+  <div class="title-container">
+    <span class="main-title">Access BC</span>
+    <span class="sub-title">BETA VERSION | GIVE FEEDBACK</span>
   </div>
+
+  <!-- Hamburger Menu -->
+  <div class="icon" onclick="toggleMenu()">☰</div>
+
+  <!-- Navigation Buttons -->
+  <a href="#about" id="about" class="menu-button">About</a>
+  <a href="#home" id="home" class="menu-button">All Campus</a>
+  <a href="#transportation" id="transportation" class="menu-button">Transportation</a>
+  <a href="#navigation" id="navigation" class="menu-button">Navigating Campus</a>
+  <a href="#resources" id="resources" class="menu-button">Campus Resources</a>
+
+  <!-- Search Bars -->
+  <div class="search-bar-container">
+    <input type="text" class="search-bar" id="generic-search" placeholder="Search for resources...">
+    <div class="search-dropdown" id="generic-dropdown"></div>
+  </div>
+  <div class="search-bar-container">
+    <input type="text" class="search-bar" id="description-search" placeholder="Search for resources...">
+    <div class="search-dropdown" id="description-dropdown"></div>
+  </div>
+</div>
+    <div id="legend"></div>
+
   
 
 <script>
+  function toggleMenu() {
+    const topNav = document.querySelector(".topnav");
+
+    // Check if the "responsive" class is already applied
+    if (topNav.classList.contains("responsive")) {
+      // Remove the responsive class to hide expanded menu
+      topNav.classList.remove("responsive");
+    } else {
+      // Add the responsive class to expand the menu
+      topNav.classList.add("responsive");
+    }
+  }
+
 	mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNsbjRrc3F6ejAxNDUya3F1NjMzMmliMzIifQ.YCTLzh1KRXr4P-9djuAMkg';
     const map = new mapboxgl.Map({
         container: 'map',

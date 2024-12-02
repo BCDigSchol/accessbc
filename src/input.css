@@ -88,47 +88,75 @@ body, html {
   margin-top: 1rem;
 }
 
-/* Header Menu */
-.menu-container {
+/* Legend */
+#legend {
   position: absolute;
+  top: calc(15vh + 5rem); /* Adjust top position to ensure it doesn't overlap with the menu bar */
+  right: 1rem; /* Keep the legend within the map boundaries */
+  background-color: white;
+  color: black;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.2);
+  z-index: 3; /* Ensure it stays above map elements */
+  max-width: calc(100% - 26vw); /* Avoid overlap with sidebar */
+  box-sizing: border-box;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 5px;
+}
+
+.legend-icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+}
+
+.legend-color-box {
+  width: 20px;
+  height: 20px;
+  margin-right: 5px;
+}
+
+/* Top Navigation Bar */
+.topnav {
+  position: relative;
   top: 0;
   left: 0;
   width: 100%;
-  height: 12vh;
   background: #ADBABC;
   color: white;
   display: flex;
-  flex-wrap: wrap; /* Allow wrapping for smaller screens */
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap; /* Allow items to wrap on smaller screens */
   padding: 0.5rem 1rem;
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
   z-index: 2;
 }
 
-.header .title-container {
+/* Title Section */
+.topnav .title-container {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start; /* Align titles to the left */
   gap: 0.3rem;
-  max-width: 50%; /* Allow the title container to take up 70% of the available width */
-  flex-shrink: 1;
-  overflow: hidden;
-  margin-bottom: 1rem;
   margin-right: 1rem;
-  text-align: center;
 }
 
-.header .main-title {
+.topnav .main-title {
   font-size: 5vh;
   font-weight: 500;
   color: #17343B;
-  white-space: nowrap; /* Prevent title from breaking into multiple lines */
+  white-space: nowrap; /* Prevent line breaks */
   overflow: hidden;
 }
 
-.header .sub-title {
+.topnav .sub-title {
   font-size: 2vh;
   font-weight: 400;
   color: #17343B;
@@ -136,38 +164,37 @@ body, html {
   overflow: hidden;
 }
 
-/* Buttons */
-.button-container {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap; /* Allow wrapping for buttons */
-  margin-left: auto;
-  gap: 0.5rem;
-  flex-shrink: 1; /* Allow shrinking for responsiveness */
-}
-
-.menu-button {
-  padding: 0.5rem 1rem; /* Adjust for smaller screens */
+/* Navigation Links (Buttons) */
+.topnav a {
+  display: block;
+  padding: 0.5rem ;
   background: #A8100B;
   color: white;
-  border: none;
-  cursor: pointer;
+  text-decoration: none;
+  text-align: center;
   border-radius: 0.5rem;
 }
 
+.topnav a:hover {
+  background: #8a0d09;
+}
+
+.topnav a.menu-button {
+  flex-shrink: 1;
+}
+
+/* Search Bar Styles */
 .search-bar-container {
-  position: relative;
   display: flex;
   align-items: center;
   margin-left: 1rem;
-  flex-grow: 1; /* Allow it to take up available space */
 }
 
 .search-bar {
   padding: 0.5rem;
   border: 0.1rem solid #ccc;
   border-radius: 0.5rem;
-  width: 100%; /* Make the search bar fill the available space */
+  width: 100%; /* Make the search bar responsive */
   max-width: 12rem; /* Set a max-width for large screens */
 }
 
@@ -195,69 +222,50 @@ body, html {
   background: #f0f0f0;
 }
 
-/* Legend */
-#legend {
-  position: absolute;
-  top: calc(15vh + 5rem); /* Adjust top position to ensure it doesn't overlap with the menu bar */
-  right: 1rem; /* Keep the legend within the map boundaries */
-  background-color: white;
-  color: black;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.2);
-  z-index: 3; /* Ensure it stays above map elements */
-  max-width: calc(100% - 26vw); /* Avoid overlap with sidebar */
-  box-sizing: border-box;
+.topnav .icon {
+  display: none; /* Hide by default */
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #17343B;
+  margin-left: auto;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10; 
 }
 
+
 /* Media Queries for further adjustments */
-@media (max-width: 768px) {
-    .header .main-title {
-      font-size: 4vh; /* Adjust for smaller screens */
-    }
-  
-    .header .sub-title {
-      font-size: 1.5vh;
-    }
-  
-    .menu-button {
-      padding: 0.5rem 1rem;
-    }
-  
-    #sidebar {
-      width: 80%; /* Use more space on smaller screens */
-      transform: translateX(-100%); /* Ensure it disappears fully */
-    }
-  
-    .menu-container {
-      flex-direction: column; /* Stack items vertically */
-      height: auto;
-    }
-  
-    .search-bar-container {
-      flex-grow: 1;
-    }
-  
-    .search-bar {
-      max-width: 100%; /* Allow search bars to grow on smaller screens */
-    }
-
+/* Responsive Styles */
+@media screen and (max-width: 600px) {
+  /* Hide menu buttons initially */
+  .topnav a:not(:first-child),
+  .search-bar-container {
+    display: none;
   }
 
-.legend-item {
+  .topnav .icon {
+    display: block;
+  }
+
+  .topnav.responsive {
+    flex-direction: column;
+  }
+
+  .topnav.responsive a {
+    display: block;
+    text-align: left;
+  }
+
+  .topnav.responsive .search-bar-container {
     display: flex;
-    align-items: center;
-    margin-bottom: 5px;
+    justify-content: space-between;
+    width: 100%; /* Make search bars fill the width */
+    margin: 0.5rem 0;
   }
-  
-  .legend-icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 5px;
+
+  .topnav.responsive .title-container {
+    width: 100%;
+    align-items: flex-start; /* Left-align titles in responsive mode */
   }
-  
-  .legend-color-box {
-    width: 20px;
-    height: 20px;
-    margin-right: 5px;
-  }
+}
