@@ -62,8 +62,8 @@ function addMapData(map) {
         'source-layer': 'paths_cleaned-1iqegh',
         layout: {},
         paint: {
-          'line-color': '#FF0000',
-          'line-width': 2,
+          'line-color': '#F2B701',
+          'line-width': 3,
         }
       });
     map.setFilter('paths', ['==', ['get', 'highway'], 'steps']);
@@ -77,10 +77,10 @@ function addMapData(map) {
       'line-color': [
         'case',
         ['==', ['get', 'Type'], 'Exterior'],
-        '#00ff00', // green
+        '#0F8554', 
         ['==', ['get', 'Type'], 'Interior'],
-        '#8b4513', // brown
-        '#000000' // default color
+        '#5F4690', 
+        '#000000' 
       ],
       'line-width': 2
       }
@@ -108,9 +108,8 @@ function addMapData(map) {
         'source-layer': 'bluelight-8tahas',
         layout: {},
         paint: {
-          'circle-radius': 4,
+          'circle-radius': 5,
           'circle-color': '#0000ff',
-          'circle-opacity': 0.7
         }
       });
 
@@ -122,8 +121,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 4,
-          'circle-color': '#00ff00',
-          'circle-opacity': 0.7
+          'circle-color': '#94346E',
         }
       });
 
@@ -135,8 +133,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 4,
-          'circle-color': '#ff00ff',
-          'circle-opacity': 0.7
+          'circle-color': '#f97b72',
         }
       });
 
@@ -148,7 +145,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 4,
-          'circle-color': '#ffff00',
+          'circle-color': '#3969AC',
           'circle-opacity': 0.7
         }
       });
@@ -159,8 +156,8 @@ function addMapData(map) {
         source: 'reststop',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#51bbd6',
-          'circle-radius': 7
+          'circle-color': '#73AF48',
+          'circle-radius': 5
         }
       });
 
@@ -189,9 +186,9 @@ function addMapData(map) {
         'fill-color': [
           'case',
           ['==', ['get', 'fieldName'], 'Yes'], // fieldName is a placeholder, will be set dynamically
-          '#0000ff',
+          '#994E95',
           ['==', ['get', 'NAME'], 'Garage'],
-          '#0000ff',
+          '#994E95',
           'rgba(0, 0, 0, 0)'
         ],
         'fill-opacity': [
