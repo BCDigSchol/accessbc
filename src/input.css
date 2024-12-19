@@ -301,7 +301,7 @@ body, html {
 
 /* Media Queries for further adjustments */
 /* Responsive Styles */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 800px) {
   /* Hide menu buttons initially */
   .topnav button:not(:first-child),
   .search-bar-container {

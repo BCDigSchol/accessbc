@@ -49,6 +49,28 @@ function createLegend(containerId, legendData, map) {
             collapseIndicator.textContent = '▲ Hide Legend'; // Expanded state
         }
     });
+    // Automatically collapse the legend on small screens
+    const handleResize = () => {
+        if (window.innerWidth < 768) {
+            legendContainer.classList.add('collapsed');
+            content.classList.add('collapsed');
+            collapseIndicator.textContent = '▼';
+
+            const legendItems = legendContainer.querySelectorAll('.legend-item');
+            legendItems.forEach(item => item.classList.add('collapsed'));
+        } else {
+            legendContainer.classList.remove('collapsed');
+            content.classList.remove('collapsed');
+            collapseIndicator.textContent = '▲';
+
+            const legendItems = legendContainer.querySelectorAll('.legend-item');
+            legendItems.forEach(item => item.classList.remove('collapsed'));
+        }
+    };
+
+    // Call the function on load and on window resize
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Ensure it runs on page load
 
    legendData.forEach(layer => {
         const item = document.createElement('div');
