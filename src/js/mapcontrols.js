@@ -14,6 +14,42 @@ function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear any existing legend content
 
+    // Add a toggle button with an icon
+    const toggleButton = document.createElement('div');
+    toggleButton.classList.add('legend-toggle-button');
+    legendContainer.appendChild(toggleButton);
+
+    const collapseIndicator = document.createElement('span');
+    collapseIndicator.classList.add('collapse-indicator');
+    collapseIndicator.textContent = '▼ Hide Legend'; // Default collapsed state
+    toggleButton.appendChild(collapseIndicator);
+
+    // Collapsible content container
+    const content = document.createElement('div');
+    content.classList.add('legend-content'); // Renamed for clarity
+    legendContainer.appendChild(content);
+
+    toggleButton.addEventListener('click', () => {
+        // Collapse the entire legend container
+        legendContainer.classList.toggle('collapsed');
+    
+        // Collapse legend content
+        content.classList.toggle('collapsed');
+    
+        // Collapse all legend items
+        const legendItems = legendContainer.querySelectorAll('.legend-item');
+        legendItems.forEach(item => {
+            item.classList.toggle('collapsed');
+        });
+    
+        // Update the indicator and/or icon based on the state
+        if (legendContainer.classList.contains('collapsed')) {
+            collapseIndicator.textContent = '▼ Show Legend'; // Collapsed state
+        } else {
+            collapseIndicator.textContent = '▲ Hide Legend'; // Expanded state
+        }
+    });
+
    legendData.forEach(layer => {
         const item = document.createElement('div');
         item.classList.add('legend-item');
