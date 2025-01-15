@@ -41,10 +41,6 @@
     <input type="text" class="search-bar" id="generic-search" placeholder="General Resources">
     <div class="search-dropdown" id="generic-dropdown"></div>
   </div>
-  <div class="search-bar-container">
-    <input type="text" class="search-bar" id="description-search" placeholder="Detailed Resources">
-    <div class="search-dropdown" id="description-dropdown"></div>
-  </div>
 </div>
 
     <div id="legend"></div>
@@ -239,12 +235,12 @@
   document.getElementById('resources').addEventListener('click', handleResourcesClick);
   document.getElementById('home').addEventListener('click', handleHomeClick);
 
-// BUILDING QUERYING
+// Predefined options
+const predefinedOptions = ['Vending Machines', 'Cafes', 'Dining', 'Lactation Rooms', 'Single-use Restrooms', 'Group Seating', 'Individual Seating', 'Printing'];
+
+// Elements
 const searchBar = document.getElementById('generic-search');
 const searchDropdown = document.getElementById('generic-dropdown');
-const options = ['Vending Machines', 'Cafes', 'Dining', 'Lactation Rooms', 'Single-use Restrooms', 'Group Seating', 'Individual Seating', 'Printing'];
-
-let highlightedFeatures = []; // Track highlighted features
 
 // Event listener for input in the search bar
 searchBar.addEventListener('input', function () {
@@ -259,7 +255,31 @@ searchBar.addEventListener('focus', function () {
 // Update dropdown based on query
 function updateDropdown(query) {
     searchDropdown.innerHTML = ''; // Clear previous results
-    const filteredOptions = options.filter(option => option.toLowerCase().includes(query.toLowerCase()));
+
+    // Query all building features
+    const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
+        sourceLayer: 'buildings-3cknrt'
+    });
+
+    // Collect all unique resources
+    const resources = new Set();
+    const excludedStrings = ['Student Resources:', 'Academic Programs:', 'Dining Options:'];
+
+    allFeatures.forEach(feature => {
+        const description = feature.properties.Description || '';
+        const resourceList = description.split('\n'); // Split by line breaks
+        resourceList.forEach(resource => {
+            if (!excludedStrings.includes(resource.trim()) && resource.toLowerCase().includes(query.toLowerCase())) {
+                resources.add(resource.trim());
+            }
+        });
+    });
+
+    // Combine predefined options and dynamic resources
+    const combinedOptions = [...predefinedOptions, ...resources];
+
+    // Filter combined options based on query
+    const filteredOptions = combinedOptions.filter(option => option.toLowerCase().includes(query.toLowerCase()));
 
     if (filteredOptions.length > 0) {
         searchDropdown.style.display = 'block'; // Show dropdown if there are results
@@ -291,7 +311,6 @@ document.addEventListener('click', function (event) {
 });
 
 // Function to apply the selected filter
-// Apply filter based on the selected option
 function applyFilter(option) {
     let filterField = '';
     switch (option) {
@@ -320,129 +339,48 @@ function applyFilter(option) {
             filterField = 'Food_dining';
             break;
         default:
-            // Reset the filter if no matching option
-            map.setFilter('buildings-highlighted', ['==', ['get', 'dummy_field'], 'No']); // Use a dummy field to reset the filter
-            map.setLayoutProperty('buildings-highlighted', 'visibility', 'none'); // Hide layer if no match
+            // Handle dynamic resources
+            handleResourceSelection(option);
             return;
     }
 
+    // Apply the filter to the buildings layer
+    map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
 
-  // Apply the filter to the buildings layer
-  map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
+    // Update the paint properties to dynamically reflect the chosen field
+    map.setPaintProperty('buildings-highlighted', 'fill-color', [
+        'case',
+        ['==', ['get', filterField], 'Yes'],
+        '#994E95',
+        'rgba(0, 0, 0, 0)'
+    ]);
+    map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
+        'case',
+        ['==', ['get', filterField], 'Yes'],
+        0.75,
+        0
+    ]);
 
-  // Update the paint properties to dynamically reflect the chosen field
-  map.setPaintProperty('buildings-highlighted', 'fill-color', [
-      'case',
-      ['==', ['get', filterField], 'Yes'],
-      '#994E95',
-      'rgba(0, 0, 0, 0)'
-  ]);
-  map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
-      'case',
-      ['==', ['get', filterField], 'Yes'],
-      0.75,
-      0
-  ]);
-
-  // Now make sure the highlight layer is visible after applying the filter
-  map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
-  }
-
-  // Clear highlight when clicking outside the buildings layer
-  map.on('click', (e) => {
-  // Query the clicked features for the buildings layer
-  const features = map.queryRenderedFeatures(e.point, { layers: ['buildings-highlighted'] });
-
-  if (features.length === 0) {
-      // User clicked away from a building, so hide the highlight layer
-      map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
-  } else {
-      // If clicking on a building, show the highlight
-      const selectedBuildingId = features[0].id;
-
-      // Show the highlight layer and filter to only the selected building
-      map.setFilter('buildings-highlighted', ['==', 'id', selectedBuildingId]);
-      map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
-  }
-  });
-
-//QUERYING BUILDING DESCRIPTIONS
-const descriptionSearchBar = document.getElementById('description-search');
-const descriptionDropdown = document.getElementById('description-dropdown');
-
-// Event listener for input in the description search bar
-descriptionSearchBar.addEventListener('input', function () {
-  updateDescriptionDropdown(this.value);
-});
-
-// Event listener for focusing on the description search bar
-descriptionSearchBar.addEventListener('focus', function () {
-  updateDescriptionDropdown('');  // Show all options on focus
-});
-
-// Update description dropdown based on query
-function updateDescriptionDropdown(query) {
-  descriptionDropdown.innerHTML = ''; // Clear previous results
-
-  // Query all building features
-  const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
-    sourceLayer: 'buildings-3cknrt'
-  });
-
-  // Collect all unique resources
-  const resources = new Set();
-  const excludedStrings = ['Student Resources:', 'Academic Programs:', 'Dining Options:'];
-
-  allFeatures.forEach(feature => {
-    const description = feature.properties.Description || '';
-    const resourceList = description.split('\n'); // Split by line breaks
-    resourceList.forEach(resource => {
-      if (!excludedStrings.includes(resource.trim()) && resource.toLowerCase().includes(query.toLowerCase())) {
-        resources.add(resource.trim());
-      }
-    });
-  });
-
-  if (resources.size > 0) {
-    descriptionDropdown.style.display = 'block'; // Show dropdown if there are results
-    resources.forEach(resource => {
-      const div = document.createElement('div');
-      div.textContent = resource;
-      div.addEventListener('click', () => {
-        handleResourceSelection(resource);
-      });
-      descriptionDropdown.appendChild(div);
-    });
-  } else {
-    descriptionDropdown.style.display = 'none'; // Hide dropdown if no results
-  }
+    // Now make sure the highlight layer is visible after applying the filter
+    map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
 }
 
 // Handle selection from the description dropdown
 function handleResourceSelection(resource) {
-  descriptionSearchBar.value = resource;
-  descriptionDropdown.style.display = 'none'; // Hide dropdown on selection
+    // Query all building features
+    const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
+        sourceLayer: 'buildings-3cknrt'
+    });
 
-  // Query all building features
-  const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
-    sourceLayer: 'buildings-3cknrt'
-  });
+    // Find the building that contains the selected resource
+    const selectedFeature = allFeatures.find(feature => {
+        const description = feature.properties.Description || '';
+        return description.includes(resource);
+    });
 
-
-  // Find the building that contains the selected resource
-  const selectedFeature = allFeatures.find(feature => {
-    const description = feature.properties.Description || '';
-    console.log('Checking Feature:', feature); // Debugging: Log each feature being checked
-    console.log('Description:', description); // Debugging: Log the description of each feature
-    return description.includes(resource);
-  });
-
-  console.log('Selected Feature:', selectedFeature); // Debugging: Log the selected feature
-
-  if (selectedFeature) {
+    if (selectedFeature) {
         // Use the NAME or another unique property if `id` is unavailable
         const featureName = selectedFeature.properties.NAME; // Adjust based on your data
-        console.log('Feature NAME:', featureName); // Debugging: Log the feature NAME
 
         // Apply filter to highlight only the selected building
         map.setFilter('buildings-highlighted', ['==', ['get', 'NAME'], featureName]);
@@ -468,16 +406,7 @@ function handleResourceSelection(resource) {
         map.setFilter('buildings-highlighted', ['==', 'NAME', '']); // No match
         map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
     }
-    // Hide dropdown if click is outside search bar or dropdown
-
-};
-
-document.addEventListener('click', function (event) {
-  if (!descriptionSearchBar.contains(event.target) && !descriptionDropdown.contains(event.target)) {
-    descriptionDropdown.style.display = 'none';
-  }
-  
-});
+}
 </script>
 
 </body>
