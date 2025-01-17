@@ -16,8 +16,14 @@ function addSidebarHandlers(map) {
     // Split description by line breaks into an array of lines
     const descriptionLines = description.split('\n');
     
-    // Map through each line of the description and create a list of paragraphs
-    const descriptionHtml = descriptionLines.map(line => `<p>${line.trim()}</p>`).join('');
+// Map through each line of the description and create a list of paragraphs
+const descriptionHtml = descriptionLines.map(line => {
+  // Check for specific texts and wrap them in <strong> tags
+  if (line.trim() === 'Academic Programs:' || line.trim() === 'Dining Options:' || line.trim() === 'Student Resources:') {
+    return `<p><strong>${line.trim()}</strong></p>`;
+    }
+    return `<p>${line.trim()}</p>`;
+}).join('');
 
     // Build the sidebar content
     const buildingInfo = `
