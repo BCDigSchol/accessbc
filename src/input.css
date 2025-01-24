@@ -267,7 +267,7 @@ body, html {
   color: black;
   border: 0.1rem solid #ccc;
   border-radius: 0.3rem;
-  max-height: 10rem;
+  max-height: 20rem;
   overflow-y: auto;
   display: none; /* Initially hidden */
   z-index: 1100; /* Ensure dropdown is above other content */
