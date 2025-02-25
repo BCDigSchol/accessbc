@@ -101,6 +101,33 @@
     ];
 
 //HANDLE BUTTON CLICKS
+
+function handleAboutClick() {
+  // Create the popup window
+  const popup = document.createElement('div');
+  popup.id = 'about-popup';
+
+  // Add standin text
+  const text = document.createElement('p');
+  text.textContent = 'This is the About section. More information will be added here.';
+  popup.appendChild(text);
+
+  // Add close button
+  const closeButton = document.createElement('button');
+  closeButton.textContent = 'Close';
+  closeButton.style.marginTop = '10px';
+  closeButton.addEventListener('click', () => {
+    document.body.removeChild(popup);
+  });
+  popup.appendChild(closeButton);
+
+  // Append the popup to the body
+  document.body.appendChild(popup);
+}
+
+// Add event listener to the About button
+document.getElementById('about').addEventListener('click', handleAboutClick);
+
 // Function to set layer visibility
   function setLayerVisibility(layers, visibility) {
     layers.forEach(layerId => {
