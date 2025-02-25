@@ -426,6 +426,20 @@ function handleResourceSelection(resource) {
             0
         ]);
 
+        // Extract geometry and compute bounding box
+        let coordinates = selectedFeature.geometry.coordinates;
+        let bounds = new mapboxgl.LngLatBounds();
+
+        if (selectedFeature.geometry.type === 'Polygon') {
+            coordinates[0].forEach(coord => bounds.extend(coord));
+        } else if (selectedFeature.geometry.type === 'MultiPolygon') {
+            coordinates.forEach(polygon => polygon[0].forEach(coord => bounds.extend(coord)));
+        }
+
+        // Fit the map to the bounding box with padding
+        map.fitBounds(bounds, { padding: 50, maxZoom: 17 });
+
+
         // Make sure the highlight layer is visible
         map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
     } else {
