@@ -31,10 +31,10 @@
 
   <!-- Navigation Buttons -->
   <button href="#about" id="about" class="menu-button">About</button>
-  <button href="#home" id="home" class="menu-button">All Campus</button>
+  <!-- <button href="#home" id="home" class="menu-button">All Campus</button>
   <button href="#transportation" id="transportation" class="menu-button">Transportation</button>
   <button href="#navigation" id="navigation" class="menu-button">Navigating Campus</button>
-  <button href="#resources" id="resources" class="menu-button">Campus Resources</button>
+  <button href="#resources" id="resources" class="menu-button">Campus Resources</button> -->
 
   <!-- Search Bars -->
   <div class="search-bar-container">
@@ -71,8 +71,7 @@
 
     map.on('load', () => {
     addMapControls(map);
-    createLegend('legend', legendData);
-    // Load map data and add controls
+    createLegend('legend', legendData, map);
     addMapData(map);
     addPopupHandlers(map);
     addSidebarHandlers(map);
@@ -85,20 +84,20 @@
     }
 });
 
-    // Legend data for the map
-    const legendData = [
-        { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png' },
-        { id: 'bikerack', name: 'Bike Racks', icon: 'src/icons/bike.png' },
-        { id: 'bluelight', name: 'Bluelights', color: '#0000ff' },
-        { id: 'reststop', name: 'Outdoor Seating', color: '#73AF48' },
-        { id: 'elevators', name: 'Elevators', color: '#94346E' },
-        { id: 'entrances', name: 'Accessible Entrances', color: '#f97b72' },
-        { id: 'paths', name: 'Stairs', color: '#F2B701' },
-        { id: 'curbcuts', name: 'Curb Cuts', color: '#3969AC' },
-        { id: 'paths', name: 'Accessible Sidewalks'},
-        { id: 'accessiblepaths', name: 'Interior', color: '#0F8554' },
-        { id: 'accessiblepaths', name: 'Exterior', color: '#5F4690' }
-    ];
+    // // Legend data for the map
+    // const legendData = [
+    //     { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png' },
+    //     { id: 'bikerack', name: 'Bike Racks', icon: 'src/icons/bike.png' },
+    //     { id: 'bluelight', name: 'Bluelights', color: '#0000ff' },
+    //     { id: 'reststop', name: 'Outdoor Seating', color: '#73AF48' },
+    //     { id: 'elevators', name: 'Elevators', color: '#94346E' },
+    //     { id: 'entrances', name: 'Accessible Entrances', color: '#f97b72' },
+    //     { id: 'paths', name: 'Stairs', color: '#F2B701' },
+    //     { id: 'curbcuts', name: 'Curb Cuts', color: '#3969AC' },
+    //     { id: 'paths', name: 'Accessible Sidewalks'},
+    //     { id: 'accessiblepaths', name: 'Interior', color: '#0F8554' },
+    //     { id: 'accessiblepaths', name: 'Exterior', color: '#5F4690' }
+    // ];
 
 //HANDLE BUTTON CLICKS
 
@@ -135,132 +134,132 @@ document.getElementById('about').addEventListener('click', handleAboutClick);
     });
   }
 
-  function handleHomeClick() {
-    // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
-    setLayerVisibility(allLayers, 'visible');
-    updateLegend(allLayers, legendData);
-    // Change navigation button color
-    document.getElementById('home').style.backgroundColor = '#b29d6c';
+//   function handleHomeClick() {
+//     // Ensure all layers are visible
+//     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
+//     setLayerVisibility(allLayers, 'visible');
+//     updateLegend(allLayers, legendData);
+//     // Change navigation button color
+//     document.getElementById('home').style.backgroundColor = '#b29d6c';
 
-    // Reset navigation button color when other buttons are clicked
-    document.querySelectorAll('.menu-button').forEach(button => {
-    if (button.id !== 'home') {
-      button.addEventListener('click', () => {
-      document.getElementById('home').style.backgroundColor = '';
-      });
-    }
-    });
-  }
+//     // Reset navigation button color when other buttons are clicked
+//     document.querySelectorAll('.menu-button').forEach(button => {
+//     if (button.id !== 'home') {
+//       button.addEventListener('click', () => {
+//       document.getElementById('home').style.backgroundColor = '';
+//       });
+//     }
+//     });
+//   }
 
-  function handleTransportationClick() {
-    // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'buildings'];
-    setLayerVisibility(allLayers, 'visible');
-    // Toggle off non-transportation layers
-    const nottrans = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'paths', 'accessiblepaths'];
-    setLayerVisibility(nottrans, 'none');
-    updateLegend(['shuttlestop', 'bikerack'], legendData);
-      // Add Visitor Parking to the legend
-    const legend = document.getElementById('legend');
-    const visitorParkingItem = document.createElement('div');
-    visitorParkingItem.classList.add('legend-item');
+//   function handleTransportationClick() {
+//     // Ensure all layers are visible
+//     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'buildings'];
+//     setLayerVisibility(allLayers, 'visible');
+//     // Toggle off non-transportation layers
+//     const nottrans = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'paths', 'accessiblepaths'];
+//     setLayerVisibility(nottrans, 'none');
+//     updateLegend(['shuttlestop', 'bikerack'], legendData);
+//       // Add Visitor Parking to the legend
+//     const legend = document.getElementById('legend');
+//     const visitorParkingItem = document.createElement('div');
+//     visitorParkingItem.classList.add('legend-item');
 
-    const colorBox = document.createElement('div');
-    colorBox.classList.add('legend-color-box');
-    colorBox.style.backgroundColor = '#994E95';
-    visitorParkingItem.appendChild(colorBox);
+//     const colorBox = document.createElement('div');
+//     colorBox.classList.add('legend-color-box');
+//     colorBox.style.backgroundColor = '#994E95';
+//     visitorParkingItem.appendChild(colorBox);
 
-    const label = document.createElement('span');
-    label.textContent = 'Visitor Parking';
-    visitorParkingItem.appendChild(label);
+//     const label = document.createElement('span');
+//     label.textContent = 'Visitor Parking';
+//     visitorParkingItem.appendChild(label);
 
-    legend.appendChild(visitorParkingItem);
-  // Highlight buildings whose NAME field is either "Commonwealth Ave Garage" or "Beacon Street Parking Garage"
-    map.setPaintProperty('buildings', 'fill-color', [
-      'case',
-      ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
-      '#994E95',
-      '#888888'
-    ]);
-    map.setPaintProperty('buildings', 'fill-opacity', [
-      'case',
-      ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
-      0.75,
-      0.5
-    ]);
-    // Remove highlight from buildings when a different button is clicked
-    document.querySelectorAll('.menu-button').forEach(button => {
-      button.addEventListener('click', () => {
-        if (button.id !== 'transportation') {
-          map.setPaintProperty('buildings', 'fill-color', '#888888'); // Reset to default color
-          map.setPaintProperty('buildings', 'fill-opacity', 0.5); // Reset to default opacity
-        }
-      });
-    });
+//     legend.appendChild(visitorParkingItem);
+//   // Highlight buildings whose NAME field is either "Commonwealth Ave Garage" or "Beacon Street Parking Garage"
+//     map.setPaintProperty('buildings', 'fill-color', [
+//       'case',
+//       ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
+//       '#994E95',
+//       '#888888'
+//     ]);
+//     map.setPaintProperty('buildings', 'fill-opacity', [
+//       'case',
+//       ['in', ['get', 'NAME'], ['literal', ['Commonwealth Ave Garage', 'Beacon Street Parking Garage']]],
+//       0.75,
+//       0.5
+//     ]);
+//     // Remove highlight from buildings when a different button is clicked
+//     document.querySelectorAll('.menu-button').forEach(button => {
+//       button.addEventListener('click', () => {
+//         if (button.id !== 'transportation') {
+//           map.setPaintProperty('buildings', 'fill-color', '#888888'); // Reset to default color
+//           map.setPaintProperty('buildings', 'fill-opacity', 0.5); // Reset to default opacity
+//         }
+//       });
+//     });
     
-    // Change navigation button color
-    document.getElementById('transportation').style.backgroundColor = '#b29d6c';
+//     // Change navigation button color
+//     document.getElementById('transportation').style.backgroundColor = '#b29d6c';
 
-    // Reset navigation button color when other buttons are clicked
-    document.querySelectorAll('.menu-button').forEach(button => {
-    if (button.id !== 'transportation') {
-      button.addEventListener('click', () => {
-      document.getElementById('transportation').style.backgroundColor = '';
-      });
-    }
-  });
-};
+//     // Reset navigation button color when other buttons are clicked
+//     document.querySelectorAll('.menu-button').forEach(button => {
+//     if (button.id !== 'transportation') {
+//       button.addEventListener('click', () => {
+//       document.getElementById('transportation').style.backgroundColor = '';
+//       });
+//     }
+//   });
+// };
 
-  function handleNavigationClick() {
-    // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
-    setLayerVisibility(allLayers, 'visible');
+//   function handleNavigationClick() {
+//     // Ensure all layers are visible
+//     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
+//     setLayerVisibility(allLayers, 'visible');
 
-    const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop', 'curbcuts'];
-    setLayerVisibility(notnav, 'none');
-    updateLegend(['entrances', 'bluelight', 'paths', 'accessiblepaths'], legendData);
-    // Change navigation button color
-    document.getElementById('navigation').style.backgroundColor = '#b29d6c';
-    }
+//     const notnav = ['bikerack', 'shuttlestop', 'elevators', 'reststop', 'curbcuts'];
+//     setLayerVisibility(notnav, 'none');
+//     updateLegend(['entrances', 'bluelight', 'paths', 'accessiblepaths'], legendData);
+//     // Change navigation button color
+//     document.getElementById('navigation').style.backgroundColor = '#b29d6c';
+//     }
 
-    // Reset navigation button color when other buttons are clicked
-    document.querySelectorAll('.menu-button').forEach(button => {
-    if (button.id !== 'navigation') {
-      button.addEventListener('click', () => {
-      document.getElementById('navigation').style.backgroundColor = '';
-      });
-    }
-   });
+//     // Reset navigation button color when other buttons are clicked
+//     document.querySelectorAll('.menu-button').forEach(button => {
+//     if (button.id !== 'navigation') {
+//       button.addEventListener('click', () => {
+//       document.getElementById('navigation').style.backgroundColor = '';
+//       });
+//     }
+//    });
 
    
-  function handleResourcesClick() {
-    // Ensure all layers are visible
-    const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
-    setLayerVisibility(allLayers, 'visible');
+//   function handleResourcesClick() {
+//     // Ensure all layers are visible
+//     const allLayers = ['reststop', 'curbcuts', 'entrances', 'elevators', 'bluelight', 'bikerack', 'shuttlestop', 'paths'];
+//     setLayerVisibility(allLayers, 'visible');
 
-    const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
-    setLayerVisibility(notres, 'none');
-    updateLegend(['reststop', 'elevators'], legendData);
-    // Change navigation button color
-    document.getElementById('resources').style.backgroundColor = '#b29d6c';
+//     const notres = ['curbcuts', 'entrances', 'bluelight', 'bikerack', 'shuttlestop', 'paths', 'accessiblepaths'];
+//     setLayerVisibility(notres, 'none');
+//     updateLegend(['reststop', 'elevators'], legendData);
+//     // Change navigation button color
+//     document.getElementById('resources').style.backgroundColor = '#b29d6c';
 
-    // Reset navigation button color when other buttons are clicked
-    document.querySelectorAll('.menu-button').forEach(button => {
-    if (button.id !== 'resources') {
-      button.addEventListener('click', () => {
-      document.getElementById('resources').style.backgroundColor = '';
-      });
-    }
-    });
+//     // Reset navigation button color when other buttons are clicked
+//     document.querySelectorAll('.menu-button').forEach(button => {
+//     if (button.id !== 'resources') {
+//       button.addEventListener('click', () => {
+//       document.getElementById('resources').style.backgroundColor = '';
+//       });
+//     }
+//     });
     
-  }
+//   }
 
-  //Add event listeners to buttons
-  document.getElementById('transportation').addEventListener('click', handleTransportationClick);
-  document.getElementById('navigation').addEventListener('click', handleNavigationClick);
-  document.getElementById('resources').addEventListener('click', handleResourcesClick);
-  document.getElementById('home').addEventListener('click', handleHomeClick);
+//   //Add event listeners to buttons
+//   document.getElementById('transportation').addEventListener('click', handleTransportationClick);
+//   document.getElementById('navigation').addEventListener('click', handleNavigationClick);
+//   document.getElementById('resources').addEventListener('click', handleResourcesClick);
+//   document.getElementById('home').addEventListener('click', handleHomeClick);
 
 // Predefined options
 const predefinedOptions = ['Vending Machines', 'Cafes', 'Dining', 'Lactation Rooms', 'Single-use Restrooms', 'Group Seating', 'Individual Seating', 'Printing'];

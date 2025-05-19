@@ -110,7 +110,7 @@ body, html {
 #legend {
   position: absolute;
   top: calc(2vh + 5rem);
-  right: 1rem; /* Keep the legend within the map boundaries */
+  left: 1rem; /* Keep the legend within the map boundaries */
   background-color: white;
   color: black;
   padding: 1rem;
@@ -152,10 +152,6 @@ body, html {
   color: #a0a0a0;
 }
 
-.legend-item.collapsed {
-  display: none;
-}
-
 .legend-icon {
   width: 20px;
   height: 20px;
@@ -171,15 +167,14 @@ body, html {
 .legend-content {
   display: block; /* Default state: visible */
   transition: max-height 0.3s ease, opacity 0.3s ease; /* Smooth transition */
-  max-height: 300px; /* Adjust to match your legend's height */
+  max-height: 800px; /* Adjust to match your legend's height */
   overflow: hidden;
   opacity: 1;
+  overflow-y: auto;
 }
 
-.legend-content.collapsed {
+.legend-category-content.collapsed {
   display: none;
-  opacity: 0; /* Fade out for a smoother transition */
-  pointer-events: none; /* Prevent interaction when collapsed */
 }
 
 .legend-toggle-button {
