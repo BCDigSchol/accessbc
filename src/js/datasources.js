@@ -43,6 +43,13 @@ function addMapData(map) {
           'type': 'vector',
           'url': 'mapbox://bcdsg-lec.ctxmzxxp'
       });
+      map.addSource('mapbox-dem', {
+          type: 'raster-dem',
+          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+          tileSize: 512,
+          maxzoom: 20
+      });
+      map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
       
     map.addLayer({
       id: 'buildings',

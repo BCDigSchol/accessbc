@@ -11,6 +11,8 @@
 <script src="src/js/datasources.js"></script>
 <script src="src/js/popups.js"></script>
 <script src="src/js/sidebar.js"></script>
+<script src="src/js/elevation.js"></script>
+<script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
 </head>
 <body>
 
@@ -68,13 +70,15 @@
         zoom: 15,
         center: [-71.168819, 42.336193]
     });
-
+    window.map = map;
     map.on('load', () => {
     addMapControls(map);
     createLegend('legend', legendData, map);
     addMapData(map);
     addPopupHandlers(map);
     addSidebarHandlers(map);
+    setupElevationHandler(map);
+    
 
     // Example function calls to toggle visibility and update legend
     function handleHomeClick() {
