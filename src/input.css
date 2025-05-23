@@ -72,11 +72,11 @@ body, html {
   overflow-y: auto;
   position: absolute;
   top: 10vh;
-  left: 0;
+  right: 0;
   z-index: 1;
   height: calc(100% - 10vh);
   transition: transform 0.4s ease;
-  transform: translateX(-100%); /* Ensure it's off-screen by default */
+  transform: translateX(100%); /* Ensure it's off-screen by default */
 }
 
 #sidebar.visible {
