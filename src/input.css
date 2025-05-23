@@ -147,9 +147,10 @@ body, html {
   cursor: pointer;
 }
 
-.legend-item.inactive {
+.legend-item.disabled {
   background-color: #d3d3d3;
   color: #a0a0a0;
+  text-decoration: line-through;
 }
 
 .legend-icon {
