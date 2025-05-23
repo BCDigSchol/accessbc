@@ -76,11 +76,11 @@ body, html {
   z-index: 1;
   height: calc(100% - 10vh);
   transition: transform 0.4s ease;
-  transform: translateX(100%); /* Ensure it's off-screen by default */
+  transform: translateX(100%);
 }
 
 #sidebar.visible {
-  transform: translateX(0); /* Slide in when visible */
+  transform: translateX(0);
 }
 
 #sidebar p{
@@ -110,14 +110,14 @@ body, html {
 #legend {
   position: absolute;
   top: calc(2vh + 5rem);
-  left: 1rem; /* Keep the legend within the map boundaries */
+  left: 1rem;
   background-color: white;
   color: black;
   padding: 1rem;
   border-radius: 0.5rem;
   box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.2);
-  z-index: 10; /* Ensure it stays above map elements */
-  max-width: calc(100% - 26vw); /* Avoid overlap with sidebar */
+  z-index: 10;
+  max-width: calc(100% - 26vw); 
   box-sizing: border-box;
   transition: all 0.3s ease;
 }
@@ -126,8 +126,8 @@ body, html {
   display: flex;
   flex-direction: column;
   gap: 5px;
-  overflow: hidden; /* Ensures hidden content doesn't spill out */
-  max-height: 500px; /* Set a reasonable default height */
+  overflow: hidden;
+  max-height: 500px;
   transition: max-height 0.3s ease, padding 0.3s ease;
 }
 
@@ -166,9 +166,9 @@ body, html {
 }
 
 .legend-content {
-  display: block; /* Default state: visible */
-  transition: max-height 0.3s ease, opacity 0.3s ease; /* Smooth transition */
-  max-height: 800px; /* Adjust to match your legend's height */
+  display: block;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 800px;
   overflow: hidden;
   opacity: 1;
   overflow-y: auto;
@@ -187,7 +187,7 @@ body, html {
   background-color: #f5f5f5;
   border-radius: 4px;
   margin-bottom: 5px;
-  z-index: 11; /* Ensure it stays clickable */
+  z-index: 11; 
 }
 
 /* Top Navigation Bar */
@@ -201,7 +201,7 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap; /* Allow items to wrap on smaller screens */
+  flex-wrap: wrap;
   padding: 0.5rem 1rem;
   box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
   z-index: 100;
@@ -213,7 +213,7 @@ body, html {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  align-items: flex-start; /* Align titles to the left */
+  align-items: flex-start;
   gap: 0.3rem;
   margin-right: 1rem;
 }
@@ -222,7 +222,7 @@ body, html {
   font-size: 5vh;
   font-weight: 500;
   color: #17343B;
-  white-space: nowrap; /* Prevent line breaks */
+  white-space: nowrap;
   overflow: hidden;
 }
 
@@ -244,7 +244,7 @@ body, html {
   text-decoration: none;
   text-align: center;
   border-radius: 0.5rem;
-  border: none; /* Remove border */
+  border: none;
 }
 
 .topnav button:hover {
@@ -269,13 +269,13 @@ body, html {
   padding: 0.5rem;
   border: 0.1rem solid #ccc;
   border-radius: 0.5rem;
-  width: 100%; /* Make the search bar fill the available space */
-  max-width: 12rem; /* Set a max-width for large screens */
+  width: 100%;
+  max-width: 12rem;
 }
 
 .search-dropdown {
   position: absolute;
-  top: 100%; /* Dropdown appears below the search bar */
+  top: 100%;
   left: 0;
   right: 0;
   background: white;
@@ -284,8 +284,8 @@ body, html {
   border-radius: 0.3rem;
   max-height: 20rem;
   overflow-y: auto;
-  display: none; /* Initially hidden */
-  z-index: 1100; /* Ensure dropdown is above other content */
+  display: none;
+  z-index: 1100;
 }
 
 .search-dropdown div {
@@ -302,7 +302,7 @@ body, html {
 }
 
 .topnav .icon {
-  display: none; /* Hide by default */
+  display: none;
   font-size: 1.5rem;
   cursor: pointer;
   color: #17343B;
@@ -341,37 +341,33 @@ body, html {
   .topnav.responsive .search-bar-container {
     display: flex;
     justify-content: space-between;
-    width: 100%; /* Make search bars fill the width */
+    width: 100%;
     margin: 0.5rem 0;
   }
 
   .topnav.responsive .title-container {
     width: 100%;
-    align-items: flex-start; /* Left-align titles in responsive mode */
+    align-items: flex-start;
   }
 
   #legend {
-    max-width: 80%; /* Reduce the width of the legend */
-    top: calc(6rem + 1vh); /* Position it closer to the top */
+    max-width: 80%;
+    top: calc(6rem + 1vh);
     right: 1rem;
-    font-size: 0.9rem; /* Smaller font size */
-    padding: 0.2rem; /* Less padding */
+    font-size: 0.9rem;
+    padding: 0.2rem;
   }
 
   .legend-item {
-    flex-direction: row; /* Adjust legend items to be more compact */
-    font-size: 0.7rem; /* Smaller text size for items */
-    margin-bottom: 1px; /* Reduce space between items */
+    flex-direction: row;
+    font-size: 0.7rem;
+    margin-bottom: 1px;
   }
 
   .legend-icon,
   .legend-color-box {
-    width: 10px; /* Smaller icons and color boxes */
+    width: 10px;
     height: 10px;
-  }
-
-  .legend-item.inactive {
-    background-color: #e0e0e0; /* Lighter grey background for inactive items */
   }
 
   #sidebar {
@@ -379,10 +375,10 @@ body, html {
     height: 50%;
     top: auto;
     bottom: 0;
-    transform: translateY(100%); /* Ensure it's off-screen by default */
+    transform: translateY(100%);
   }
 
   #sidebar.visible {
-    transform: translateY(0); /* Slide up when visible */
+    transform: translateY(0);
   }
 }
