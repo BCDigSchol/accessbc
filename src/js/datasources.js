@@ -85,10 +85,10 @@ function addMapData(map) {
       'line-opacity': [
         'case',
         ['==', ['get', 'Type'], 'Exterior'],
-        '0', 
+        0, 
         ['==', ['get', 'Type'], 'Interior'],
-        '1', 
-        '1'
+        1, 
+        1
       ],
       'line-width': 2
       }
@@ -112,10 +112,10 @@ function addMapData(map) {
       'line-opacity': [
         'case',
         ['==', ['get', 'Type'], 'Exterior'],
-        '1', 
+        1, 
         ['==', ['get', 'Type'], 'Interior'],
-        '0', 
-        '1'
+        0, 
+        1
       ],
       'line-width': 2
       }
