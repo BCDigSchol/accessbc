@@ -20,8 +20,8 @@ const legendData = [
     { id: 'entrances', name: 'Accessible Entrances', color: '#f97b72', category: 'Navigating Campus' },
     { id: 'paths', name: 'Stairs', color: '#F2B701', category: 'Navigating Campus' },
     { id: 'curbcuts', name: 'Curb Cuts', color: '#3969AC', category: 'Navigating Campus' },
-    { id: 'accessiblepaths', name: 'Interior Accessible Paths', color: '#0F8554', category: 'Navigating Campus' },
-    { id: 'accessiblepaths', name: 'Exterior Accessible Paths', color: '#5F4690', category: 'Navigating Campus' }
+    { id: 'accessiblepaths-int', name: 'Interior Accessible Paths', color: '#0F8554', category: 'Navigating Campus' },
+    { id: 'accessiblepaths-ext', name: 'Exterior Accessible Paths', color: '#5F4690', category: 'Navigating Campus' }
 ];
 
 // Make global

@@ -68,7 +68,7 @@ function addMapData(map) {
       });
     map.setFilter('paths', ['==', ['get', 'highway'], 'steps']);
     map.addLayer({
-      id: 'accessiblepaths',
+      id: 'accessiblepaths-int',
       type: 'line',
       source: 'accessiblepaths-b55sh1',
       'source-layer': 'accessiblepaths-b55sh1',
@@ -81,6 +81,41 @@ function addMapData(map) {
         ['==', ['get', 'Type'], 'Interior'],
         '#5F4690', 
         '#000000' 
+      ],
+      'line-opacity': [
+        'case',
+        ['==', ['get', 'Type'], 'Exterior'],
+        '0', 
+        ['==', ['get', 'Type'], 'Interior'],
+        '1', 
+        '1'
+      ],
+      'line-width': 2
+      }
+    });
+    
+    map.addLayer({
+      id: 'accessiblepaths-ext',
+      type: 'line',
+      source: 'accessiblepaths-b55sh1',
+      'source-layer': 'accessiblepaths-b55sh1',
+      layout: {},
+      paint: {
+      'line-color': [
+        'case',
+        ['==', ['get', 'Type'], 'Exterior'],
+        '#0F8554', 
+        ['==', ['get', 'Type'], 'Interior'],
+        '#5F4690', 
+        '#000000' 
+      ],
+      'line-opacity': [
+        'case',
+        ['==', ['get', 'Type'], 'Exterior'],
+        '1', 
+        ['==', ['get', 'Type'], 'Interior'],
+        '0', 
+        '1'
       ],
       'line-width': 2
       }
