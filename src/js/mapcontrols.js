@@ -151,6 +151,66 @@ function createLegend(containerId, legendData, map) {
     });
 }
 
+function createElevationLegend(containerId) {
+    if (document.getElementById('legend-elevation-section')) return;
+    window.elevationLegendExpanded = false;
+    
+    const legendContainer = document.getElementById(containerId);
+    const elevSection = document.createElement('div');
+    elevSection.classList.add('legend-section');
+    elevSection.id = 'legend-elevation-section';
+
+    // Header with toggle
+    const elevHeader = document.createElement('h4');
+    elevHeader.classList.add('legend-subheader');
+
+    const elevToggleSpan = document.createElement('span');
+    elevToggleSpan.textContent = '►'; // collapsed by default
+    elevToggleSpan.style.marginLeft = '0.5rem';
+    elevToggleSpan.style.cursor = 'pointer';
+
+    const elevHeaderLabel = document.createElement('span');
+    elevHeaderLabel.textContent = 'Elevation';
+    elevHeaderLabel.classList.add('legend-category-label');
+    elevHeaderLabel.style.cursor = 'pointer';
+    elevHeaderLabel.style.fontWeight = 'bold';
+
+    elevHeader.textContent = '';
+    elevHeader.appendChild(elevHeaderLabel);
+    elevHeader.appendChild(elevToggleSpan);
+
+    elevSection.appendChild(elevHeader);
+
+    const elevContent = document.createElement('div');
+    elevContent.classList.add('legend-category-content', 'collapsed');
+    elevContent.style.maxHeight = '0';
+    elevContent.style.overflow = 'hidden';
+
+    const elevInfo = document.createElement('div');
+    elevInfo.id = 'elevation-info';
+    elevInfo.style.fontSize = '0.9rem';
+    elevInfo.style.color = '#444';
+    elevInfo.style.padding = '0.5rem 0';
+    elevInfo.innerHTML = 'Click on the map to get elevation change.';
+    elevContent.appendChild(elevInfo);
+
+    elevSection.appendChild(elevContent);
+    legendContainer.appendChild(elevSection);
+
+    // Toggle
+    const toggleElevation = () => {
+        const isCollapsed = elevContent.classList.toggle('collapsed');
+        elevContent.style.maxHeight = isCollapsed ? '0' : 'none';
+        elevToggleSpan.textContent = isCollapsed ? '►' : '▼';
+    };
+
+    elevHeader.addEventListener('click', toggleElevation);
+    elevToggleSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleElevation();
+    });
+}
+
 //Set layer visibility
 function setLayerVisibility(map, layers, visibility) {
     layers.forEach(layerId => {

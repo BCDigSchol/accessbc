@@ -74,6 +74,7 @@
     map.on('load', () => {
     addMapControls(map);
     createLegend('legend', legendData, map);
+    createElevationLegend('legend')
     addMapData(map);
     addPopupHandlers(map);
     addSidebarHandlers(map);

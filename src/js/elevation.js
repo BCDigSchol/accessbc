@@ -39,6 +39,7 @@ async function setupElevationHandler(map) {
   }
 
   map.on('click', (e) => {
+    if (!window.elevationLegendExpanded) return;
     if (!coord0 || isNaN(coord0[0]) || isNaN(coord0[1])) {
       alert("User location not set. Try refreshing.");
       return;
@@ -82,14 +83,13 @@ async function setupElevationHandler(map) {
       const elev1Feet = elev1 * 3.28084;
       const elevChangeFeet = elev1Feet - elev0Feet;
 
-      new mapboxgl.Popup()
-        .setLngLat(coord1)
-        .setHTML(
-          `Start Elev: ${elev0Feet.toFixed(2)} ft<br>` +
-          `End Elev: ${elev1Feet.toFixed(2)} ft<br>` +
-          `Change: ${elevChangeFeet.toFixed(2)} ft`
-        )
-        .addTo(map);
+      const elevInfoContainer = document.getElementById('elevation-info');
+      if (elevInfoContainer) {
+        elevInfoContainer.innerHTML = 
+          `Start Elevation: ${elev0Feet.toFixed(2)} ft<br>` +
+          `End Elevation: ${elev1Feet.toFixed(2)} ft<br>` +
+          `Change: ${elevChangeFeet.toFixed(2)} ft`;
+      }
 
     } catch (err) {
       console.error("Error querying elevation:", err);
