@@ -50,6 +50,8 @@ function addMapData(map) {
           maxzoom: 20
       });
       map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+
+    
       
     map.addLayer({
       id: 'buildings',
