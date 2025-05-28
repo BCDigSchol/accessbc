@@ -78,14 +78,7 @@
     addMapData(map);
     addPopupHandlers(map);
     addSidebarHandlers(map);
-    map.once('idle', () => {
-  if (map.getTerrain()) {
-    console.log("Terrain ready — enabling elevation handler.");
     setupElevationHandler(map);
-  } else {
-    console.warn("Terrain not available. Elevation queries will not work.");
-  }
-});
     });
     
 //HANDLE BUTTON CLICKS

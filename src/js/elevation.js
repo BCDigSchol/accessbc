@@ -1,5 +1,77 @@
+function createElevationLegend(containerId) {
+    if (document.getElementById('legend-elevation-section')) return;
+    
+    const legendContainer = document.getElementById(containerId);
+    const elevSection = document.createElement('div');
+    elevSection.classList.add('legend-section');
+    elevSection.id = 'legend-elevation-section';
+
+    // Header with toggle
+    const elevHeader = document.createElement('h4');
+    elevHeader.classList.add('legend-subheader');
+
+    const elevToggleSpan = document.createElement('span');
+    elevToggleSpan.textContent = '►'; // collapsed by default
+    elevToggleSpan.style.marginLeft = '0.5rem';
+    elevToggleSpan.style.cursor = 'pointer';
+
+    const elevHeaderLabel = document.createElement('span');
+    elevHeaderLabel.textContent = 'Elevation';
+    elevHeaderLabel.classList.add('legend-category-label');
+    elevHeaderLabel.style.cursor = 'pointer';
+    elevHeaderLabel.style.fontWeight = 'bold';
+
+    elevHeader.textContent = '';
+    elevHeader.appendChild(elevHeaderLabel);
+    elevHeader.appendChild(elevToggleSpan);
+
+    elevSection.appendChild(elevHeader);
+
+    const elevContent = document.createElement('div');
+    elevContent.classList.add('legend-category-content', 'collapsed');
+    elevContent.style.maxHeight = '0';
+    elevContent.style.overflow = 'hidden';
+
+    const elevInfo = document.createElement('div');
+    elevInfo.id = 'elevation-info';
+    elevInfo.style.fontSize = '0.9rem';
+    elevInfo.style.color = '#444';
+    elevInfo.style.padding = '0.5rem 0';
+    elevInfo.innerHTML = 'Click on the map to get elevation change.';
+    elevContent.appendChild(elevInfo);
+
+    elevSection.appendChild(elevContent);
+    legendContainer.appendChild(elevSection);
+
+    // Toggle
+    const toggleElevation = () => {
+        const isCollapsed = elevContent.classList.toggle('collapsed');
+        elevContent.style.maxHeight = isCollapsed ? '0' : 'none';
+        elevToggleSpan.textContent = isCollapsed ? '►' : '▼';
+        elevationActive = !isCollapsed;
+        if (isCollapsed && marker1) {
+        marker1.remove();
+        marker1 = null;
+
+        const elevInfoContainer = document.getElementById('elevation-info');
+        if (elevInfoContainer) {
+            elevInfoContainer.innerHTML = 'Click on the map to get elevation change.';
+        }
+    }
+    };
+
+    elevHeader.addEventListener('click', toggleElevation);
+    elevToggleSpan.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleElevation();
+    });
+
+    
+}
+
 let coord0 = null;
 let marker1 = null;
+let elevationActive = false;
 
 async function getUserLocation() {
   return new Promise((resolve, reject) => {
@@ -32,13 +104,12 @@ async function setupElevationHandler(map) {
       return;
     }
 
-    console.log("User location:", coord0);
-
   } catch (err) {
     return; // stop if geolocation fails
   }
 
   map.on('click', (e) => {
+    if (!elevationActive) return;
     if (!coord0 || isNaN(coord0[0]) || isNaN(coord0[1])) {
       alert("User location not set. Try refreshing.");
       return;
@@ -75,8 +146,6 @@ async function setupElevationHandler(map) {
         elevation_end: elev1,
         elevation_change: elevChange
       });
-
-      console.log('Line with elevation:', line);
 
       const elev0Feet = elev0 * 3.28084;
       const elev1Feet = elev1 * 3.28084;
