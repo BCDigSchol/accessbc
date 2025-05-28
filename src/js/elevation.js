@@ -39,7 +39,6 @@ async function setupElevationHandler(map) {
   }
 
   map.on('click', (e) => {
-    if (!window.elevationLegendExpanded) return;
     if (!coord0 || isNaN(coord0[0]) || isNaN(coord0[1])) {
       alert("User location not set. Try refreshing.");
       return;

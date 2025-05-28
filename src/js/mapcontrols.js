@@ -118,20 +118,9 @@ function createLegend(containerId, legendData, map) {
         section.appendChild(itemsContainer);
         content.appendChild(section);
 
-        // Toggle collapse behavior for individual categories
+        // Handle clicking either the category label or the arrow
         header.addEventListener('click', () => {
-            const isCollapsed = itemsContainer.classList.toggle('collapsed');
-            toggleSpan.textContent = isCollapsed ? '►' : '▼';
-        });
-        // Toggle collapse behavior (clicking arrow)
-        toggleSpan.addEventListener('click', (e) => {
-            e.stopPropagation(); // Prevent category toggle when collapsing
-            const isCollapsed = itemsContainer.classList.toggle('collapsed');
-            toggleSpan.textContent = isCollapsed ? '►' : '▼';
-        });
-
-        // Toggle all layers in category (clicking label)
-        headerLabel.addEventListener('click', () => {
+            // 1. Toggle visibility of all layers in this category
             const allLayers = categories[categoryName];
             const anyVisible = allLayers.some(layer => map.getLayoutProperty(layer.id, 'visibility') !== 'none');
 
@@ -141,19 +130,20 @@ function createLegend(containerId, legendData, map) {
 
                 // Update legend item styling
                 const item = itemsContainer.querySelector(`[data-layer-id="${layer.id}"]`);
-                if (visibility === 'none') {
-                    item.classList.add('disabled');
-                } else {
-                    item.classList.remove('disabled');
+                if (item) {
+                    item.classList.toggle('disabled', visibility === 'none');
                 }
             });
+
+            // 2. Toggle collapsed state
+            const isCollapsed = itemsContainer.classList.toggle('collapsed');
+            toggleSpan.textContent = isCollapsed ? '►' : '▼';
         });
     });
 }
 
 function createElevationLegend(containerId) {
     if (document.getElementById('legend-elevation-section')) return;
-    window.elevationLegendExpanded = false;
     
     const legendContainer = document.getElementById(containerId);
     const elevSection = document.createElement('div');

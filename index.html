@@ -86,16 +86,8 @@
     console.warn("Terrain not available. Elevation queries will not work.");
   }
 });
+    });
     
-
-    // Example function calls to toggle visibility and update legend
-    function handleHomeClick() {
-        const allLayers = legendData.map(layer => layer.id);
-        setLayerVisibility(map, allLayers, 'visible');
-        updateLegend(allLayers, legendData);
-    }
-});
-
 //HANDLE BUTTON CLICKS
 function handleAboutClick() {
   // Create the popup window
