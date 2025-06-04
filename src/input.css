@@ -353,7 +353,7 @@ body, html {
   #legend {
     max-width: 80%;
     top: calc(6rem + 1vh);
-    right: 1rem;
+    left: 1rem;
     font-size: 0.9rem;
     padding: 0.2rem;
   }
