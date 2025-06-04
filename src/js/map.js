@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
-    mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNsbjRrc3F6ejAxNDUya3F1NjMzMmliMzIifQ.YCTLzh1KRXr4P-9djuAMkg';
+    mapboxgl.accessToken = 'pk.eyJ1IjoiYmNkc2ctbGVjIiwiYSI6ImNtYmk5OHB0eDAyemkybXB5bmwwbWJucXUifQ.examOW7keLjA67etGpg1AQ';
     const map = new mapboxgl.Map({
         container: 'map',
         style: 'mapbox://styles/bcdsg-lec/cm3oohpoy00oc01r2hl6wgqwm',
