@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', function () {
         container: 'map',
         style: 'mapbox://styles/bcdsg-lec/cm3oohpoy00oc01r2hl6wgqwm',
         zoom: 15,
-        center: [-71.168819, 42.336193]
+        center: [-71.170820, 42.336190]
     });
     window.map = map;
     map.on('load', () => {

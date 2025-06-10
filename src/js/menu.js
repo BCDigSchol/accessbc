@@ -27,7 +27,7 @@ function setLayerVisibility(layers, visibility) {
 
 function handleChestnutClick() {
   map.flyTo({
-    center: [-71.168819, 42.336193],
+    center: [-71.170820, 42.336190],
     speed: 1.25,
     curve: 1,
     zoom: 15
@@ -46,7 +46,7 @@ function handleChestnutClick() {
 
 function handleBrightonClick() {
   map.flyTo({
-    center: [-71.161387, 42.343167],
+    center: [-71.163387, 42.343167],
     speed: 1.25,
     curve: 1,
     zoom: 15.5
@@ -65,7 +65,7 @@ function handleBrightonClick() {
 
 function handleNewtonClick() {
   map.flyTo({
-    center: [-71.194044, 42.344074],
+    center: [-71.196944, 42.344074],
     speed: 1.25,
     curve: 1,
     zoom: 15
@@ -84,7 +84,7 @@ function handleNewtonClick() {
 
 function handleBrooklineClick() {
   map.flyTo({
-    center: [-71.156244, 42.320203],
+    center: [-71.157244, 42.320203],
     speed: 1.25,
     curve: 1,
     zoom: 15.5
