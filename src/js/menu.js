@@ -5,7 +5,7 @@ function handleAboutClick() {
   popup.id = 'about-popup';
 
   const text = document.createElement('p');
-  text.textContent = 'This is the About section. More information will be added here.';
+  text.textContent = 'Welcome to the AccessBC webmap! To explore the different Boston College campuses, select the campus you wish to view. Use the legend to turn on/off different layers. If you are trying to view elevation changes, please ensure that your geolocation is on (you may need to refresh the page if you are on a mobile device)';
   popup.appendChild(text);
 
   const closeButton = document.createElement('button');
@@ -18,6 +18,8 @@ function handleAboutClick() {
 
   document.body.appendChild(popup);
 }
+
+
 
 function setLayerVisibility(layers, visibility) {
   layers.forEach(layerId => {
