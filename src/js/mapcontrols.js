@@ -1,12 +1,25 @@
 //CREATES ZOOM CONTROLS AND GEOLOCATION CONTROLS
 function addMapControls(map) {
-    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.addControl(new mapboxgl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true,
         showUserHeading: true
-    }), 'bottom-right');
+    }), 'top-right');
 }
+
+function repositionMapboxControls() {
+const topnav = document.querySelector('.topnav');
+const ctrlContainer = document.querySelector('.mapboxgl-ctrl-top-right');
+
+if (topnav && ctrlContainer) {
+    const height = topnav.offsetHeight;
+    ctrlContainer.style.top = `${height + 10}px`; // 10px padding below topnav
+}
+}
+
+document.addEventListener('DOMContentLoaded', repositionMapboxControls);
+window.addEventListener('resize', repositionMapboxControls);
 
 //CREATES AND DYNAMICALLY UPDATES LEGEND
 
