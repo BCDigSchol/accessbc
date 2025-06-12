@@ -169,6 +169,12 @@ body, html {
   margin-right: 10px;
 }
 
+.legend-subheader{
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: large;
+}
+
 .legend-content {
   display: block;
   transition: max-height 0.3s ease, opacity 0.3s ease;
@@ -301,9 +307,9 @@ body, html {
 
 .topnav .icon {
   display: none;
-  font-size: 1.5rem;
+  font-size: 2rem;
   cursor: pointer;
-  color: #17343B;
+  color: #FFFFFF;
   margin-left: auto;
   position: fixed;
   right: 1rem;
@@ -312,7 +318,7 @@ body, html {
 
 /* Media Queries for further adjustments */
 /* Responsive Styles */
-@media screen and (max-width: 800px) {
+@media screen and (max-width: 870px) {
   /* Hide menu buttons initially */
   .topnav button:not(:first-child),
   .search-bar-container {
