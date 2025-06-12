@@ -113,8 +113,8 @@ body, html {
 #legend {
   position: absolute;
   top: 50%;
-  left: 1.5rem;
-  transform: translateY(-50%);
+  left: 2rem;
+  transform: translateY(-45%);
   background-color: white;
   color: black;
   padding: 1rem;
@@ -129,7 +129,7 @@ body, html {
 .legend {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   overflow: hidden;
   max-height: 500px;
   transition: max-height 0.3s ease, padding 0.3s ease;
@@ -141,7 +141,7 @@ body, html {
 
 .legend-item {
   display: flex;
-  background-color: #DAD8D4 ;
+  background-color: #DAD8D4;
   align-items: center;
   margin-bottom: 5px;
   padding: 5px;
@@ -166,7 +166,7 @@ body, html {
 .legend-color-box {
   width: 20px;
   height: 20px;
-  margin-right: 5px;
+  margin-right: 10px;
 }
 
 .legend-content {
@@ -219,7 +219,7 @@ body, html {
   justify-content: center;
   align-items: flex-start;
   gap: 0.3rem;
-  margin-right: 1rem;
+  margin-right: 2rem;
 }
 
 .topnav .main-title {
@@ -393,5 +393,27 @@ body, html {
 
   #sidebar.visible {
     transform: translateY(0);
+  }
+}
+
+@media screen and (min-width: 1500px) {
+  #legend {
+    font-size: 1.15rem;
+    padding: 1.5rem;
+    max-width: 28vw;
+  }
+  .legend {
+    max-height: 600px;
+    gap: 10px;
+  }
+  .legend-item {
+    font-size: 1.05rem;
+    padding: 8px;
+  }
+  .legend-icon,
+  .legend-color-box {
+    width: 26px;
+    height: 26px;
+    margin-right: 12px;
   }
 }
