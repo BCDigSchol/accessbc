@@ -67,46 +67,64 @@ body, html {
   border-bottom-color: #91c949;
 }
 
-/* Sidebar */
-#sidebar {
-  width: 30%;
-  background: rgba(136, 136, 136, 0.9);
-  padding: 1rem;
-  overflow-y: auto;
-  position: absolute;
-  top: 10vh;
-  right: 0;
-  z-index: 1;
-  height: calc(100% - 10vh);
-  transition: transform 0.4s ease;
-  transform: translateX(100%);
-}
+/* Building Popup */
 
-#sidebar.visible {
-  transform: translateX(0);
-}
-
-#sidebar p{
-  margin-top: 1rem;
-}
-
-#about-popup {
+#building-popup {
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  width: 90%;
+  max-width: 600px;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 0.3em 0.6em rgba(0, 0, 0, 0.5);
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: #ADBABC;
-  padding: 20px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-  z-index: 1000;
+  display: none;
+  z-index: 1001;
+}
+
+
+#building-popup.visible {
+display: block;
+}
+
+
+/* Show modal when visible */
+#building-popup.visible {
+  display: block;
+}
+#building-popup p{
+  margin-top: 1rem;
+}
+
+/* About Section */
+#about-popup {
+  background: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  width: 90%;
+  max-width: 600px;
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 0.3em 0.6em rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1001;
 }
 
 #about-popup p {
-  color: #17343B
+  color: #FFFFFF;
 }
 
-#about-popup button {
-  margin-top: 10px;
+.close { 
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  font-size: 1.5rem;
+  cursor: pointer;
 }
 
 /* Legend */

@@ -27,6 +27,7 @@ const descriptionHtml = descriptionLines.map(line => {
 
     // Build the sidebar content
     const buildingInfo = `
+      <div class="close" id="building-popup-close">x</div>
       <h2>${buildingName}</h2>
       ${descriptionHtml} <!-- Inject the description with line breaks handled -->
     `;
@@ -35,7 +36,7 @@ const descriptionHtml = descriptionLines.map(line => {
     document.getElementById('building-info').innerHTML = buildingInfo;
 
     // Show the sidebar
-    document.getElementById('sidebar').classList.add('visible');
+    document.getElementById('building-popup').classList.add('visible');
   });
 
   // Hide sidebar when user clicks away from the buildings
@@ -45,9 +46,18 @@ const descriptionHtml = descriptionLines.map(line => {
     });
 
     if (!features.length) {
-      document.getElementById('sidebar').classList.remove('visible');
+      document.getElementById('building-popup').classList.remove('visible');
     }
   });
+
+  // Hide sidebar when the close element is clicked
+  document.addEventListener('click', (e) => {
+    if (e.target && e.target.id === 'building-popup-close') {
+      document.getElementById('building-popup').classList.remove('visible');
+    }
+  });
+
+  
 
   // Change the cursor to a pointer when the mouse is over the buildings layer
   map.on('mouseenter', 'buildings', () => {

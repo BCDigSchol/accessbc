@@ -8,8 +8,9 @@ function handleAboutClick() {
   text.textContent = 'Welcome to the AccessBC webmap! To explore the different Boston College campuses, select the campus you wish to view. Use the legend to turn on/off different layers. If you are trying to view elevation changes, please ensure that your geolocation is on (you may need to refresh the page if you are on a mobile device)';
   popup.appendChild(text);
 
-  const closeButton = document.createElement('button');
-  closeButton.textContent = 'Close';
+const closeButton = document.createElement('div');
+  closeButton.className = 'close';
+  closeButton.textContent = '×';
   closeButton.style.marginTop = '10px';
   closeButton.addEventListener('click', () => {
     document.body.removeChild(popup);
