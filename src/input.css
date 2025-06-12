@@ -141,20 +141,20 @@ body, html {
 
 .legend-item {
   display: flex;
+  background-color: #DAD8D4 ;
   align-items: center;
   margin-bottom: 5px;
   padding: 5px;
   width: 100%; 
   box-sizing: border-box;
   border-radius: 4px;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.1s ease;
   cursor: pointer;
 }
 
 .legend-item.disabled {
-  background-color: #d3d3d3;
+  background-color: #FFFFFF;
   color: #a0a0a0;
-  text-decoration: line-through;
 }
 
 .legend-icon {
