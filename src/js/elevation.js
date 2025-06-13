@@ -87,7 +87,7 @@ async function getUserLocation() {
       },
       error => {
         console.error("Geolocation error:", error.message);
-        alert("Geolocation not available or permission denied.");
+        alert("It looks like your geolocation is turned off. Please turn it on for all of the functions in this app to work.");
         reject(error);
       }
     );
@@ -154,8 +154,8 @@ async function setupElevationHandler(map) {
       const elevInfoContainer = document.getElementById('elevation-info');
       if (elevInfoContainer) {
         elevInfoContainer.innerHTML = 
-          `Start Elevation: ${elev0Feet.toFixed(2)} ft<br>` +
-          `End Elevation: ${elev1Feet.toFixed(2)} ft<br>` +
+          `Current Elevation: ${elev0Feet.toFixed(2)} ft<br>` +
+          `Destination Elevation: ${elev1Feet.toFixed(2)} ft<br>` +
           `Change: ${elevChangeFeet.toFixed(2)} ft`;
       }
 
