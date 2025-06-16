@@ -5,7 +5,7 @@ function handleAboutClick() {
   popup.id = 'about-popup';
 
   const intro = document.createElement('p');
-  intro.innerHTML = 'Welcome to the AccessBC webmap! If you want to provide feedback or report an issue, please use our <a href="https://forms.gle/GfVRxZ5yT1wCsaUr5" style="color: #fff; font-weight: bold;">Google Form</a>.';
+  intro.innerHTML = 'Welcome to the AccessBC webmap! If you want to provide feedback or report an issue, please use our <a href="https://forms.gle/EqSt5qz31ub9eB5x7" style="color: #fff; font-weight: bold;">Google Form</a>.';
   popup.appendChild(intro);
 
   // Dashed line break
