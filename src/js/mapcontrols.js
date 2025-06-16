@@ -49,6 +49,54 @@ function createLegend(containerId, legendData, map) {
     content.classList.add('legend-content');
     legendContainer.appendChild(content);
 
+    // Add "collapse all" toggle button
+    const collapseAllBtn = document.createElement('button');
+    collapseAllBtn.textContent = 'Collapse all ▼';
+    collapseAllBtn.style.background = 'none';
+    collapseAllBtn.style.border = 'none';
+    collapseAllBtn.style.color = '#888';
+    collapseAllBtn.style.fontStyle = 'italic';
+    collapseAllBtn.style.cursor = 'pointer';
+    collapseAllBtn.style.marginBottom = '0.5rem';
+    collapseAllBtn.style.alignSelf = 'flex-end';
+    collapseAllBtn.classList.add('legend-collapse-all-btn');
+
+    let legendCollapsed = false;
+
+    collapseAllBtn.addEventListener('click', () => {
+    legendCollapsed = !legendCollapsed;
+
+    const allSections = content.querySelectorAll('.legend-section');
+
+    allSections.forEach(section => {
+        const itemsContainer = section.querySelector('.legend-category-content');
+        const toggleSpan = section.querySelector('span:last-child');
+        if (legendCollapsed) {
+            itemsContainer.classList.add('collapsed');
+        } else {
+            itemsContainer.classList.remove('collapsed');
+        }
+    });
+
+    // Update all legend items and toggle map layer visibility
+    legendData.forEach(layer => {
+        const item = content.querySelector(`[data-layer-id="${layer.id}"]`);
+        if (item) {
+            if (legendCollapsed) {
+                map.setLayoutProperty(layer.id, 'visibility', 'none');
+                item.classList.add('disabled');
+            } else {
+                map.setLayoutProperty(layer.id, 'visibility', 'visible');
+                item.classList.remove('disabled');
+            }
+        }
+    });
+
+    collapseAllBtn.textContent = legendCollapsed ? 'Expand all ►' : 'Collapse all ▼';
+    });
+
+    content.appendChild(collapseAllBtn);
+
     // Group legend items by category
     const categories = {
         'Transportation': [],
