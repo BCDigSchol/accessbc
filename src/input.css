@@ -11,6 +11,12 @@ body, html {
   font-family: 'Lato', 'Helvetica Neue', sans-serif;
 }
 
+hr {
+  border: 0;
+  border-top: 5px dotted #FFFFFF;
+  opacity: 0.8;
+  margin: 1rem 0;
+}
 /* Map Container */
 #map { 
   position: absolute; 

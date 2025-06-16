@@ -4,9 +4,37 @@ function handleAboutClick() {
   const popup = document.createElement('div');
   popup.id = 'about-popup';
 
-  const text = document.createElement('p');
-  text.textContent = 'Welcome to the AccessBC webmap! To explore the different Boston College campuses, select the campus you wish to view. Use the legend to turn on/off different layers. If you are trying to view elevation changes, please ensure that your geolocation is on (you may need to refresh the page if you are on a mobile device)';
-  popup.appendChild(text);
+  const header = document.createElement('h2');
+  header.textContent = 'About AccessBC';
+  popup.appendChild(header);
+
+  const intro = document.createElement('p');
+  intro.textContent = 'Welcome to the AccessBC webmap!';
+  popup.appendChild(intro);
+
+  // Dashed line break
+  const hr1 = document.createElement('hr');
+  popup.appendChild(hr1);
+
+  const instructionHeader = document.createElement('h3');
+  instructionHeader.textContent = 'How to Explore';
+  popup.appendChild(instructionHeader);
+
+  const instruction = document.createElement('p');
+  instruction.textContent = 'To explore the different Boston College campuses, select the campus you wish to view on the top menu. Use the legend to turn on/off different layers.';
+  popup.appendChild(instruction);
+
+  // Dashed line break
+  const hr2 = document.createElement('hr');
+  popup.appendChild(hr2);
+
+  const noteHeader = document.createElement('h3');
+  noteHeader.textContent = 'Note on Elevation';
+  popup.appendChild(noteHeader);
+
+  const note = document.createElement('p');
+  note.textContent = 'If you are trying to view elevation changes, please ensure that your geolocation is on (you may need to refresh the page if you are on a mobile device).';
+  popup.appendChild(note);
 
 const closeButton = document.createElement('div');
   closeButton.className = 'close';
