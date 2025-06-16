@@ -8,7 +8,6 @@ function handleAboutClick() {
   intro.innerHTML = 'Welcome to the AccessBC webmap! If you want to provide feedback or report an issue, please use our <a href="https://forms.gle/EqSt5qz31ub9eB5x7" style="color: #fff; font-weight: bold;">Google Form</a>.';
   popup.appendChild(intro);
 
-  // Dashed line break
   const hr1 = document.createElement('hr');
   popup.appendChild(hr1);
 
@@ -20,7 +19,6 @@ function handleAboutClick() {
   instruction.textContent = 'To explore the different Boston College campuses, select the campus you wish to view on the top menu. Use the legend to turn on/off different layers.';
   popup.appendChild(instruction);
 
-  // Dashed line break
   const hr2 = document.createElement('hr');
   popup.appendChild(hr2);
 
@@ -32,7 +30,7 @@ function handleAboutClick() {
   note.textContent = 'If you are trying to view elevation changes, please ensure that your geolocation is on (you may need to refresh the page if you are on a mobile device).';
   popup.appendChild(note);
 
-const closeButton = document.createElement('div');
+  const closeButton = document.createElement('div');
   closeButton.className = 'close';
   closeButton.textContent = '×';
   closeButton.style.marginTop = '10px';
