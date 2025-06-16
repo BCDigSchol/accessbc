@@ -60,8 +60,8 @@ function addMapData(map) {
       'source-layer': 'buildings-3cknrt',
       layout: {},
       paint: {
-        'fill-color': '#888888',
-        'fill-opacity': 0.5
+        'fill-color': '#2C7FB8',
+        'fill-opacity': 0.3
       }
     });
     map.addLayer({
