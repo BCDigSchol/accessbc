@@ -154,4 +154,20 @@ document.addEventListener('DOMContentLoaded', function () {
       map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
     }
   }
+
+  const clearBtn = document.createElement('button');
+  clearBtn.textContent = 'Clear';
+  clearBtn.id = 'searchbar-clear-btn';
+  clearBtn.style.marginLeft = '8px';
+  clearBtn.type = 'button';
+  searchBar.parentNode.insertBefore(clearBtn, searchBar.nextSibling);
+
+  clearBtn.addEventListener('click', function () {
+    searchBar.value = '';
+    searchDropdown.style.display = 'none';
+    map.setFilter('buildings-highlighted', ['==', 'NAME', '']);
+    map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
+  });
 });
+
+
