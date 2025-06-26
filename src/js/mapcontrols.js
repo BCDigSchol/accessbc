@@ -14,7 +14,7 @@ const ctrlContainer = document.querySelector('.mapboxgl-ctrl-top-right');
 
 if (topnav && ctrlContainer) {
     const height = topnav.offsetHeight;
-    ctrlContainer.style.top = `${height + 10}px`; // 10px padding below topnav
+    ctrlContainer.style.top = `${height + 10}px`;
 }
 }
 

@@ -6,12 +6,11 @@ function createElevationLegend(containerId) {
     elevSection.classList.add('legend-section');
     elevSection.id = 'legend-elevation-section';
 
-    // Header with toggle
     const elevHeader = document.createElement('h4');
     elevHeader.classList.add('legend-subheader');
 
     const elevToggleSpan = document.createElement('span');
-    elevToggleSpan.textContent = '►'; // collapsed by default
+    elevToggleSpan.textContent = '►';
     elevToggleSpan.style.marginLeft = '0.5rem';
     elevToggleSpan.style.cursor = 'pointer';
 
@@ -43,7 +42,6 @@ function createElevationLegend(containerId) {
     elevSection.appendChild(elevContent);
     legendContainer.appendChild(elevSection);
 
-    // Toggle
     const toggleElevation = () => {
         const isCollapsed = elevContent.classList.toggle('collapsed');
         elevContent.style.maxHeight = isCollapsed ? '0' : 'none';
@@ -105,7 +103,7 @@ async function setupElevationHandler(map) {
     }
 
   } catch (err) {
-    return; // stop if geolocation fails
+    return; 
   }
 
   map.on('click', (e) => {
