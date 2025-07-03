@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateDropdown(query) {
     searchDropdown.innerHTML = '';
 
-    const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
-      sourceLayer: 'buildings-3cknrt'
+    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
+      sourceLayer: 'CampusBuildings-5rbg0v'
     });
 
     const resources = new Set();
@@ -110,8 +110,8 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   function handleResourceSelection(resource) {
-    const allFeatures = map.querySourceFeatures('buildings-3cknrt', {
-      sourceLayer: 'buildings-3cknrt'
+    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
+      sourceLayer: 'CampusBuildings-5rbg0v'
     });
 
     const selectedFeature = allFeatures.find(feature => {
