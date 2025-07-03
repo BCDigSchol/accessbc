@@ -35,9 +35,9 @@ function addMapData(map) {
           'type': 'vector',
           'url': 'mapbox://bcdsg-lec.6wha4sxm'
       });
-      map.addSource('buildings-3cknrt', {
+      map.addSource('CampusBuildings-5rbg0v', {
           'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.c2z0cfaj'
+          'url': 'mapbox://bcdsg-lec.acj06c4q'
       });
       map.addSource('accessiblepaths-b55sh1', {
           'type': 'vector',
@@ -56,8 +56,8 @@ function addMapData(map) {
     map.addLayer({
       id: 'buildings',
       type: 'fill',
-      source: 'buildings-3cknrt',
-      'source-layer': 'buildings-3cknrt',
+      source: 'CampusBuildings-5rbg0v',
+      'source-layer': 'CampusBuildings-5rbg0v',
       layout: {},
       paint: {
         'fill-color': '#2C7FB8',
@@ -224,8 +224,8 @@ function addMapData(map) {
     map.addLayer({
       id: 'buildings-highlighted',
       type: 'fill',
-      source: 'buildings-3cknrt',
-      'source-layer': 'buildings-3cknrt',
+      source: 'CampusBuildings-5rbg0v',
+      'source-layer': 'CampusBuildings-5rbg0v',
       paint: {
         'fill-color': [
           'case',
