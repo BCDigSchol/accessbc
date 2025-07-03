@@ -4,9 +4,9 @@ function addMapData(map) {
         'type': 'vector',
         'url': 'mapbox://bcdsg-lec.35wuf8yc'
       });
-      map.addSource('bluelight-8tahas', {
+      map.addSource('bluelight-bae81w', {
           'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.2v8mtky1'
+          'url': 'mapbox://bcdsg-lec.438a3ike'
       });
       map.addSource('elevators-17pm1x',{
           'type': 'vector',
@@ -16,9 +16,9 @@ function addMapData(map) {
           'type': 'vector',
           'url': 'mapbox://bcdsg-lec.cf8ep7jl' 
       });
-      map.addSource('curbcuts-5wa67q', {
+      map.addSource('curbcut-52afsu', {
           'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.9fpimwx2'
+          'url': 'mapbox://bcdsg-lec.1bsbmi40'
       });
       map.addSource('reststop', {
           'type': 'geojson',
@@ -148,8 +148,8 @@ function addMapData(map) {
       map.addLayer({
         id: 'bluelight',
         type: 'circle',
-        source: 'bluelight-8tahas',
-        'source-layer': 'bluelight-8tahas',
+        source: 'bluelight-bae81w',
+        'source-layer': 'bluelight-bae81w',
         layout: {},
         paint: {
           'circle-radius': 5,
@@ -184,8 +184,8 @@ function addMapData(map) {
       map.addLayer({
         id: 'curbcuts',
         type: 'circle',
-        source: 'curbcuts-5wa67q',
-        'source-layer': 'curbcuts-5wa67q',
+        source: 'curbcut-52afsu',
+        'source-layer': 'curbcut-52afsu',
         layout: {},
         paint: {
           'circle-radius': 4,
