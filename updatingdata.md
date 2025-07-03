@@ -1,48 +1,33 @@
-# Uploading Tileset in Mapbox
-#### [Made by Lester Carver with Scribe](https://scribehow.com/shared/Uploading_Tileset_in_Mapbox__ZDJ90BnAR6-IDdgJ2p3RLA)
+# Uploading a File in Mapbox Data Manager
+#### [Made by Lester Carver with Scribe](https://scribehow.com/shared/Uploading_a_File_in_Mapbox_Data_Manager__M0b0cSEiSm6ARtckg5qaEg)
 
 
-1\. Navigate to [mapbox.com](https://console.mapbox.com/)
+1\. Navigate to [https://console.mapbox.com/](https://console.mapbox.com/)
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/00469e88-128b-4679-9240-1daaf8d947d2/ascreenshot.jpeg?tl_px=82,70&br_px=1458,840&force_format=jpeg&q=100&width=1120.0)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/1b91c8dd-a36a-4f10-9904-53ce0c482362/ascreenshot.jpeg?tl_px=82,70&br_px=1458,840&force_format=jpeg&q=100&width=1120.0)
 
 
 2\. Click "Data manager"
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/00469e88-128b-4679-9240-1daaf8d947d2/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=70,113)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/1b91c8dd-a36a-4f10-9904-53ce0c482362/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=31,112)
 
 
-3\. Click "New tileset"
+3\. Click the tileset you want to update
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/b869e3f9-83f9-4c8b-8a91-62d13aadb446/ascreenshot.jpeg?tl_px=164,0&br_px=1541,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=751,5)
-
-
-4\. Select the data file to upload
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/9300c5ba-af7d-4d70-8021-2eca8343ecfc/ascreenshot.jpeg?tl_px=89,0&br_px=1465,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=524,254)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/581ec1ea-ba88-41c2-8763-f13234f7a30e/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=346,149)
 
 
-5\. Once uploaded, note the layer name.
+4\. Click "options"
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/da221a17-c7a0-46f3-8f5f-26f16887f1f3/user_cropped_screenshot.webp?tl_px=250,42&br_px=1110,523&force_format=jpeg&q=100&width=860)
-
-
-6\. Click "options" next to the layer name
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/a1743b66-1879-468d-8cc8-4503487c031b/ascreenshot.jpeg?tl_px=324,34&br_px=1184,515&force_format=jpeg&q=100&width=860&wat_scale=76&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=784,176)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/b1d3902b-5801-458e-971e-c800654fc893/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=184,-13)
 
 
-7\. Note the Tileset ID
+5\. Click "Replace"
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/01cf4fd8-573e-418c-af27-c43926365e6a/user_cropped_screenshot.webp?tl_px=776,136&br_px=1541,563&force_format=jpeg&q=100&width=764)
-
-
-8\. In the datasources.js file, under the [[addSource() ]]functions, change the layer name to the tileset name and the url to [[mapbox:// + tileset ID]]
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/0f30dfa2-8863-4ef0-8a5a-f55e8f9ab4b9/user_cropped_screenshot.webp?tl_px=15,165&br_px=640,515&force_format=jpeg&q=100&width=625)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/3f9fb422-60e6-4735-af57-55fc905e7a3c/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=269,-9)
 
 
-9\. In the [[addLayer()]] functions, change the [[source]] and [[source-layer]] properties to the tileset name.
+6\. Click "Select a file" and chose to geojson or zipped shapefile with updated data.
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-06-26/c740222b-1ac0-4711-8f41-c67739aca5e4/user_cropped_screenshot.webp?tl_px=0,271&br_px=764,699&force_format=jpeg&q=100&width=764)
-#### [Made with Scribe](https://scribehow.com/shared/Uploading_Tileset_in_Mapbox__ZDJ90BnAR6-IDdgJ2p3RLA)
+![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/adea3d1e-d2bd-4cae-9d7f-95ec7874c21c/ascreenshot.jpeg?tl_px=103,0&br_px=1479,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=524,258)
+#### [Made with Scribe](https://scribehow.com/shared/Uploading_a_File_in_Mapbox_Data_Manager__M0b0cSEiSm6ARtckg5qaEg)
