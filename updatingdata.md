@@ -1,4 +1,4 @@
-# Uploading a File in Mapbox Data Manager
+# Updating a Tileset in Mapbox
 #### [Made by Lester Carver with Scribe](https://scribehow.com/shared/Uploading_a_File_in_Mapbox_Data_Manager__M0b0cSEiSm6ARtckg5qaEg)
 
 
