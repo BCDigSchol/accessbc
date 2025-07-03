@@ -311,6 +311,7 @@ display: block;
   border: 0.1rem solid #ccc;
   border-radius: 0.3rem;
   max-height: 20rem;
+  max-width: fit-content;
   overflow-y: auto;
   display: none;
   z-index: 1100;
