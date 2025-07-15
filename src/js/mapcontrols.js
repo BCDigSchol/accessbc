@@ -1,4 +1,4 @@
-//CREATES ZOOM CONTROLS AND GEOLOCATION CONTROLS
+//Sets up zoom and geolocation controls on the map
 function addMapControls(map) {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.addControl(new mapboxgl.GeolocateControl({
@@ -8,22 +8,9 @@ function addMapControls(map) {
     }), 'top-right');
 }
 
-function repositionMapboxControls() {
-const topnav = document.querySelector('.topnav');
-const ctrlContainer = document.querySelector('.mapboxgl-ctrl-top-right');
+//LEGEND FUNCTIONS
 
-if (topnav && ctrlContainer) {
-    const height = topnav.offsetHeight;
-    ctrlContainer.style.top = `${height + 10}px`;
-}
-}
-
-document.addEventListener('DOMContentLoaded', repositionMapboxControls);
-window.addEventListener('resize', repositionMapboxControls);
-
-//CREATES AND DYNAMICALLY UPDATES LEGEND
-
-//Set Legend Data
+//Set Legend data with patches and associated categories
 const legendData = [
     { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png', category: 'Transportation' },
     { id: 'bikerack', name: 'Bike Racks', icon: 'src/icons/bike.png', category: 'Transportation' },
@@ -37,9 +24,10 @@ const legendData = [
     { id: 'accessiblepaths-ext', name: 'Interior Accessible Paths', color: '#5F4690', category: 'Navigating Campus' }
 ];
 
-// Make global
+// Make global variable for legend data
 window.legendData = legendData;
 
+//Creates the legend container and adds it to the map
 function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear existing legend content
@@ -109,7 +97,7 @@ function createLegend(containerId, legendData, map) {
             categories[layer.category].push(layer);
         }
     });
-
+    //Handle toggle and visibility functions for legend items and categories
     Object.keys(categories).forEach(categoryName => {
         const section = document.createElement('div');
         section.classList.add('legend-section');
@@ -159,7 +147,6 @@ function createLegend(containerId, legendData, map) {
             label.textContent = layer.name;
             item.appendChild(label);
 
-            // Add interactivity: toggle layer visibility
             item.addEventListener('click', () => {
                 const layerId = layer.id;
                 const visibility = map.getLayoutProperty(layerId, 'visibility');
@@ -181,7 +168,7 @@ function createLegend(containerId, legendData, map) {
 
         // Handle clicking either the category label or the arrow
         header.addEventListener('click', () => {
-            // 1. Toggle visibility of all layers in this category
+     
             const allLayers = categories[categoryName];
             const anyVisible = allLayers.some(layer => map.getLayoutProperty(layer.id, 'visibility') !== 'none');
 
@@ -189,21 +176,20 @@ function createLegend(containerId, legendData, map) {
                 const visibility = anyVisible ? 'none' : 'visible';
                 map.setLayoutProperty(layer.id, 'visibility', visibility);
 
-                // Update legend item styling
+   
                 const item = itemsContainer.querySelector(`[data-layer-id="${layer.id}"]`);
                 if (item) {
                     item.classList.toggle('disabled', visibility === 'none');
                 }
             });
 
-            // 2. Toggle collapsed state
             const isCollapsed = itemsContainer.classList.toggle('collapsed');
             toggleSpan.textContent = isCollapsed ? '►' : '▼';
         });
     });
 }
 
-//Set layer visibility
+//Set layers to be initially visible
 function setLayerVisibility(map, layers, visibility) {
     layers.forEach(layerId => {
         map.setLayoutProperty(layerId, 'visibility', visibility);

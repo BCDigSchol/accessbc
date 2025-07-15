@@ -1,16 +1,18 @@
+//There are 2 types of content in search bar:
+// Predefined: based on building attributes fields like dining, single-use restrooms, lactation rooms, etc, which can be associated with multiple buildings.
+// Description: based on the building description field, which splits up each named resource in the description field into a separate option in the search bar, associated with only one building
+
 document.addEventListener('DOMContentLoaded', function () {
-  // Predefined options
+  // Predefined options added to dropdown
   const predefinedOptions = [
     'Vending Machines', 'Cafes', 'Dining',
     'Lactation Rooms', 'Single-use Restrooms',
     'Group Seating', 'Individual Seating', 'Printing'
   ];
 
-  // Elements
   const searchBar = document.getElementById('generic-search');
   const searchDropdown = document.getElementById('generic-dropdown');
 
-  // Input and focus listeners
   searchBar.addEventListener('input', function () {
     updateDropdown(this.value);
   });
@@ -18,7 +20,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updateDropdown('');
   });
 
-  // Dropdown update logic
+  // Splits building description into individual resources to add to dropdown
   function updateDropdown(query) {
     searchDropdown.innerHTML = '';
 
@@ -78,7 +80,7 @@ document.addEventListener('DOMContentLoaded', function () {
       searchDropdown.style.display = 'none';
     }
   });
-
+  // Handles filtering to highlight buildings based on the selected option
   function applyFilter(option) {
     let filterField = '';
     switch (option) {
@@ -92,7 +94,7 @@ document.addEventListener('DOMContentLoaded', function () {
       case 'Dining': filterField = 'Food_dining'; break;
       default: handleResourceSelection(option); return;
     }
-
+    // Highlights building if they have 'Yes' for the predefined fields
     map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
     map.setPaintProperty('buildings-highlighted', 'fill-color', [
       'case',
@@ -108,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function () {
     ]);
     map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
   }
-
+  // Highlights building if the description selected from dropdown is found in the building description field
   function handleResourceSelection(resource) {
     const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
       sourceLayer: 'CampusBuildings-5rbg0v'
@@ -136,6 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
         0
       ]);
 
+      // Zooms map to the selected buildings (Description field only)
       let coordinates = selectedFeature.geometry.coordinates;
       let bounds = new mapboxgl.LngLatBounds();
 
@@ -155,6 +158,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  //Clears highlighted buildings
   const clearBtn = document.createElement('button');
   clearBtn.textContent = 'Clear';
   clearBtn.id = 'searchbar-clear-btn';

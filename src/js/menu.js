@@ -1,5 +1,4 @@
-// HANDLE BUTTON CLICKS
-
+//Handles about menu button click
 function handleAboutClick() {
   const popup = document.createElement('div');
   popup.id = 'about-popup';
@@ -42,14 +41,7 @@ function handleAboutClick() {
   document.body.appendChild(popup);
 }
 
-
-
-function setLayerVisibility(layers, visibility) {
-  layers.forEach(layerId => {
-    map.setLayoutProperty(layerId, 'visibility', visibility);
-  });
-}
-
+// Handles selectiont different campuses to adjust map view
 function handleChestnutClick() {
   map.flyTo({
     center: [-71.170820, 42.336190],
@@ -138,12 +130,10 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleMenu() {
 const topNav = document.querySelector(".topnav");
 
-// Check if the "responsive" class is already applied
-if (topNav.classList.contains("responsive")) {
-    // Remove the responsive class to hide expanded menu
+// Collapse/Expand menu for different screen sizes
+if (topNav.classList.contains("responsive")) { 
     topNav.classList.remove("responsive");
 } else {
-    // Add the responsive class to expand the menu
     topNav.classList.add("responsive");
 }
 }

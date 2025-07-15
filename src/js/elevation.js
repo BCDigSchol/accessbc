@@ -1,3 +1,4 @@
+//Sets up elevation container in the legend to display elevation information. Handlers toggling to turn elevation functionality on and off.
 function createElevationLegend(containerId) {
     if (document.getElementById('legend-elevation-section')) return;
     
@@ -62,15 +63,14 @@ function createElevationLegend(containerId) {
     elevToggleSpan.addEventListener('click', (e) => {
         e.stopPropagation();
         toggleElevation();
-    });
-
-    
+    });  
 }
-
+// Sets up coordinate variables for elevation handler
 let coord0 = null;
 let marker1 = null;
 let elevationActive = false;
 
+//Grabs user's current location
 async function getUserLocation() {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
@@ -92,6 +92,7 @@ async function getUserLocation() {
   });
 }
 
+// Queries elevation data when the user clicks on the map and calculates change between user location and selected
 async function setupElevationHandler(map) {
   try {
     coord0 = await getUserLocation();

@@ -1,5 +1,6 @@
 function addMapData(map) {
   return new Promise((resolve) => {
+   // Load Mapbox Data Sources
     map.addSource('bikerack-5yn5u5', {
         'type': 'vector',
         'url': 'mapbox://bcdsg-lec.35wuf8yc'
@@ -51,8 +52,7 @@ function addMapData(map) {
       });
       map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
 
-    
-      
+    // Add layers to map and set styling  
     map.addLayer({
       id: 'buildings',
       type: 'fill',
@@ -229,17 +229,13 @@ function addMapData(map) {
       paint: {
         'fill-color': [
           'case',
-          ['==', ['get', 'fieldName'], 'Yes'], // fieldName is a placeholder, will be set dynamically
-          '#994E95',
-          ['==', ['get', 'NAME'], 'Garage'],
+          ['==', ['get', 'fieldName'], 'Yes'], // fieldName is a placeholder for the fields with building information
           '#994E95',
           'rgba(0, 0, 0, 0)'
         ],
         'fill-opacity': [
           'case',
           ['==', ['get', 'fieldName'], 'Yes'],
-          0.75,
-          ['==', ['get', 'NAME'], 'Garage'],
           0.75,
           0
         ]
