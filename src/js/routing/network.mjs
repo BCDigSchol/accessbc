@@ -9,6 +9,10 @@
 // - a vertex snapped onto the middle of another path becomes a junction
 // - each entrance is linked to the nearest outdoor path and the nearest indoor path of its own
 //   building, each within ENTRANCE_LINK_M
+//
+// Optionally, OpenStreetMap footpaths and steps (paths.geojson) can be added for people who can use
+// stairs. Footpaths are treated like outdoor paths but aren't checked for accessibility; steps never
+// get junctions where they cross something, since they're often above or below it.
 
 export const SAME_POINT_M = 0.25;
 export const JOIN_GAP_M = 2;
@@ -97,20 +101,20 @@ export function buildNetwork(pathFeatures) {
     byCell.get(key).push(nodes.length - 1);
     return nodes.length - 1;
   };
-  const segments = []; // {a, b, line, type}
-  const lines = []; // {fid, type, comment, length}
+  const segments = []; // {a, b, line, type, from, to}: from/to are distances along the line
+  const lines = []; // {fid, type, comment, length, coordinates}
   for (const f of pathFeatures) {
     for (const coords of parts(f.geometry)) {
       const line = lines.length;
-      const ids = coords.map((c) => nodeAt(proj(c)));
+      const ids = coords.map((c) => nodeAt(proj(c))).filter((id, i, all) => i === 0 || id !== all[i - 1]);
       let length = 0;
       for (let i = 1; i < ids.length; i++) {
-        if (ids[i] === ids[i - 1]) continue;
-        segments.push({ a: ids[i - 1], b: ids[i], line, type: f.properties.Type });
-        length += dist(nodes[ids[i - 1]].xy, nodes[ids[i]].xy);
+        const len = dist(nodes[ids[i - 1]].xy, nodes[ids[i]].xy);
+        segments.push({ a: ids[i - 1], b: ids[i], line, type: f.properties.Type, from: length, to: length + len });
+        length += len;
       }
       ids.forEach((n) => nodes[n].lines.add(line));
-      lines.push({ fid: f.properties.FID, type: f.properties.Type, comment: (f.properties.Comment || '').trim(), length });
+      lines.push({ fid: f.properties.FID, type: f.properties.Type, comment: (f.properties.Comment || '').trim(), length, coordinates: ids.map((n) => unproj(nodes[n].xy)) });
     }
   }
   const degree = new Array(nodes.length).fill(0);
@@ -175,12 +179,12 @@ export function findCrossings({ nodes, segments, lines, near }) {
   return out;
 }
 
-// Nearest segment to p, optionally only of one path Type ('Exterior' or 'Interior') and only
-// within maxDistance.
+// Nearest segment to p, optionally only of the given path Type(s) and only within maxDistance.
 export function nearestSegment({ nodes, segments, near }, p, type, maxDistance = Infinity) {
+  const types = type && [type].flat();
   let best = { d: Infinity };
   for (const s of Number.isFinite(maxDistance) ? near(p, maxDistance) : segments) {
-    if (type && s.type !== type) continue;
+    if (types && !types.includes(s.type)) continue;
     const r = nearestOnSegment(p, nodes[s.a].xy, nodes[s.b].xy);
     if (r.d < best.d) best = { ...r, seg: s };
   }
@@ -189,9 +193,18 @@ export function nearestSegment({ nodes, segments, near }, p, type, maxDistance =
 
 // ---- Routable graph ------------------------------------------------------------------------
 
-// Returns {nodes: [[lon, lat]], adjacency: [[{to, length, type}]], entrances: [{id, building, node, linkMeters}]}.
-export function buildGraph({ paths, entrances, buildings }) {
-  const net = buildNetwork(paths);
+// Edge types: 'Exterior' and 'Interior' (accessible paths), 'Entrance' (door links), and with footpaths,
+// 'Footpath' and 'Stairs'.
+const GROUND_LEVEL = new Set(['Exterior', 'Footpath']);
+
+// Returns {nodes: [[lon, lat]], adjacency: [[{to, length, type, seg}]], entrances: [{id, building, node, linkMeters}],
+// segments, lines, buildings, elevatorBuildings}. Pass footpaths (paths.geojson features) to include them.
+export function buildGraph({ paths, entrances, buildings, elevators = [], footpaths = [] }) {
+  const osm = footpaths.map((f) => ({
+    ...f,
+    properties: { Type: f.properties.highway === 'steps' ? 'Stairs' : 'Footpath', FID: `osm-${f.properties.OBJECTID}`, Comment: '' },
+  }));
+  const net = buildNetwork([...paths, ...osm]);
   const { nodes, segments } = net;
   const projectedBuildings = projectBuildings(buildings);
   const xy = nodes.map((n) => n.xy);
@@ -212,7 +225,7 @@ export function buildGraph({ paths, entrances, buildings }) {
     if (g.d <= JOIN_GAP_M) extraEdges.push([g.node, nodeOnSegment(g.seg, g.t, g.point), g.seg.type]);
   }
   for (const c of findCrossings(net)) {
-    if (c.types !== 'Exterior/Exterior') continue;
+    if (!c.segs.every((seg) => GROUND_LEVEL.has(seg.type))) continue;
     const [s, u] = c.segs;
     const node = nodeOnSegment(s, c.t, c.point);
     const other = nodeOnSegment(u, c.u, c.point);
@@ -235,7 +248,7 @@ export function buildGraph({ paths, entrances, buildings }) {
     const p = proj(e.geometry.coordinates);
     const building = (e.properties.Building || '').trim() || nearestBuilding(projectedBuildings, p).name;
     const links = [];
-    const outdoor = nearestSegment(net, p, 'Exterior', ENTRANCE_LINK_M);
+    const outdoor = nearestSegment(net, p, footpaths.length ? ['Exterior', 'Footpath'] : 'Exterior', ENTRANCE_LINK_M);
     if (outdoor.d <= ENTRANCE_LINK_M) links.push(outdoor);
     const indoor = nearestSegment(net, p, 'Interior', ENTRANCE_LINK_M);
     if (indoor.d <= ENTRANCE_LINK_M && nearestBuilding(projectedBuildings, indoor.point).name === building) links.push(indoor);
@@ -245,20 +258,32 @@ export function buildGraph({ paths, entrances, buildings }) {
     linkedEntrances.push({ id: e.properties.OBJECTID, building, node, linkMeters: +Math.min(...links.map((l) => l.d)).toFixed(1) });
   }
 
+  // seg is the index of the path segment an edge lies on (-1 for joins and door links), so per-segment
+  // data like slope can be looked up for an edge.
   const adjacency = xy.map(() => []);
-  const addEdge = (a, b, type) => {
+  const addEdge = (a, b, type, seg = -1) => {
     if (a === b) return;
     const length = dist(xy[a], xy[b]);
-    adjacency[a].push({ to: b, length, type });
-    adjacency[b].push({ to: a, length, type });
+    adjacency[a].push({ to: b, length, type, seg });
+    adjacency[b].push({ to: a, length, type, seg });
   };
-  for (const s of segments) {
+  segments.forEach((s, i) => {
     const chain = [s.a, ...(splits.get(s) || []).sort((p, q) => p.t - q.t).map((x) => x.node), s.b];
-    for (let i = 1; i < chain.length; i++) addEdge(chain[i - 1], chain[i], s.type);
-  }
+    for (let k = 1; k < chain.length; k++) addEdge(chain[k - 1], chain[k], s.type, i);
+  });
   extraEdges.forEach(([a, b, type]) => addEdge(a, b, type));
 
-  return { nodes: xy.map(unproj), adjacency, entrances: linkedEntrances, buildings: projectedBuildings };
+  const elevatorBuildings = new Set(elevators.map((e) => {
+    const p = proj(e.geometry.coordinates);
+    const near = nearestBuilding(projectedBuildings, p);
+    return (e.properties.Building || '').trim() || (near.d <= 5 ? near.name : '');
+  }).filter(Boolean));
+
+  return {
+    nodes: xy.map(unproj), adjacency, entrances: linkedEntrances, buildings: projectedBuildings, elevatorBuildings,
+    segments: segments.map(({ line, type, from, to }) => ({ line, type, from, to })),
+    lines: net.lines.map(({ type, coordinates }) => ({ type, coordinates })),
+  };
 }
 
 // Campus centres, matching the campus buttons in the top menu. Paths on different campuses don't connect.
@@ -292,13 +317,16 @@ export function describeRoute(graph, route) {
   for (let i = 1; i < route.nodes.length; i++) {
     const a = route.nodes[i - 1], b = route.nodes[i];
     const edge = graph.adjacency[a].find((e) => e.to === b);
-    const type = edge.type === 'Interior' ? 'indoor' : 'outdoor';
+    // Footpaths often run alongside accessible paths and the route can hop between them, so they're one
+    // outdoor step that records how much of it is on footpaths not checked for accessibility.
+    const type = { Interior: 'indoor', Stairs: 'stairs' }[edge.type] || 'outdoor';
     let step = steps.at(-1);
     if (!step || step.type !== type) {
-      step = { type, length: 0, coordinates: [graph.nodes[a]], nodes: [a] };
+      step = { type, length: 0, unverifiedLength: 0, coordinates: [graph.nodes[a]], nodes: [a] };
       steps.push(step);
     }
     step.length += edge.length;
+    if (edge.type === 'Footpath') step.unverifiedLength += edge.length;
     step.coordinates.push(graph.nodes[b]);
     step.nodes.push(b);
   }
@@ -310,6 +338,7 @@ export function describeRoute(graph, route) {
       if (near.d <= 5) votes[near.name] = (votes[near.name] || 0) + 1;
     }
     step.building = Object.entries(votes).sort((x, y) => y[1] - x[1])[0]?.[0];
+    step.elevator = !!step.building && graph.elevatorBuildings.has(step.building);
   }
   return {
     length: route.length,
@@ -318,11 +347,14 @@ export function describeRoute(graph, route) {
   };
 }
 
-// Dijkstra from any of `sources` to the nearest of `targets`. Returns {length, nodes} or null.
-export function shortestRoute(graph, sources, targets) {
+// Dijkstra from any of `sources` to the cheapest of `targets`. edgeCost(edge) gives an edge's cost
+// (Infinity to forbid it); by default the cost is its length. Returns {length, cost, nodes} or null,
+// where length is the walking distance.
+export function shortestRoute(graph, sources, targets, edgeCost = (e) => e.length) {
   const n = graph.nodes.length;
   const best = new Float64Array(n).fill(Infinity);
   const prev = new Int32Array(n).fill(-1);
+  const prevEdge = new Array(n); // the edge used to reach each node, for the walking distance
   const goal = new Set(targets);
   const heap = []; // binary min-heap of [cost, node]
   const push = (item) => {
@@ -357,13 +389,19 @@ export function shortestRoute(graph, sources, targets) {
     if (goal.has(node)) {
       const route = [];
       for (let v = node; v !== -1; v = prev[v]) route.push(v);
-      return { length: cost, nodes: route.reverse() };
+      route.reverse();
+      let length = 0;
+      for (let i = 1; i < route.length; i++) length += prevEdge[route[i]].length;
+      return { length, cost, nodes: route };
     }
-    for (const { to, length } of graph.adjacency[node]) {
-      if (cost + length < best[to]) {
-        best[to] = cost + length;
-        prev[to] = node;
-        push([best[to], to]);
+    for (const edge of graph.adjacency[node]) {
+      const step = edgeCost(edge);
+      if (!(step < Infinity)) continue;
+      if (cost + step < best[edge.to]) {
+        best[edge.to] = cost + step;
+        prev[edge.to] = node;
+        prevEdge[edge.to] = edge;
+        push([best[edge.to], edge.to]);
       }
     }
   }
@@ -371,9 +409,9 @@ export function shortestRoute(graph, sources, targets) {
 }
 
 // Route between two buildings, using any accessible entrance of each.
-export function routeBetweenBuildings(graph, fromBuilding, toBuilding) {
+export function routeBetweenBuildings(graph, fromBuilding, toBuilding, edgeCost) {
   const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
   const from = doors(fromBuilding), to = doors(toBuilding);
   if (!from.length || !to.length) return null;
-  return shortestRoute(graph, from, to);
+  return shortestRoute(graph, from, to, edgeCost);
 }

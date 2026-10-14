@@ -473,6 +473,40 @@ hr {
   margin-left: 0.75rem;
 }
 
+.route-swatch.stairs {
+  border-top-color: #b8860b;
+  border-top-style: dotted;
+  margin-left: 0.75rem;
+}
+
+.route-options {
+  margin: 0.75rem 0 0.25rem;
+  border: 0.1rem solid #ddd;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.route-options summary {
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.route-options .route-field,
+.route-check {
+  margin-top: 0.6rem;
+}
+
+.route-check input {
+  width: 1.1rem;
+  height: 1.1rem;
+  vertical-align: middle;
+  margin-right: 0.3rem;
+}
+
+.route-check label {
+  font-weight: bold;
+}
+
 .route-warning {
   background: #fff4e5;
   border-left: 4px solid #e07000;

@@ -3,6 +3,8 @@
 //
 // Usage: node scripts/routing/check-routes.mjs ["From building" "To building"]
 import { load, buildGraph, routeBetweenBuildings, campusOf, proj, dist } from './lib.mjs';
+import { terrainTileLoader } from '../terrain.mjs';
+import { createTerrain, segmentGrades } from '../../src/js/routing/elevation.mjs';
 
 const t0 = performance.now();
 const graph = buildGraph({ paths: load('accessiblepaths.geojson'), entrances: load('entrances.geojson'), buildings: load('buildings.geojson') });
@@ -44,6 +46,18 @@ for (let i = 0; i < routable.length; i++) {
 const perRoute = (performance.now() - t1) / routes;
 console.log(`\nBuilding pairs on the same campus that can be routed (${perRoute.toFixed(1)} ms per route):`);
 for (const [campus, s] of Object.entries(byCampus)) console.log(`  ${campus}: ${s.routed} of ${s.pairs} (${((s.routed / s.pairs) * 100).toFixed(0)}%)`);
+
+// The same, with the slope limits offered in the directions panel.
+const grades = await segmentGrades(createTerrain(terrainTileLoader(), graph.buildings), graph);
+const totals = Object.values(byCampus).reduce((t, s) => ({ pairs: t.pairs + s.pairs, routed: t.routed + s.routed }), { pairs: 0, routed: 0 });
+for (const [label, max] of [['1:12 (8.3%)', 1 / 12], ['1:20 (5%)', 0.05]]) {
+  const cost = (e) => (e.seg >= 0 && grades[e.seg] > max ? Infinity : e.length);
+  let routed = 0;
+  for (let i = 0; i < routable.length; i++)
+    for (let j = i + 1; j < routable.length; j++)
+      if (campusOf(doorOf[routable[i]]) === campusOf(doorOf[routable[j]]) && routeBetweenBuildings(graph, routable[i], routable[j], cost)) routed++;
+  console.log(`  Staying within ${label}: ${routed} of ${totals.pairs} (${totals.routed} with no limit)`);
+}
 
 const unreachable = routable.filter((b) => {
   const campus = campusOf(doorOf[b]);

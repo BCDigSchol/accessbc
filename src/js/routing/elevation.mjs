@@ -1,8 +1,9 @@
 // Slope and climb along outdoor routes, from the Terrarium-encoded terrain tiles in
 // src/basemap/terrain.pmtiles (about 3.5 m per pixel at zoom 15).
 //
-// The terrain data includes building rooftops, so elevation pixels whose centre falls inside a
-// building footprint are ignored and the ground around them is used instead. Grades are measured
+// The terrain data is bare earth: under a building it's interpolated, and buildings are often cut
+// into slopes, so elevation pixels whose centre falls inside a building footprint are ignored and the
+// ground around them is used instead. Grades are measured
 // over WINDOW_M so single-pixel noise doesn't show up as a steep spot. The results are estimates:
 // they can't see curbs, short ramps, or anything smaller than a few metres. They also can't see
 // bridges: a footbridge reads as a cliff down to the ground beneath it. Grades steeper than
@@ -159,5 +160,34 @@ export async function profile(terrain, coordinates) {
     }
   }
   const maxGrade = grades.filter((_, i) => reliable[i]).reduce((m, g) => (Math.abs(g) > Math.abs(m) ? g : m), 0);
-  return { climb, descent, maxGrade, unreliableLength, pieces };
+  const points = samples.map((sample, i) => ({ at: sample.at, grade: grades[i], reliable: reliable[i] }));
+  return { climb, descent, maxGrade, unreliableLength, pieces, points };
+}
+
+// Steepest reliable grade (absolute) of every outdoor segment in a routing graph, for slope-limited
+// routing. Each path line is profiled as a whole so grades near segment ends have context. Returns a
+// Float32Array indexed like graph.segments, NaN where unknown (indoors, stairs, no data, unreliable).
+export async function segmentGrades(terrain, graph) {
+  const grades = new Float32Array(graph.segments.length).fill(NaN);
+  const byLine = new Map();
+  graph.segments.forEach((seg, i) => {
+    if (!byLine.has(seg.line)) byLine.set(seg.line, []);
+    byLine.get(seg.line).push(i);
+  });
+  const outdoorLines = [...byLine.keys()].filter((l) => ['Exterior', 'Footpath'].includes(graph.lines[l].type));
+  await terrain.ensureTiles(outdoorLines.flatMap((l) => graph.lines[l].coordinates));
+  for (const line of outdoorLines) {
+    const p = await profile(terrain, graph.lines[line].coordinates);
+    if (!p) continue;
+    for (const i of byLine.get(line)) {
+      const { from, to } = graph.segments[i];
+      const mid = (from + to) / 2;
+      // Samples on the segment, or the nearest one if it's shorter than the sample spacing.
+      let inside = p.points.filter((pt) => pt.at >= from - SAMPLE_M / 2 && pt.at <= to + SAMPLE_M / 2);
+      if (!inside.length) inside = [p.points.reduce((b, pt) => (Math.abs(pt.at - mid) < Math.abs(b.at - mid) ? pt : b))];
+      const reliable = inside.filter((pt) => pt.reliable);
+      if (reliable.length) grades[i] = Math.max(...reliable.map((pt) => Math.abs(pt.grade)));
+    }
+  }
+  return grades;
 }

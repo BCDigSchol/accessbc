@@ -66,9 +66,33 @@
     <label for="route-to">To</label>
     <select id="route-to"></select>
   </div>
+  <details class="route-options">
+    <summary>Route options</summary>
+    <div class="route-check">
+      <input type="checkbox" id="opt-stairs" checked aria-describedby="opt-stairs-help">
+      <label for="opt-stairs">Avoid stairs</label>
+      <p id="opt-stairs-help" class="route-note">Turning this off also allows footpaths that haven't been checked for accessibility.</p>
+    </div>
+    <div class="route-field">
+      <label for="opt-indoor">Routes through buildings</label>
+      <select id="opt-indoor">
+        <option value="auto">Use when shorter</option>
+        <option value="prefer">Prefer (indoors, where the elevators are)</option>
+        <option value="avoid">Avoid (for example, after hours)</option>
+      </select>
+    </div>
+    <div class="route-field">
+      <label for="opt-slope">Steepest slope allowed</label>
+      <select id="opt-slope">
+        <option value="">No limit</option>
+        <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
+        <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
+      </select>
+    </div>
+  </details>
   <div id="route-result" aria-live="polite"></div>
   <p class="route-legend"><span class="route-swatch"></span> Outdoors <span class="route-swatch indoor"></span> Indoors</p>
-  <p class="route-legend"><span class="route-swatch steep"></span> Steeper than 1:20 <span class="route-swatch very-steep"></span> Steeper than 1:12 <span class="route-swatch unreliable"></span> Unknown</p>
+  <p class="route-legend"><span class="route-swatch steep"></span> Steeper than 1:20 <span class="route-swatch very-steep"></span> Steeper than 1:12 <span class="route-swatch unreliable"></span> Unknown <span class="route-swatch stairs"></span> Stairs</p>
   <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
   <p id="route-coverage" class="route-note"></p>
 </section>
