@@ -24,9 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateDropdown(query) {
     searchDropdown.innerHTML = '';
 
-    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
-      sourceLayer: 'CampusBuildings-5rbg0v'
-    });
+    const allFeatures = map.querySourceFeatures('buildings');
 
     const resources = new Set();
     const excludedStrings = [
@@ -34,10 +32,11 @@ document.addEventListener('DOMContentLoaded', function () {
     ];
 
     allFeatures.forEach(feature => {
-      const description = feature.properties.Description || '';
+      const description = feature.properties.Descriptio || '';
       const resourceList = description.split('\n');
       resourceList.forEach(resource => {
         if (
+          resource.trim() &&
           !excludedStrings.includes(resource.trim()) &&
           resource.toLowerCase().includes(query.toLowerCase())
         ) {
@@ -85,13 +84,13 @@ document.addEventListener('DOMContentLoaded', function () {
     let filterField = '';
     switch (option) {
       case 'Lactation Rooms': filterField = 'Lactation'; break;
-      case 'Single-use Restrooms': filterField = 'Single_restroom'; break;
-      case 'Group Seating': filterField = 'Seating_group'; break;
-      case 'Individual Seating': filterField = 'Seating_ind'; break;
+      case 'Single-use Restrooms': filterField = 'Single_res'; break;
+      case 'Group Seating': filterField = 'Seating_gr'; break;
+      case 'Individual Seating': filterField = 'Seating_in'; break;
       case 'Printing': filterField = 'Printing'; break;
       case 'Vending Machines': filterField = 'Food_vend'; break;
       case 'Cafes': filterField = 'Food_cafe'; break;
-      case 'Dining': filterField = 'Food_dining'; break;
+      case 'Dining': filterField = 'Food_dinin'; break;
       default: handleResourceSelection(option); return;
     }
     // Highlights building if they have 'Yes' for the predefined fields
@@ -112,12 +111,10 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   // Highlights building if the description selected from dropdown is found in the building description field
   function handleResourceSelection(resource) {
-    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
-      sourceLayer: 'CampusBuildings-5rbg0v'
-    });
+    const allFeatures = map.querySourceFeatures('buildings');
 
     const selectedFeature = allFeatures.find(feature => {
-      const description = feature.properties.Description || '';
+      const description = feature.properties.Descriptio || '';
       return description.includes(resource);
     });
 
@@ -140,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Zooms map to the selected buildings (Description field only)
       let coordinates = selectedFeature.geometry.coordinates;
-      let bounds = new mapboxgl.LngLatBounds();
+      let bounds = new maplibregl.LngLatBounds();
 
       if (selectedFeature.geometry.type === 'Polygon') {
         coordinates[0].forEach(coord => bounds.extend(coord));

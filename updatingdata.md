@@ -1,34 +1,22 @@
-# Updating a Tileset in Mapbox
-#### [Made by Lester Carver with Scribe](https://scribehow.com/shared/Uploading_a_File_in_Mapbox_Data_Manager__M0b0cSEiSm6ARtckg5qaEg)
+# Updating map data
 
+All map data lives in this repository; there is no Mapbox account or upload step.
 
-1\. Navigate to [https://console.mapbox.com/](https://console.mapbox.com/)
+## Campus layers (paths, buildings, entrances, etc.)
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/1b91c8dd-a36a-4f10-9904-53ce0c482362/ascreenshot.jpeg?tl_px=82,70&br_px=1458,840&force_format=jpeg&q=100&width=1120.0)
+The layers are GeoJSON files in [src/geojson/](src/geojson/), one feature per line. See
+[src/geojson/README.md](src/geojson/README.md) for what each file contains and the meaning of its fields.
 
+1. Open the file in [QGIS](https://qgis.org) (or [geojson.io](https://geojson.io) for small edits).
+2. Edit features and attributes. Keep the existing field names. The app reads them by name, and some are
+   shortened to 10 characters (e.g. `Descriptio`, `Single_res`).
+3. Save as GeoJSON in WGS84 (EPSG:4326), keeping the same file name.
+4. Preview locally with `python3 scripts/serve.py` and open http://localhost:8000.
+5. Commit and push. GitHub Pages publishes the change.
 
-2\. Click "Data manager"
+## Basemap and terrain
 
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/1b91c8dd-a36a-4f10-9904-53ce0c482362/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=31,112)
-
-
-3\. Click the tileset you want to update
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/581ec1ea-ba88-41c2-8763-f13234f7a30e/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=346,149)
-
-
-4\. Click "options"
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/b1d3902b-5801-458e-971e-c800654fc893/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=184,-13)
-
-
-5\. Click "Replace"
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/3f9fb422-60e6-4735-af57-55fc905e7a3c/ascreenshot.jpeg?tl_px=0,0&br_px=1376,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=269,-9)
-
-
-6\. Click "Select a file" and chose to geojson or zipped shapefile with updated data. **Note: Rest stops data should NOT be uploaded to MapBox. Upload geojson into /src/geojson folder. This preserves the cluster symbology that it uses**
-
-![](https://ajeuwbhvhr.cloudimg.io/https://colony-recorder.s3.amazonaws.com/files/2025-07-03/adea3d1e-d2bd-4cae-9d7f-95ec7874c21c/ascreenshot.jpeg?tl_px=103,0&br_px=1479,769&force_format=jpeg&q=100&width=1120.0&wat=1&wat_opacity=1&wat_gravity=northwest&wat_url=https://colony-recorder.s3.amazonaws.com/images/watermarks/FB923C_standard.png&wat_pad=524,258)
-
-
+The basemap (streets, labels, water) and the terrain used by the elevation tool are in
+[src/basemap/](src/basemap/), cut from OpenStreetMap to the area around the campuses. To refresh them with
+newer OpenStreetMap data, run [scripts/build-basemap.sh](scripts/build-basemap.sh) (requirements are listed
+at the top of the script), then preview and commit.

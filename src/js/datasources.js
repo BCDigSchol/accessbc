@@ -1,26 +1,13 @@
 function addMapData(map) {
   return new Promise((resolve) => {
-   // Load Mapbox Data Sources
-    map.addSource('bikerack-5yn5u5', {
-        'type': 'vector',
-        'url': 'mapbox://bcdsg-lec.35wuf8yc'
+   // Load data sources from the GeoJSON files in src/geojson
+    ['bikeracks', 'bluelights', 'elevators', 'entrances', 'curbcuts', 'shuttlestops',
+     'paths', 'buildings', 'accessiblepaths'].forEach(name => {
+      map.addSource(name, {
+          'type': 'geojson',
+          'data': `src/geojson/${name}.geojson`
       });
-      map.addSource('bluelight-bae81w', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.438a3ike'
-      });
-      map.addSource('elevators-17pm1x',{
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.9zp1t3fm'
-      });
-      map.addSource('entrances-6v95tt', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.cf8ep7jl' 
-      });
-      map.addSource('curbcut-52afsu', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.1bsbmi40'
-      });
+    });
       map.addSource('reststop', {
           'type': 'geojson',
           'data': 'src/geojson/reststop.geojson',
@@ -28,36 +15,19 @@ function addMapData(map) {
           'clusterMaxZoom': 25,
           'clusterRadius': 20
       })
-      map.addSource('shuttlestop-3opjnk', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.b0eg11k3'
-      });
-      map.addSource('paths_cleaned-1iqegh', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.6wha4sxm'
-      });
-      map.addSource('CampusBuildings-5rbg0v', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.acj06c4q'
-      });
-      map.addSource('accessiblepaths-b55sh1', {
-          'type': 'vector',
-          'url': 'mapbox://bcdsg-lec.ctxmzxxp'
-      });
-      map.addSource('mapbox-dem', {
+      map.addSource('terrain', {
           type: 'raster-dem',
-          url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-          tileSize: 512,
-          maxzoom: 20
+          url: 'pmtiles://' + new URL('src/basemap/terrain.pmtiles', document.baseURI).href,
+          encoding: 'terrarium',
+          tileSize: 256
       });
-      map.setTerrain({ 'source': 'mapbox-dem', 'exaggeration': 1 });
+      map.setTerrain({ 'source': 'terrain', 'exaggeration': 1 });
 
     // Add layers to map and set styling  
     map.addLayer({
       id: 'buildings',
       type: 'fill',
-      source: 'CampusBuildings-5rbg0v',
-      'source-layer': 'CampusBuildings-5rbg0v',
+      source: 'buildings',
       layout: {},
       paint: {
         'fill-color': '#2C7FB8',
@@ -67,8 +37,7 @@ function addMapData(map) {
     map.addLayer({
         id: 'paths',
         type: 'line',
-        source: 'paths_cleaned-1iqegh',
-        'source-layer': 'paths_cleaned-1iqegh',
+        source: 'paths',
         layout: {},
         paint: {
           'line-color': '#F2B701',
@@ -79,8 +48,7 @@ function addMapData(map) {
     map.addLayer({
       id: 'accessiblepaths-int',
       type: 'line',
-      source: 'accessiblepaths-b55sh1',
-      'source-layer': 'accessiblepaths-b55sh1',
+      source: 'accessiblepaths',
       layout: {},
       paint: {
       'line-color': [
@@ -106,8 +74,7 @@ function addMapData(map) {
     map.addLayer({
       id: 'accessiblepaths-ext',
       type: 'line',
-      source: 'accessiblepaths-b55sh1',
-      'source-layer': 'accessiblepaths-b55sh1',
+      source: 'accessiblepaths',
       layout: {},
       paint: {
       'line-color': [
@@ -129,14 +96,12 @@ function addMapData(map) {
       'line-width': 2
       }
     });
-    map.loadImage('src/icons/bike.png', function(error, image) {
-        if (error) throw error;
+    map.loadImage('src/icons/bike.png').then(({ data: image }) => {
       map.addImage('bike-icon', image);
       map.addLayer({
         id: 'bikerack',
         type: 'symbol',
-        source: 'bikerack-5yn5u5',
-        'source-layer': 'bikerack-5yn5u5',
+        source: 'bikeracks',
         'layout': {},
         layout: {
           'icon-image': 'bike-icon',
@@ -148,8 +113,7 @@ function addMapData(map) {
       map.addLayer({
         id: 'bluelight',
         type: 'circle',
-        source: 'bluelight-bae81w',
-        'source-layer': 'bluelight-bae81w',
+        source: 'bluelights',
         layout: {},
         paint: {
           'circle-radius': 5,
@@ -160,8 +124,7 @@ function addMapData(map) {
       map.addLayer({
         id: 'elevators',
         type: 'circle',
-        source: 'elevators-17pm1x',
-        'source-layer': 'elevators-17pm1x',
+        source: 'elevators',
         layout: {},
         paint: {
           'circle-radius': 4,
@@ -172,8 +135,7 @@ function addMapData(map) {
       map.addLayer({
         id: 'entrances',
         type: 'circle',
-        source: 'entrances-6v95tt',
-        'source-layer': 'entrances-6v95tt',
+        source: 'entrances',
         layout: {},
         paint: {
           'circle-radius': 4,
@@ -184,8 +146,7 @@ function addMapData(map) {
       map.addLayer({
         id: 'curbcuts',
         type: 'circle',
-        source: 'curbcut-52afsu',
-        'source-layer': 'curbcut-52afsu',
+        source: 'curbcuts',
         layout: {},
         paint: {
           'circle-radius': 4,
@@ -205,14 +166,12 @@ function addMapData(map) {
         }
       });
 
-      map.loadImage('src/icons/shuttle.png', function(error, image) {
-        if (error) throw error;
+      map.loadImage('src/icons/shuttle.png').then(({ data: image }) => {
       map.addImage('shuttle-icon', image);
       map.addLayer({
         id: 'shuttlestop',
         type: 'symbol',
-        source: 'shuttlestop-3opjnk',
-        'source-layer': 'shuttlestop-3opjnk',
+        source: 'shuttlestops',
         'layout': {},
         layout: {
           'icon-image': 'shuttle-icon',
@@ -224,8 +183,7 @@ function addMapData(map) {
     map.addLayer({
       id: 'buildings-highlighted',
       type: 'fill',
-      source: 'CampusBuildings-5rbg0v',
-      'source-layer': 'CampusBuildings-5rbg0v',
+      source: 'buildings',
       paint: {
         'fill-color': [
           'case',
