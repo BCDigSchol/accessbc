@@ -24,9 +24,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function updateDropdown(query) {
     searchDropdown.innerHTML = '';
 
-    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
-      sourceLayer: 'CampusBuildings-5rbg0v'
-    });
+    const allFeatures = map.querySourceFeatures('buildings');
 
     const resources = new Set();
     const excludedStrings = [
@@ -113,9 +111,7 @@ document.addEventListener('DOMContentLoaded', function () {
   }
   // Highlights building if the description selected from dropdown is found in the building description field
   function handleResourceSelection(resource) {
-    const allFeatures = map.querySourceFeatures('CampusBuildings-5rbg0v', {
-      sourceLayer: 'CampusBuildings-5rbg0v'
-    });
+    const allFeatures = map.querySourceFeatures('buildings');
 
     const selectedFeature = allFeatures.find(feature => {
       const description = feature.properties.Descriptio || '';
@@ -141,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
       // Zooms map to the selected buildings (Description field only)
       let coordinates = selectedFeature.geometry.coordinates;
-      let bounds = new mapboxgl.LngLatBounds();
+      let bounds = new maplibregl.LngLatBounds();
 
       if (selectedFeature.geometry.type === 'Polygon') {
         coordinates[0].forEach(coord => bounds.extend(coord));

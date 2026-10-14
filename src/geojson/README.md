@@ -6,6 +6,9 @@ The original ArcGIS shapefiles for this project were not preserved. Every layer 
 Each tile was fetched at the tileset's maximum zoom, clipped to its exact bounds, and the
 pieces were stitched back into whole features. Coordinates are WGS84 (EPSG:4326), rounded to 7 decimals.
 
+The app now loads these files directly. They are the source of truth, and the Mapbox tilesets are no longer used.
+See [updatingdata.md](../../updatingdata.md) for how to edit them.
+
 | File | Mapbox tileset | Max zoom | Features | Geometry |
 |---|---|---|---|---|
 | `accessiblepaths.geojson` | `bcdsg-lec.ctxmzxxp` | 16 | 280 | LineString |

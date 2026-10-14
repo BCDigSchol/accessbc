@@ -44,7 +44,7 @@ function addPopupHandlers(map) {
                     popupContent = `<p>${JSON.stringify(feature.properties)}</p>`;
             }
             // Set popup on the selected feature
-            const popup = new mapboxgl.Popup({ offset: [0, -15] })
+            const popup = new maplibregl.Popup({ offset: [0, -15] })
                 .setLngLat(feature.geometry.coordinates)
                 .setHTML(popupContent)
                 .addTo(map);

@@ -118,33 +118,24 @@ async function setupElevationHandler(map) {
 
     if (marker1) marker1.remove();
 
-    marker1 = new mapboxgl.Marker({ color: '#ed6461' })
+    marker1 = new maplibregl.Marker({ color: '#ed6461' })
       .setLngLat(coord1)
       .addTo(map);
 
     try {
-      if (!map.isSourceLoaded('mapbox-dem')) {
+      if (!map.isSourceLoaded('terrain')) {
         console.warn('DEM source not loaded yet. Cannot query elevation.');
         return;
       }
 
       // Query elevation using geographic coordinates (LngLat)
-      const elev0 = map.queryTerrainElevation(coord0, { exaggerated: false });
-      const elev1 = map.queryTerrainElevation(coord1, { exaggerated: false });
+      const elev0 = map.queryTerrainElevation(coord0);
+      const elev1 = map.queryTerrainElevation(coord1);
 
       if (elev0 == null || elev1 == null) {
         console.warn("Elevation data unavailable at one or both points.");
         return;
       }
-
-      const elevChange = elev1 - elev0;
-
-      // Create a Turf.js line with elevation info as properties
-      const line = turf.lineString([coord0, coord1], {
-        elevation_start: elev0,
-        elevation_end: elev1,
-        elevation_change: elevChange
-      });
 
       const elev0Feet = elev0 * 3.28084;
       const elev1Feet = elev1 * 3.28084;

@@ -1,10 +1,9 @@
 //Sets up zoom and geolocation controls on the map
 function addMapControls(map) {
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-    map.addControl(new mapboxgl.GeolocateControl({
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.GeolocateControl({
         positionOptions: { enableHighAccuracy: true },
-        trackUserLocation: true,
-        showUserHeading: true
+        trackUserLocation: true
     }), 'top-right');
 }
 
