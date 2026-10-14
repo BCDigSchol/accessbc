@@ -63,10 +63,28 @@ function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear existing legend content
 
+    // A "Map layers" button opens and closes the whole legend. It starts closed on phones, where an open
+    // legend would cover much of the map.
+    const panelToggle = document.createElement('button');
+    panelToggle.type = 'button';
+    panelToggle.className = 'legend-panel-toggle';
+    panelToggle.setAttribute('aria-controls', 'legend-body');
+    legendContainer.appendChild(panelToggle);
+
     // Main legend content wrapper
     const content = document.createElement('div');
     content.classList.add('legend-content');
+    content.id = 'legend-body';
     legendContainer.appendChild(content);
+
+    const setLegendOpen = (open) => {
+        legendContainer.classList.toggle('panel-collapsed', !open);
+        content.hidden = !open;
+        panelToggle.setAttribute('aria-expanded', String(open));
+        panelToggle.innerHTML = `Map layers <span class="legend-arrow" aria-hidden="true">${open ? '▼' : '▲'}</span>`;
+    };
+    setLegendOpen(!window.matchMedia('(max-width: 870px)').matches);
+    panelToggle.addEventListener('click', () => setLegendOpen(content.hidden));
 
     const setItem = (item, visible) => {
         item.classList.toggle('disabled', !visible);

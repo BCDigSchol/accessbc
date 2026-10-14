@@ -51,6 +51,12 @@ function nearbyCandidates(graph, kind) {
   return (graph.nearby[kind] = candidates);
 }
 
+// A one-line message in the results area, announced to screen readers.
+function nearbyMessage(out, html) {
+  out.innerHTML = html;
+  announce(out.textContent.trim());
+}
+
 async function findNearby(map) {
   const { module } = routing;
   const kind = document.getElementById('nearby-kind').value;
@@ -63,12 +69,12 @@ async function findNearby(map) {
   // Where to measure from
   let sources, startOffset = 0, fromWhat, notice = '', start;
   if (near === 'route') {
-    if (!routing.current) return (out.innerHTML = '<p>Find a route first, then search along it.</p>');
+    if (!routing.current) return nearbyMessage(out, '<p>Find a route first, then search along it.</p>');
     sources = routing.current.route.nodes;
     fromWhat = 'route';
   } else if (near === 'start') {
     const from = document.getElementById('route-from').value;
-    if (!from || from === MY_LOCATION) return (out.innerHTML = '<p>Choose a starting building under From first.</p>');
+    if (!from || from === MY_LOCATION) return nearbyMessage(out, '<p>Choose a starting building under From first.</p>');
     sources = graph.entrances.filter((e) => e.building === from).map((e) => e.node);
     fromWhat = from;
   } else {
@@ -88,7 +94,7 @@ async function findNearby(map) {
       problem = 'Your location isn’t available. Check that location access is allowed for this site and turned on for your browser.';
     }
     if (problem) {
-      if (!fallback) return (out.innerHTML = `<p>${problem}${instead}</p>`);
+      if (!fallback) return nearbyMessage(out, `<p>${problem}${instead}</p>`);
       notice = `<p class="nearby-notice">${problem}${instead}</p>`;
       sources = graph.entrances.filter((e) => e.building === fallback).map((e) => e.node);
       fromWhat = fallback;
@@ -111,8 +117,7 @@ async function findNearby(map) {
 
   const label = NEARBY_KINDS[kind].label.toLowerCase();
   if (!nearbyResults.length) {
-    out.innerHTML = `${notice}<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`;
-    return;
+    return nearbyMessage(out, `${notice}<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`);
   }
   const along = fromWhat === 'route';
   // Along a route, the start and destination buildings are already on it: say so, rather than offer them as stops.
@@ -133,7 +138,9 @@ async function findNearby(map) {
   });
   out.innerHTML = `${notice}<p class="nearby-heading">Nearest ${label}${along ? ' along your route' : ''}:</p><ol class="nearby-list">${items.join('')}</ol>`;
   const first = nearbyResults[0];
-  speak(`The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`);
+  const said = `The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
+  announce(`${notice ? out.querySelector('.nearby-notice').textContent + ' ' : ''}${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);
+  speak(said);
 }
 
 function showNearbyOnMap(map, result) {

@@ -1110,3 +1110,73 @@ html.high-contrast .nearby-distance {
   display: block;
   margin-bottom: 0.75rem;
 }
+
+/* "Map layers" button that opens and closes the legend */
+.legend-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  padding: 0 0.25rem;
+  background: none;
+  border: none;
+  font: inherit;
+  font-weight: bold;
+  font-size: 1rem;
+  color: inherit;
+  cursor: pointer;
+}
+
+#legend:not(.panel-collapsed) .legend-panel-toggle {
+  margin-bottom: 0.25rem;
+}
+
+#legend.panel-collapsed {
+  padding: 0 0.75rem;
+}
+
+/* Closed: only the button shows (this also covers the elevation key, which is added after the layers) */
+#legend.panel-collapsed > :not(.legend-panel-toggle) {
+  display: none !important;
+}
+
+@media screen and (max-width: 870px) {
+  /* Closed on a phone: just a small button in the corner */
+  #legend.panel-collapsed {
+    left: 0.5rem !important;
+    right: auto !important;
+    bottom: 0.5rem !important;
+    width: auto !important;
+    border-radius: 0.5rem !important;
+  }
+
+  /* Open on a phone: a scrolling sheet that leaves most of the map visible */
+  #legend:not(.panel-collapsed) .legend-content {
+    max-height: 40vh;
+  }
+}
+
+/* Skip link: hidden until it gets keyboard focus */
+.skip-link {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 2000;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  color: #000;
+  font-weight: bold;
+  border: 3px solid #0050d0;
+  border-radius: 0.4rem;
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+/* Spoken directions */
+#guidance-audio[aria-pressed="true"] {
+  background: #0050d0;
+  color: #fff;
+}

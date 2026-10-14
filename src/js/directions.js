@@ -279,8 +279,13 @@ function getPosition() {
   );
 }
 
-function showResult(html) {
-  document.getElementById('route-result').innerHTML = html;
+// Show a result in the panel and announce it to screen readers: the given message, or else the result's
+// own text (fine for one-line messages; a found route passes a short summary instead of its step list).
+function showResult(html, message) {
+  const result = document.getElementById('route-result');
+  result.innerHTML = html;
+  const text = message ?? result.textContent.trim();
+  if (text) announce(text);
 }
 
 function clearRoute(map) {
@@ -459,18 +464,22 @@ async function updateRoute(map) {
   const indoor = description.indoorLength ? `, ${feet(description.indoorLength)} of it indoors` : '';
   const stairs = description.steps.filter((st) => st.type === 'stairs').reduce((sum, st) => sum + st.length, 0);
   const stairsNote = stairs ? `<p class="route-warning">This route uses stairs (${feet(stairs)}).</p>` : '';
+  const stopsSaid = stops.length ? `, with ${stops.length === 1 ? 'a stop' : `${stops.length} stops`}` : '';
+  const message = `Route found: ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}. Start step-by-step directions or audio guidance below.`;
   showResult(`
     ${unmet}
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
     ${stopNote(stops)}
     <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
+    ${'speechSynthesis' in window ? `<button type="button" id="guidance-start-audio" class="route-start" aria-describedby="audio-guidance-help"><span aria-hidden="true">🔊 </span>Start audio guidance</button>
+    <p id="audio-guidance-help" class="route-note">Speaks each step aloud and moves to the next step as you walk.</p>` : ''}
     <div class="route-check"><input type="checkbox" id="route-focus" ${focusOnRoute ? 'checked' : ''}><label for="route-focus">Only show map features along this route</label></div>
     ${stairsNote}
     ${slopeSummary(description)}
-    <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>`);
+    <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>`, message);
 
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromValue !== MY_LOCATION };
-  speak(`Route found: ${feet(description.length)}${stairs ? ', using stairs' : ''}. Choose Start step-by-step directions to begin.`);
+  speak(message);
   if (routing.autoStart) {
     const follow = routing.autoStart.follow;
     routing.autoStart = null;
@@ -656,3 +665,11 @@ function unobstructedPadding(map) {
   if (padding.top + padding.bottom > maxV) padding.bottom = Math.max(20, maxV - padding.top);
   return padding;
 }
+
+// The skip link at the top of the page opens the directions panel and moves focus into it
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('skip-to-directions').addEventListener('click', (e) => {
+    e.preventDefault();
+    setPanelOpen(true);
+  });
+});

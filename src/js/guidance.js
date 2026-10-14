@@ -24,6 +24,13 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
+// The "Speak directions" button in step-by-step mode shows whether reading aloud is on.
+function syncAudioButton() {
+  const button = document.getElementById('guidance-audio');
+  button.hidden = !('speechSynthesis' in window);
+  button.setAttribute('aria-pressed', String(!!settings.readAloud));
+}
+
 function guidanceStatus(html) {
   document.getElementById('guidance-status').innerHTML = html;
 }
@@ -45,6 +52,7 @@ async function startGuidance(map, { follow = false } = {}) {
   document.getElementById('directions-title').textContent = 'Step-by-step directions';
   document.getElementById('guidance').hidden = false;
   guidanceStatus('');
+  syncAudioButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
   await showStep(map, 0);
@@ -244,6 +252,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     if (e.target.id === 'guidance-start') startGuidance(window.map);
+    // Audio guidance: steps read aloud, advancing on their own as you walk
+    if (e.target.closest('#guidance-start-audio')) {
+      settings.readAloud = true;
+      saveSettings();
+      startGuidance(window.map, { follow: true });
+    }
     if (e.target.id === 'guidance-reroute') {
       // Re-route from the current location, then carry on following
       stopGuidance(window.map);
@@ -254,6 +268,13 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('guidance-prev').addEventListener('click', () => go(-1));
   document.getElementById('guidance-next').addEventListener('click', () => go(1));
+  document.getElementById('guidance-audio').addEventListener('click', () => {
+    settings.readAloud = !settings.readAloud;
+    saveSettings();
+    syncAudioButton();
+    if (settings.readAloud) speak(guide.steps[guide.index].text);
+    else window.speechSynthesis.cancel();
+  });
   document.getElementById('guidance-repeat').addEventListener('click', () => {
     const step = guide.steps[guide.index];
     const live = document.getElementById('guidance-instruction');

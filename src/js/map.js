@@ -30,7 +30,9 @@ document.addEventListener('DOMContentLoaded', function () {
         zoom: 15,
         minZoom: 12,
         maxBounds: BASEMAP_BOUNDS,
-        center: [-71.170820, 42.336190]
+        center: [-71.170820, 42.336190],
+        // The map is visual only; screen reader users get the same information as text
+        locale: { 'Map.Title': 'Campus map. Search and Directions give the same information as text.' }
     });
     window.map = map;
 

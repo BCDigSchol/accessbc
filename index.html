@@ -23,28 +23,27 @@
 </head>
 <body>
 
-<div id="map"></div>
-<div id="building-popup" role="dialog" aria-labelledby="building-name">
-  <div id="building-info">Click on a building to see details here.</div>
-</div>
+<a href="#directions-title" class="skip-link" id="skip-to-directions">Skip to accessible directions</a>
+<!-- Short spoken updates for screen readers (route found, results found, errors) -->
+<div id="announcer" class="visually-hidden" role="status" aria-live="polite"></div>
 
-<div class="topnav" id="myTopnav">
+<header class="topnav" id="myTopnav">
   <!-- Title Section -->
   <div class="title-container">
-    <span class="main-title">Access BC</span>
+    <h1 class="main-title">Access BC</h1>
   </div>
 
   <!-- Hamburger Menu -->
   <button type="button" class="icon" id="menu-toggle" aria-label="Menu" aria-expanded="false" onclick="toggleMenu()">☰</button>
 
   <!-- Navigation Buttons -->
-  <button href="#about" id="about" class="menu-button">About</button>
-  <button href="#home" id="chestnut-hill" class="menu-button">Chestnut Hill</button>
-  <button href="#brighton" id="brighton" class="menu-button">Brighton</button>
-  <button href="#newton" id="newton" class="menu-button">Newton</button>
-  <button href="#brookline" id="brookline" class="menu-button">Brookline</button>
-  <button id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
-  <button id="settings-toggle" class="menu-button" aria-haspopup="dialog">Accessibility</button>
+  <button type="button" id="about" class="menu-button" aria-haspopup="dialog">About</button>
+  <button type="button" id="chestnut-hill" class="menu-button" aria-label="Show Chestnut Hill campus on the map">Chestnut Hill</button>
+  <button type="button" id="brighton" class="menu-button" aria-label="Show Brighton campus on the map">Brighton</button>
+  <button type="button" id="newton" class="menu-button" aria-label="Show Newton campus on the map">Newton</button>
+  <button type="button" id="brookline" class="menu-button" aria-label="Show Brookline campus on the map">Brookline</button>
+  <button type="button" id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
+  <button type="button" id="settings-toggle" class="menu-button" aria-haspopup="dialog">Accessibility</button>
 
   <!-- Search Bars -->
   <div class="search-bar-container">
@@ -53,9 +52,15 @@
            role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="generic-dropdown" autocomplete="off">
     <div class="search-dropdown" id="generic-dropdown" role="listbox" aria-label="Search results"></div>
   </div>
+</header>
+
+<main>
+<div id="map"></div>
+<div id="building-popup" role="dialog" aria-labelledby="building-name">
+  <div id="building-info">Click on a building to see details here.</div>
 </div>
 
-    <div id="legend" role="region" aria-label="Map layers"></div>
+<div id="legend" role="region" aria-label="Map layers"></div>
 
 <div id="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
   <button type="button" class="close" id="settings-close" aria-label="Close accessibility settings">×</button>
@@ -106,7 +111,7 @@
       </select>
     </div>
     <button type="button" id="nearby-search" class="nearby-search">Find nearest</button>
-    <div id="nearby-results" aria-live="polite"></div>
+    <div id="nearby-results"></div>
     <p class="route-note">Distances are walking distances on mapped paths, using your route options.</p>
   </details>
   <div class="route-field">
@@ -115,8 +120,8 @@
   </div>
   <ol id="route-stops" class="stops-list" aria-label="Stops"></ol>
   <div class="route-actions">
-    <button type="button" id="route-add-stop">+ Add a stop</button>
-    <button type="button" id="route-swap">Swap ⇅</button>
+    <button type="button" id="route-add-stop"><span aria-hidden="true">+ </span>Add a stop</button>
+    <button type="button" id="route-swap" aria-label="Swap From and To">Swap <span aria-hidden="true">⇅</span></button>
     <button type="button" id="route-clear">Clear</button>
   </div>
   <div class="route-field">
@@ -147,16 +152,19 @@
       </select>
     </div>
   </details>
-  <div id="route-result" aria-live="polite"></div>
+  <div id="route-result"></div>
   <div id="guidance" hidden>
-    <p id="guidance-progress" class="guidance-progress"></p>
-    <p id="guidance-instruction" class="guidance-instruction" aria-live="polite"></p>
+    <div aria-live="polite" aria-atomic="true">
+      <p id="guidance-progress" class="guidance-progress"></p>
+      <p id="guidance-instruction" class="guidance-instruction"></p>
+    </div>
     <p id="guidance-detail" class="guidance-detail"></p>
     <div class="guidance-nav">
-      <button type="button" id="guidance-prev">◀ Back</button>
-      <button type="button" id="guidance-next">Next ▶</button>
+      <button type="button" id="guidance-prev"><span aria-hidden="true">◀ </span>Back</button>
+      <button type="button" id="guidance-next">Next<span aria-hidden="true"> ▶</span></button>
     </div>
     <div class="guidance-tools">
+      <button type="button" id="guidance-audio" aria-pressed="false">Speak directions</button>
       <button type="button" id="guidance-repeat">Repeat</button>
       <button type="button" id="guidance-add-stop">Add a stop</button>
       <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
@@ -165,7 +173,7 @@
     <p id="guidance-status" class="guidance-status" aria-live="polite"></p>
     <p class="route-note">Use the arrow keys or swipe to move between steps.</p>
   </div>
-  <ul class="route-legend" aria-label="Route line key">
+  <ul class="route-legend" aria-label="Route line colours">
     <li><span class="route-swatch"></span>Outdoors</li>
     <li><span class="route-swatch indoor"></span>Indoors</li>
     <li><span class="route-swatch steep"></span>Steeper than 1:20</li>
@@ -176,6 +184,7 @@
   <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
   <p id="route-coverage" class="route-note"></p>
 </section>
+</main>
 
 </body>
 </html>

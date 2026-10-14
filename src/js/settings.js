@@ -38,6 +38,15 @@ function highContrast() {
   return settings.highContrast === 'auto' ? systemPrefers('(prefers-contrast: more)') : !!settings.highContrast;
 }
 
+// A short status message for screen readers ("Route found…"), through the page's polite live region.
+// Cleared first so the same message twice is still announced.
+function announce(text) {
+  const el = document.getElementById('announcer');
+  if (!el) return;
+  el.textContent = '';
+  setTimeout(() => { el.textContent = text; }, 50);
+}
+
 // Move the map, without animation when motion should be reduced.
 function moveMap(map, method, options) {
   if (reducedMotion()) {
