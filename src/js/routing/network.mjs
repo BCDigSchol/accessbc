@@ -6,7 +6,9 @@
 // - a dangling path end within JOIN_GAP_M of another path is joined to it
 // - exterior paths that cross without a shared vertex get a junction node (interior crossings are
 //   left alone, since interior paths on different floors can cross in plan view)
-// - each entrance within ENTRANCE_LINK_M of a path is linked to the nearest point on it
+// - a vertex snapped onto the middle of another path becomes a junction
+// - each entrance is linked to the nearest outdoor path and the nearest indoor path of its own
+//   building, each within ENTRANCE_LINK_M
 
 export const SAME_POINT_M = 0.25;
 export const JOIN_GAP_M = 2;
@@ -76,9 +78,16 @@ export function nearestBuilding(buildings, p) {
 // Vertices clustered into nodes and consecutive vertices joined by segments. No repairs.
 export function buildNetwork(pathFeatures) {
   const nodes = []; // {xy, lines: Set}
+  const byCell = new Map(); // 1 m grid cell -> node ids, so clustering only checks neighbours
   const nodeAt = (xy) => {
-    for (let i = 0; i < nodes.length; i++) if (dist(nodes[i].xy, xy) < SAME_POINT_M) return i;
+    const cx = Math.floor(xy[0]), cy = Math.floor(xy[1]);
+    for (let dx = -1; dx <= 1; dx++)
+      for (let dy = -1; dy <= 1; dy++)
+        for (const i of byCell.get(`${cx + dx},${cy + dy}`) || []) if (dist(nodes[i].xy, xy) < SAME_POINT_M) return i;
     nodes.push({ xy, lines: new Set() });
+    const key = `${cx},${cy}`;
+    if (!byCell.has(key)) byCell.set(key, []);
+    byCell.get(key).push(nodes.length - 1);
     return nodes.length - 1;
   };
   const segments = []; // {a, b, line, type}
@@ -99,15 +108,40 @@ export function buildNetwork(pathFeatures) {
   }
   const degree = new Array(nodes.length).fill(0);
   segments.forEach((s) => { degree[s.a]++; degree[s.b]++; });
-  return { nodes, segments, lines, degree };
+  return { nodes, segments, lines, degree, near: segmentGrid(nodes, segments) };
 }
 
-// For each dangling (degree-1) endpoint, the nearest segment that isn't part of its own line.
-export function danglingGaps({ nodes, segments, degree }) {
+// Uniform grid over segment bounding boxes. near(p, r) returns the segments whose bounding box
+// comes within r of p, so bounded searches don't have to scan every segment.
+const CELL_M = 25;
+function segmentGrid(nodes, segments) {
+  const cells = new Map();
+  const range = (lo, hi) => [Math.floor(lo / CELL_M), Math.floor(hi / CELL_M)];
+  segments.forEach((s, i) => {
+    const [ax, ay] = nodes[s.a].xy, [bx, by] = nodes[s.b].xy;
+    const [x0, x1] = range(Math.min(ax, bx), Math.max(ax, bx)), [y0, y1] = range(Math.min(ay, by), Math.max(ay, by));
+    for (let cx = x0; cx <= x1; cx++)
+      for (let cy = y0; cy <= y1; cy++) {
+        const key = `${cx},${cy}`;
+        if (!cells.has(key)) cells.set(key, []);
+        cells.get(key).push(i);
+      }
+  });
+  return ([x, y], r) => {
+    const found = new Set();
+    const [x0, x1] = range(x - r, x + r), [y0, y1] = range(y - r, y + r);
+    for (let cx = x0; cx <= x1; cx++) for (let cy = y0; cy <= y1; cy++) for (const i of cells.get(`${cx},${cy}`) || []) found.add(i);
+    return [...found].map((i) => segments[i]);
+  };
+}
+
+// For each dangling (degree-1) endpoint, the nearest segment that isn't part of its own line,
+// searching only within maxDistance when one is given.
+export function danglingGaps({ nodes, segments, degree, near }, maxDistance = Infinity) {
   return nodes.map((_, i) => i).filter((i) => degree[i] === 1).map((i) => {
     const p = nodes[i].xy;
     let best = { d: Infinity };
-    for (const s of segments) {
+    for (const s of Number.isFinite(maxDistance) ? near(p, maxDistance) : segments) {
       if (s.a === i || s.b === i || nodes[i].lines.has(s.line)) continue;
       const r = nearestOnSegment(p, nodes[s.a].xy, nodes[s.b].xy);
       if (r.d < best.d) best = { ...r, seg: s };
@@ -117,11 +151,15 @@ export function danglingGaps({ nodes, segments, degree }) {
 }
 
 // Pairs of segments from different lines that cross without sharing a node.
-export function findCrossings({ nodes, segments, lines }) {
+export function findCrossings({ nodes, segments, lines, near }) {
   const out = [];
+  const index = new Map(segments.map((s, i) => [s, i]));
   for (let i = 0; i < segments.length; i++) {
-    for (let j = i + 1; j < segments.length; j++) {
-      const s = segments[i], t = segments[j];
+    const s = segments[i];
+    const [ax, ay] = nodes[s.a].xy, [bx, by] = nodes[s.b].xy;
+    const centre = [(ax + bx) / 2, (ay + by) / 2], radius = Math.hypot(bx - ax, by - ay) / 2;
+    for (const t of near(centre, radius)) {
+      if (index.get(t) <= i) continue;
       if (s.line === t.line || s.a === t.a || s.a === t.b || s.b === t.a || s.b === t.b) continue;
       const x = segmentIntersection(nodes[s.a].xy, nodes[s.b].xy, nodes[t.a].xy, nodes[t.b].xy);
       if (x) out.push({ ...x, segs: [s, t], types: [s.type, t.type].sort().join('/'), fids: [lines[s.line].fid, lines[t.line].fid] });
@@ -130,9 +168,12 @@ export function findCrossings({ nodes, segments, lines }) {
   return out;
 }
 
-export function nearestSegment({ nodes, segments }, p) {
+// Nearest segment to p, optionally only of one path Type ('Exterior' or 'Interior') and only
+// within maxDistance.
+export function nearestSegment({ nodes, segments, near }, p, type, maxDistance = Infinity) {
   let best = { d: Infinity };
-  for (const s of segments) {
+  for (const s of Number.isFinite(maxDistance) ? near(p, maxDistance) : segments) {
+    if (type && s.type !== type) continue;
     const r = nearestOnSegment(p, nodes[s.a].xy, nodes[s.b].xy);
     if (r.d < best.d) best = { ...r, seg: s };
   }
@@ -160,7 +201,7 @@ export function buildGraph({ paths, entrances, buildings }) {
     return node;
   };
 
-  for (const g of danglingGaps(net)) {
+  for (const g of danglingGaps(net, JOIN_GAP_M)) {
     if (g.d <= JOIN_GAP_M) extraEdges.push([g.node, nodeOnSegment(g.seg, g.t, g.point), g.seg.type]);
   }
   for (const c of findCrossings(net)) {
@@ -170,15 +211,31 @@ export function buildGraph({ paths, entrances, buildings }) {
     const other = nodeOnSegment(u, c.u, c.point);
     if (other !== node) extraEdges.push([node, other, 'Exterior']);
   }
+  // A vertex lying on another line (not at its end) was snapped there when the data was drawn: a junction.
+  // (Dangling ends are already handled by the gap joins above.)
+  for (let i = 0; i < nodes.length; i++) {
+    if (net.degree[i] < 2) continue;
+    for (const s of net.near(nodes[i].xy, SAME_POINT_M)) {
+      if (s.a === i || s.b === i || nodes[i].lines.has(s.line)) continue;
+      const r = nearestOnSegment(nodes[i].xy, xy[s.a], xy[s.b]);
+      if (r.d < SAME_POINT_M) extraEdges.push([i, nodeOnSegment(s, r.t, r.point), s.type]);
+    }
+  }
+  // An entrance is where inside meets outside, so link it to the nearest outdoor path and to the
+  // nearest indoor path of its own building (never into a neighbouring building's corridor).
   const linkedEntrances = [];
   for (const e of entrances) {
     const p = proj(e.geometry.coordinates);
-    const near = nearestSegment(net, p);
-    if (near.d > ENTRANCE_LINK_M) continue;
     const building = (e.properties.Building || '').trim() || nearestBuilding(projectedBuildings, p).name;
+    const links = [];
+    const outdoor = nearestSegment(net, p, 'Exterior', ENTRANCE_LINK_M);
+    if (outdoor.d <= ENTRANCE_LINK_M) links.push(outdoor);
+    const indoor = nearestSegment(net, p, 'Interior', ENTRANCE_LINK_M);
+    if (indoor.d <= ENTRANCE_LINK_M && nearestBuilding(projectedBuildings, indoor.point).name === building) links.push(indoor);
+    if (!links.length) continue;
     const node = xy.push(p) - 1;
-    extraEdges.push([node, nodeOnSegment(near.seg, near.t, near.point), 'Entrance']);
-    linkedEntrances.push({ id: e.properties.OBJECTID, building, node, linkMeters: +near.d.toFixed(1) });
+    for (const link of links) extraEdges.push([node, nodeOnSegment(link.seg, link.t, link.point), 'Entrance']);
+    linkedEntrances.push({ id: e.properties.OBJECTID, building, node, linkMeters: +Math.min(...links.map((l) => l.d)).toFixed(1) });
   }
 
   const adjacency = xy.map(() => []);

@@ -16,7 +16,8 @@ The paths were drawn without enforced topology, so the builder repairs the netwo
 | A path end that stops just short of another path (≤ 2 m) | Joins it |
 | Two exterior paths that cross without a shared vertex | Adds a junction |
 | Two interior paths that cross | Nothing. They may be on different floors |
-| An entrance near a path (≤ 15 m) | Links it to the nearest point on the path |
+| A vertex sitting on the middle of another path (≤ 0.25 m) | Adds a junction. It was snapped there on purpose |
+| An entrance near paths (≤ 15 m) | Links it to the nearest outdoor path, and to the nearest indoor path of its own building |
 | An entrance with no `Building` name | Uses the building it's on or nearest to |
 
 Anything less certain is left alone and reported for review.
@@ -57,3 +58,17 @@ Open it in QGIS over `accessiblepaths.geojson` and style by the `issue` field:
 Work from the `check-routes.mjs` fix list: each stranded piece shows the buildings it cuts off and where it
 comes closest to the main network. In QGIS, enable snapping, extend or add a path so it shares a vertex with
 the main network (or confirm the gap is a real barrier), save, and re-run the check.
+
+## Reviewed gaps
+
+Gaps that have been checked, so they aren't re-examined or "fixed" the wrong way. Evidence comes from the
+mapped curb cuts, OpenStreetMap paths (`paths.geojson`, where `highway=steps` is a barrier), and building
+outlines.
+
+| Place | Gap | Decision | Why |
+|---|---|---|---|
+| 129 Lake Street | 9 m | Connected (path FID 280) | Matching curb cuts (91, 46) on both sides of the driveway |
+| Higgins Hall | 0 m | Fixed in the builder | Indoor path vertex snapped onto the corridor line |
+| 66 Commonwealth Avenue | 10 m | Not connected | The only link to the main network is OpenStreetMap steps |
+| Voute Hall | 33 m | Needs a site check | The gap runs through the building. A real link would follow the Commonwealth Ave sidewalk (about 150 m), and there are steps on the east side |
+| Conte Forum, side door 32 | 17 m | Left as is | Conte's other three entrances are already on the network |
