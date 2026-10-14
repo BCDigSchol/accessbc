@@ -57,7 +57,7 @@ function stopGuidance(map) {
   stopFollowing();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   const panel = document.getElementById('directions-panel');
-  panel.classList.remove('guiding');
+  panel.classList.remove('guiding', 'adding-stop');
   document.body.classList.remove('guiding');
   document.getElementById('directions-title').textContent = 'Accessible directions';
   document.getElementById('guidance').hidden = true;
@@ -221,6 +221,21 @@ function onPosition(map, position) {
   }
 }
 
+// Partway through a trip, before changing it: drop the stops already passed, start the new route from where
+// you are (your GPS position if following, else the start of the current step), and resume guidance after.
+// A stop just added that turns out to be behind you becomes the next stop.
+function prepareRerouteFromHere(newStop) {
+  const chosen = routing.stops.filter((st) => st.building || st.lonlat);
+  const reached = guide.steps.slice(0, guide.index + 1).filter((st) => st.kind === 'stop').length;
+  const passed = new Set(chosen.filter((st) => st !== newStop).slice(0, reached));
+  routing.stops = routing.stops.filter((st) => !passed.has(st));
+  if (newStop && !routing.stops.includes(newStop)) routing.stops.unshift(newStop);
+  const following = !!guide.watch;
+  if (following) document.getElementById('route-from').value = MY_LOCATION;
+  else setPlaceStart({ label: 'Where you are now', lonlat: guide.steps[guide.index].start });
+  routing.autoStart = { follow: following };
+}
+
 // ---- Controls ----------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -254,6 +269,16 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       startFollowing(window.map);
     }
+  });
+  // Add a stop mid-trip: show "Find nearby", searching along the route
+  document.getElementById('guidance-add-stop').addEventListener('click', () => {
+    const panel = document.getElementById('directions-panel');
+    const adding = panel.classList.toggle('adding-stop');
+    if (!adding) return;
+    const nearby = document.querySelector('.nearby');
+    nearby.open = true;
+    document.getElementById('nearby-from').value = 'route';
+    document.getElementById('nearby-kind').focus();
   });
   document.getElementById('guidance-exit').addEventListener('click', () => {
     stopGuidance(window.map);

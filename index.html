@@ -10,15 +10,16 @@
 <script src="src/vendor/pmtiles/pmtiles.js"></script>
 <script src="src/basemap/style.js"></script>
 <script src="src/js/settings.js"></script>
-<script src = "src/js/map.js"></script>
+<script src="src/js/map.js"></script>
 <script src="src/js/mapcontrols.js"></script>
 <script src="src/js/datasources.js"></script>
 <script src="src/js/popups.js"></script>
 <script src="src/js/elevation.js"></script>
-<script src = "src/js/menu.js"></script>
-<script src = "src/js/searchbar.js"></script>
+<script src="src/js/menu.js"></script>
+<script src="src/js/searchbar.js"></script>
 <script src="src/js/directions.js"></script>
 <script src="src/js/guidance.js"></script>
+<script src="src/js/nearby.js"></script>
 </head>
 <body>
 
@@ -90,11 +91,31 @@
 <section id="directions-panel" aria-labelledby="directions-title" hidden>
   <button type="button" id="directions-close" class="directions-close" aria-label="Close directions">×</button>
   <h2 id="directions-title">Accessible directions</h2>
+  <details class="route-options nearby">
+    <summary>Find something nearby</summary>
+    <div class="route-field">
+      <label for="nearby-kind">Find</label>
+      <select id="nearby-kind"></select>
+    </div>
+    <div class="route-field">
+      <label for="nearby-from">Near</label>
+      <select id="nearby-from">
+        <option value="me">My location</option>
+        <option value="start">My starting building (From)</option>
+        <option value="route">Along my route</option>
+      </select>
+    </div>
+    <button type="button" id="nearby-search" class="nearby-search">Find nearest</button>
+    <div id="nearby-results" aria-live="polite"></div>
+    <p class="route-note">Distances are walking distances on mapped paths, using your route options.</p>
+  </details>
   <div class="route-field">
     <label for="route-from">From</label>
     <select id="route-from"></select>
   </div>
+  <ol id="route-stops" class="stops-list" aria-label="Stops"></ol>
   <div class="route-actions">
+    <button type="button" id="route-add-stop">+ Add a stop</button>
     <button type="button" id="route-swap">Swap ⇅</button>
     <button type="button" id="route-clear">Clear</button>
   </div>
@@ -137,6 +158,7 @@
     </div>
     <div class="guidance-tools">
       <button type="button" id="guidance-repeat">Repeat</button>
+      <button type="button" id="guidance-add-stop">Add a stop</button>
       <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
       <button type="button" id="guidance-exit">Exit step-by-step</button>
     </div>

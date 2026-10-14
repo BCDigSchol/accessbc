@@ -351,11 +351,21 @@ export function describeRoute(graph, route) {
 // (Infinity to forbid it); by default the cost is its length. Returns {length, cost, nodes} or null,
 // where length is the walking distance.
 export function shortestRoute(graph, sources, targets, edgeCost = (e) => e.length) {
+  return dijkstra(graph, sources, new Set(targets), edgeCost);
+}
+
+// Walking distance (metres) from the nearest of `sources` to every node, along the cheapest routes
+// under edgeCost; Infinity where unreachable. For ranking many candidate destinations in one pass.
+export function walkingDistances(graph, sources, edgeCost = (e) => e.length) {
+  return dijkstra(graph, sources, null, edgeCost);
+}
+
+function dijkstra(graph, sources, goal, edgeCost) {
   const n = graph.nodes.length;
+  const walked = new Float64Array(n).fill(Infinity); // walking distance along the cheapest route
   const best = new Float64Array(n).fill(Infinity);
   const prev = new Int32Array(n).fill(-1);
   const prevEdge = new Array(n); // the edge used to reach each node, for the walking distance
-  const goal = new Set(targets);
   const heap = []; // binary min-heap of [cost, node]
   const push = (item) => {
     heap.push(item);
@@ -382,11 +392,11 @@ export function shortestRoute(graph, sources, targets, edgeCost = (e) => e.lengt
     }
     return top;
   };
-  for (const s of sources) { best[s] = 0; push([0, s]); }
+  for (const s of sources) { best[s] = 0; walked[s] = 0; push([0, s]); }
   while (heap.length) {
     const [cost, node] = pop();
     if (cost > best[node]) continue;
-    if (goal.has(node)) {
+    if (goal && goal.has(node)) {
       const route = [];
       for (let v = node; v !== -1; v = prev[v]) route.push(v);
       route.reverse();
@@ -399,13 +409,19 @@ export function shortestRoute(graph, sources, targets, edgeCost = (e) => e.lengt
       if (!(step < Infinity)) continue;
       if (cost + step < best[edge.to]) {
         best[edge.to] = cost + step;
+        walked[edge.to] = walked[node] + edge.length;
         prev[edge.to] = node;
         prevEdge[edge.to] = edge;
         push([best[edge.to], edge.to]);
       }
     }
   }
-  return null;
+  return goal ? null : walked;
+}
+
+// Two consecutive routes (the second starting where the first ends) as one, e.g. via a stop.
+export function joinRoutes(first, second) {
+  return { length: first.length + second.length, cost: first.cost + second.cost, nodes: [...first.nodes, ...second.nodes.slice(1)] };
 }
 
 // Route between two buildings, using any accessible entrance of each.
