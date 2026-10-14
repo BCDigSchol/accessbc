@@ -13,6 +13,12 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 
 
 class RangeRequestHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        # Make the browser check for a newer file on every load, so edits to data and code show up
+        # immediately (it still gets a quick 304 Not Modified when nothing changed).
+        self.send_header('Cache-Control', 'no-cache')
+        super().end_headers()
+
     def send_head(self):
         match = re.fullmatch(r'bytes=(\d*)-(\d*)', self.headers.get('Range', ''))
         path = self.translate_path(self.path)

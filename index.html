@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>Access BC</title>
-<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="src/vendor/maplibre-gl/maplibre-gl.css" rel="stylesheet">
 <link href="src/input.css" rel="stylesheet">
 <script src="src/vendor/maplibre-gl/maplibre-gl.js"></script>
 <script src="src/vendor/pmtiles/pmtiles.js"></script>
 <script src="src/basemap/style.js"></script>
+<script src="src/js/settings.js"></script>
 <script src = "src/js/map.js"></script>
 <script src="src/js/mapcontrols.js"></script>
 <script src="src/js/datasources.js"></script>
@@ -17,11 +18,12 @@
 <script src = "src/js/menu.js"></script>
 <script src = "src/js/searchbar.js"></script>
 <script src="src/js/directions.js"></script>
+<script src="src/js/guidance.js"></script>
 </head>
 <body>
 
 <div id="map"></div>
-<div id="building-popup">
+<div id="building-popup" role="dialog" aria-labelledby="building-name">
   <div id="building-info">Click on a building to see details here.</div>
 </div>
 
@@ -32,7 +34,7 @@
   </div>
 
   <!-- Hamburger Menu -->
-  <div class="icon" onclick="toggleMenu()">☰</div>
+  <button type="button" class="icon" id="menu-toggle" aria-label="Menu" aria-expanded="false" onclick="toggleMenu()">☰</button>
 
   <!-- Navigation Buttons -->
   <button href="#about" id="about" class="menu-button">About</button>
@@ -41,15 +43,49 @@
   <button href="#newton" id="newton" class="menu-button">Newton</button>
   <button href="#brookline" id="brookline" class="menu-button">Brookline</button>
   <button id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
+  <button id="settings-toggle" class="menu-button" aria-haspopup="dialog">Accessibility</button>
 
   <!-- Search Bars -->
   <div class="search-bar-container">
-    <input type="text" class="search-bar" id="generic-search" placeholder="Select a resource...">
-    <div class="search-dropdown" id="generic-dropdown"></div>
+    <label for="generic-search" class="visually-hidden">Search buildings and campus resources</label>
+    <input type="text" class="search-bar" id="generic-search" placeholder="Search buildings and resources..."
+           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="generic-dropdown" autocomplete="off">
+    <div class="search-dropdown" id="generic-dropdown" role="listbox" aria-label="Search results"></div>
   </div>
 </div>
 
-    <div id="legend"></div>
+    <div id="legend" role="region" aria-label="Map layers"></div>
+
+<div id="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
+  <button type="button" class="close" id="settings-close" aria-label="Close accessibility settings">×</button>
+  <h2 id="settings-title">Accessibility settings</h2>
+  <p class="route-note">Saved on this device.</p>
+  <fieldset>
+    <legend>Directions</legend>
+    <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read directions aloud</label></div>
+    <div class="setting">
+      <label for="set-speechRate">Speaking speed</label>
+      <select id="set-speechRate"><option value="0.8">Slower</option><option value="1">Normal</option><option value="1.25">Faster</option><option value="1.5">Fastest</option></select>
+      <button type="button" id="set-testVoice">Test</button>
+    </div>
+    <p class="route-note">If you use a screen reader, you'll already hear each step, so you may want this off.</p>
+    <div class="setting"><input type="checkbox" id="set-headingUp"><label for="set-headingUp">In step-by-step mode, turn the map to face my direction of travel</label></div>
+    <div class="setting"><input type="checkbox" id="set-guidance3D"><label for="set-guidance3D">In step-by-step mode, show buildings in 3D</label></div>
+    <div class="setting"><input type="checkbox" id="set-vibrate"><label for="set-vibrate">Vibrate at each new step (Android phones)</label></div>
+  </fieldset>
+  <fieldset>
+    <legend>Display</legend>
+    <div class="setting">
+      <label for="set-highContrast">High contrast</label>
+      <select id="set-highContrast"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
+    </div>
+    <div class="setting"><input type="checkbox" id="set-largerText"><label for="set-largerText">Larger text</label></div>
+    <div class="setting">
+      <label for="set-reduceMotion">Reduce motion (no map animations)</label>
+      <select id="set-reduceMotion"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
+    </div>
+  </fieldset>
+</div>
 
 <section id="directions-panel" aria-labelledby="directions-title" hidden>
   <button type="button" id="directions-close" class="directions-close" aria-label="Close directions">×</button>
@@ -66,8 +102,56 @@
     <label for="route-to">To</label>
     <select id="route-to"></select>
   </div>
+  <details class="route-options">
+    <summary>Route options</summary>
+    <div class="route-check">
+      <input type="checkbox" id="opt-stairs" checked aria-describedby="opt-stairs-help">
+      <label for="opt-stairs">Avoid stairs</label>
+      <p id="opt-stairs-help" class="route-note">Turning this off also allows footpaths that haven't been checked for accessibility.</p>
+    </div>
+    <div class="route-field">
+      <label for="opt-indoor">Routes through buildings</label>
+      <select id="opt-indoor">
+        <option value="auto">Use when shorter</option>
+        <option value="prefer">Prefer (indoors, where the elevators are)</option>
+        <option value="avoid">Avoid (for example, after hours)</option>
+      </select>
+    </div>
+    <div class="route-field">
+      <label for="opt-slope">Steepest slope allowed</label>
+      <select id="opt-slope">
+        <option value="">No limit</option>
+        <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
+        <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
+      </select>
+    </div>
+  </details>
   <div id="route-result" aria-live="polite"></div>
-  <p class="route-legend"><span class="route-swatch"></span> Outdoors <span class="route-swatch indoor"></span> Indoors</p>
+  <div id="guidance" hidden>
+    <p id="guidance-progress" class="guidance-progress"></p>
+    <p id="guidance-instruction" class="guidance-instruction" aria-live="polite"></p>
+    <p id="guidance-detail" class="guidance-detail"></p>
+    <div class="guidance-nav">
+      <button type="button" id="guidance-prev">◀ Back</button>
+      <button type="button" id="guidance-next">Next ▶</button>
+    </div>
+    <div class="guidance-tools">
+      <button type="button" id="guidance-repeat">Repeat</button>
+      <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
+      <button type="button" id="guidance-exit">Exit step-by-step</button>
+    </div>
+    <p id="guidance-status" class="guidance-status" aria-live="polite"></p>
+    <p class="route-note">Use the arrow keys or swipe to move between steps.</p>
+  </div>
+  <ul class="route-legend" aria-label="Route line key">
+    <li><span class="route-swatch"></span>Outdoors</li>
+    <li><span class="route-swatch indoor"></span>Indoors</li>
+    <li><span class="route-swatch steep"></span>Steeper than 1:20</li>
+    <li><span class="route-swatch very-steep"></span>Steeper than 1:12</li>
+    <li><span class="route-swatch unreliable"></span>Slope unknown</li>
+    <li><span class="route-swatch stairs"></span>Stairs</li>
+  </ul>
+  <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
   <p id="route-coverage" class="route-note"></p>
 </section>
 

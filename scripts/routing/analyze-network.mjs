@@ -48,7 +48,7 @@ console.log(`Nodes: ${nodes.length}, segments: ${segments.length}, dangling endp
 
 for (const [label, joins] of [
   ['As drawn', []],
-  [`Joining gaps ≤ ${JOIN_GAP_M} m and exterior crossings (what the router does)`, [...gapJoins(JOIN_GAP_M), ...crossingJoins(['Exterior/Exterior'])]],
+  [`Joining gaps ≤ ${JOIN_GAP_M} m and exterior crossings (roughly what the router does; check-routes.mjs is exact)`, [...gapJoins(JOIN_GAP_M), ...crossingJoins(['Exterior/Exterior'])]],
   [`Also joining gaps ≤ ${REVIEW_GAP_M} m and interior crossings`, [...gapJoins(REVIEW_GAP_M), ...crossingJoins(['Exterior/Exterior', 'Interior/Interior'])]],
 ]) {
   const { list } = components(joins);

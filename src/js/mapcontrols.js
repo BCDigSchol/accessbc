@@ -5,6 +5,36 @@ function addMapControls(map) {
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true
     }), 'top-right');
+    map.addControl(new ThreeDControl(), 'top-right');
+}
+
+// Button that tilts the map to show buildings in 3D, and back. Tilting by hand also shows them.
+class ThreeDControl {
+    onAdd(map) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'three-d-toggle';
+        button.textContent = '3D';
+        button.setAttribute('aria-label', 'Show buildings in 3D');
+        button.addEventListener('click', () => {
+            moveMap(map, 'easeTo', map.getPitch() > 10 ? { pitch: 0, bearing: 0 } : { pitch: 60 });
+        });
+        const sync = () => {
+            const tilted = map.getPitch() > 10;
+            button.setAttribute('aria-pressed', String(tilted));
+            if (map.getLayer('buildings-3d')) map.setLayoutProperty('buildings-3d', 'visibility', tilted ? 'visible' : 'none');
+        };
+        map.on('pitch', sync);
+        sync();
+        this.container = document.createElement('div');
+        this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        this.container.appendChild(button);
+        return this.container;
+    }
+
+    onRemove() {
+        this.container.remove();
+    }
 }
 
 //LEGEND FUNCTIONS
@@ -26,7 +56,9 @@ const legendData = [
 // Make global variable for legend data
 window.legendData = legendData;
 
-//Creates the legend container and adds it to the map
+//Creates the legend container and adds it to the map. Every control is a real button, so the legend
+//works with a keyboard and screen readers: layer toggles report on/off (aria-pressed), and category
+//headers report expanded/collapsed (aria-expanded).
 function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear existing legend content
@@ -36,50 +68,43 @@ function createLegend(containerId, legendData, map) {
     content.classList.add('legend-content');
     legendContainer.appendChild(content);
 
+    const setItem = (item, visible) => {
+        item.classList.toggle('disabled', !visible);
+        item.setAttribute('aria-pressed', String(visible));
+    };
+
     // Add "collapse all" toggle button
     const collapseAllBtn = document.createElement('button');
+    collapseAllBtn.type = 'button';
     collapseAllBtn.textContent = 'Collapse all ▼';
-    collapseAllBtn.style.background = 'none';
-    collapseAllBtn.style.border = 'none';
-    collapseAllBtn.style.color = '#888';
-    collapseAllBtn.style.fontStyle = 'italic';
-    collapseAllBtn.style.cursor = 'pointer';
-    collapseAllBtn.style.marginBottom = '0.5rem';
-    collapseAllBtn.style.alignSelf = 'flex-end';
+    collapseAllBtn.setAttribute('aria-expanded', 'true');
     collapseAllBtn.classList.add('legend-collapse-all-btn');
 
     let legendCollapsed = false;
 
     collapseAllBtn.addEventListener('click', () => {
-    legendCollapsed = !legendCollapsed;
+        legendCollapsed = !legendCollapsed;
 
-    const allSections = content.querySelectorAll('.legend-section');
-
-    allSections.forEach(section => {
-        const itemsContainer = section.querySelector('.legend-category-content');
-        const toggleSpan = section.querySelector('span:last-child');
-        if (legendCollapsed) {
-            itemsContainer.classList.add('collapsed');
-        } else {
-            itemsContainer.classList.remove('collapsed');
-        }
-    });
-
-    // Update all legend items and toggle map layer visibility
-    legendData.forEach(layer => {
-        const item = content.querySelector(`[data-layer-id="${layer.id}"]`);
-        if (item) {
-            if (legendCollapsed) {
-                map.setLayoutProperty(layer.id, 'visibility', 'none');
-                item.classList.add('disabled');
-            } else {
-                map.setLayoutProperty(layer.id, 'visibility', 'visible');
-                item.classList.remove('disabled');
+        content.querySelectorAll('.legend-section').forEach(section => {
+            section.querySelector('.legend-category-content').classList.toggle('collapsed', legendCollapsed);
+            const toggle = section.querySelector('.legend-category-toggle');
+            if (toggle) {
+                toggle.setAttribute('aria-expanded', String(!legendCollapsed));
+                toggle.querySelector('.legend-arrow').textContent = legendCollapsed ? '►' : '▼';
             }
-        }
-    });
+        });
 
-    collapseAllBtn.textContent = legendCollapsed ? 'Expand all ►' : 'Collapse all ▼';
+        // Update all legend items and toggle map layer visibility
+        legendData.forEach(layer => {
+            const item = content.querySelector(`[data-layer-id="${layer.id}"]`);
+            if (item) {
+                map.setLayoutProperty(layer.id, 'visibility', legendCollapsed ? 'none' : 'visible');
+                setItem(item, !legendCollapsed);
+            }
+        });
+
+        collapseAllBtn.textContent = legendCollapsed ? 'Expand all ►' : 'Collapse all ▼';
+        collapseAllBtn.setAttribute('aria-expanded', String(!legendCollapsed));
     });
 
     content.appendChild(collapseAllBtn);
@@ -97,47 +122,44 @@ function createLegend(containerId, legendData, map) {
         }
     });
     //Handle toggle and visibility functions for legend items and categories
-    Object.keys(categories).forEach(categoryName => {
+    Object.keys(categories).forEach((categoryName, index) => {
         const section = document.createElement('div');
         section.classList.add('legend-section');
 
-        const header = document.createElement('h4');
+        const itemsId = `legend-category-${index}`;
+        const header = document.createElement('h3');
         header.classList.add('legend-subheader');
-        
-        const toggleSpan = document.createElement('span');
-        toggleSpan.textContent = '▼';
-        toggleSpan.style.marginLeft = '0.5rem';
-        toggleSpan.style.cursor = 'pointer';
-
-        const headerLabel = document.createElement('span');
-        headerLabel.textContent = categoryName;
-        headerLabel.classList.add('legend-category-label');
-        headerLabel.style.cursor = 'pointer';
-        headerLabel.style.fontWeight = 'bold';
-
-        header.textContent = '';
-        header.appendChild(headerLabel);
-        header.appendChild(toggleSpan);
-
-        header.appendChild(toggleSpan);
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.classList.add('legend-category-toggle');
+        toggle.setAttribute('aria-expanded', 'true');
+        toggle.setAttribute('aria-controls', itemsId);
+        toggle.innerHTML = `<span class="legend-category-label"></span><span class="legend-arrow" aria-hidden="true">▼</span>`;
+        toggle.querySelector('.legend-category-label').textContent = categoryName;
+        header.appendChild(toggle);
         section.appendChild(header);
 
         const itemsContainer = document.createElement('div');
         itemsContainer.classList.add('legend-category-content');
+        itemsContainer.id = itemsId;
 
         categories[categoryName].forEach(layer => {
-            const item = document.createElement('div');
+            const item = document.createElement('button');
+            item.type = 'button';
             item.classList.add('legend-item');
             item.dataset.layerId = layer.id;
+            setItem(item, true);
 
             if (layer.icon) {
                 const icon = document.createElement('img');
                 icon.src = layer.icon;
+                icon.alt = '';
                 icon.classList.add('legend-icon');
                 item.appendChild(icon);
             } else if (layer.color) {
-                const colorBox = document.createElement('div');
+                const colorBox = document.createElement('span');
                 colorBox.classList.add('legend-color-box');
+                colorBox.setAttribute('aria-hidden', 'true');
                 colorBox.style.backgroundColor = layer.color;
                 item.appendChild(colorBox);
             }
@@ -147,43 +169,32 @@ function createLegend(containerId, legendData, map) {
             item.appendChild(label);
 
             item.addEventListener('click', () => {
-                const layerId = layer.id;
-                const visibility = map.getLayoutProperty(layerId, 'visibility');
-
-                if (visibility === 'none') {
-                    map.setLayoutProperty(layerId, 'visibility', 'visible');
-                    item.classList.remove('disabled');
-                } else {
-                    map.setLayoutProperty(layerId, 'visibility', 'none');
-                    item.classList.add('disabled');
-                }
+                const visible = map.getLayoutProperty(layer.id, 'visibility') === 'none';
+                map.setLayoutProperty(layer.id, 'visibility', visible ? 'visible' : 'none');
+                setItem(item, visible);
             });
 
-                    itemsContainer.appendChild(item);
-                });
+            itemsContainer.appendChild(item);
+        });
 
         section.appendChild(itemsContainer);
         content.appendChild(section);
 
-        // Handle clicking either the category label or the arrow
-        header.addEventListener('click', () => {
-     
+        // The category header hides or shows all of its layers, and collapses or expands the list
+        toggle.addEventListener('click', () => {
             const allLayers = categories[categoryName];
             const anyVisible = allLayers.some(layer => map.getLayoutProperty(layer.id, 'visibility') !== 'none');
 
             allLayers.forEach(layer => {
                 const visibility = anyVisible ? 'none' : 'visible';
                 map.setLayoutProperty(layer.id, 'visibility', visibility);
-
-   
                 const item = itemsContainer.querySelector(`[data-layer-id="${layer.id}"]`);
-                if (item) {
-                    item.classList.toggle('disabled', visibility === 'none');
-                }
+                if (item) setItem(item, visibility === 'visible');
             });
 
             const isCollapsed = itemsContainer.classList.toggle('collapsed');
-            toggleSpan.textContent = isCollapsed ? '►' : '▼';
+            toggle.setAttribute('aria-expanded', String(!isCollapsed));
+            toggle.querySelector('.legend-arrow').textContent = isCollapsed ? '►' : '▼';
         });
     });
 }

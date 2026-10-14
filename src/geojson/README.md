@@ -30,6 +30,16 @@ rebuilt geometry was checked against the measurements ArcGIS stored on each feat
 - `paths`: every length is within 1.3% of `Shape_Length` (degrees).
 - `accessiblepaths`: every length is within 3% of `Shape_Le_1` (ft).
 
+## Building heights
+
+`buildings.height_m` is each building's height in metres above the surrounding ground, measured from the
+USGS 3DEP lidar survey *MA_CentralEastern_1_2021* (public domain) by
+[scripts/lidar/derive-building-heights.py](../../scripts/lidar/derive-building-heights.py): the median elevation
+of lidar points classified as building inside the footprint, minus the median of ground points 3–15 m outside it.
+It's the main roof height, so towers and spires aren't included. 258 of 298 buildings have one; the other 40 are
+small garages and sheds with too few lidar points, so they're `null` (the 3D view shows them at 3 m). Re-run
+the script after adding or reshaping buildings.
+
 ## Known quirks
 
 - Field names were cut to 10 characters by the shapefile export (`Descriptio`, `Food_dinin`,

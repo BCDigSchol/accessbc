@@ -1,158 +1,130 @@
-//There are 2 types of content in search bar:
-// Predefined: based on building attributes fields like dining, single-use restrooms, lactation rooms, etc, which can be associated with multiple buildings.
-// Description: based on the building description field, which splits up each named resource in the description field into a separate option in the search bar, associated with only one building
+// Search box (an accessible combobox: arrow keys move through suggestions, Enter picks, Escape closes).
+// There are 3 kinds of suggestion:
+// - Building: a building name. Picking one zooms to it and opens its information.
+// - Predefined: building attribute fields like dining, single-use restrooms, lactation rooms, etc., which can
+//   be associated with multiple buildings.
+// - Description: each named resource in a building's description field, associated with only one building.
 
 document.addEventListener('DOMContentLoaded', function () {
-  // Predefined options added to dropdown
-  const predefinedOptions = [
-    'Vending Machines', 'Cafes', 'Dining',
-    'Lactation Rooms', 'Single-use Restrooms',
-    'Group Seating', 'Individual Seating', 'Printing'
-  ];
+  // Predefined options added to dropdown, with the building field each one filters on
+  const predefinedOptions = {
+    'Vending Machines': 'Food_vend', 'Cafes': 'Food_cafe', 'Dining': 'Food_dinin',
+    'Lactation Rooms': 'Lactation', 'Single-use Restrooms': 'Single_res',
+    'Group Seating': 'Seating_gr', 'Individual Seating': 'Seating_in', 'Printing': 'Printing'
+  };
+  const excludedStrings = ['Student Resources:', 'Academic Programs:', 'Dining Options:'];
 
   const searchBar = document.getElementById('generic-search');
   const searchDropdown = document.getElementById('generic-dropdown');
+  let buildings = []; // all building features, from the GeoJSON rather than the currently loaded map tiles
+  let options = []; // {label, kind, value} currently shown
+  let active = -1;
 
-  searchBar.addEventListener('input', function () {
-    updateDropdown(this.value);
-  });
-  searchBar.addEventListener('focus', function () {
-    updateDropdown('');
-  });
+  fetch('src/geojson/buildings.geojson').then((r) => r.json()).then((data) => { buildings = data.features; });
 
-  // Splits building description into individual resources to add to dropdown
-  function updateDropdown(query) {
-    searchDropdown.innerHTML = '';
-
-    const allFeatures = map.querySourceFeatures('buildings');
-
-    const resources = new Set();
-    const excludedStrings = [
-      'Student Resources:', 'Academic Programs:', 'Dining Options:'
-    ];
-
-    allFeatures.forEach(feature => {
-      const description = feature.properties.Descriptio || '';
-      const resourceList = description.split('\n');
-      resourceList.forEach(resource => {
-        if (
-          resource.trim() &&
-          !excludedStrings.includes(resource.trim()) &&
-          resource.toLowerCase().includes(query.toLowerCase())
-        ) {
-          resources.add(resource.trim());
-        }
+  function allOptions() {
+    const names = new Set(), resources = new Set();
+    buildings.forEach(feature => {
+      const name = (feature.properties.NAME || '').trim();
+      if (name) names.add(name);
+      (feature.properties.Descriptio || '').split('\n').forEach(resource => {
+        if (resource.trim() && !excludedStrings.includes(resource.trim())) resources.add(resource.trim());
       });
     });
+    return [
+      ...Object.keys(predefinedOptions).map(label => ({ label, kind: 'Find all', value: label })),
+      ...[...names].sort((a, b) => a.localeCompare(b)).map(label => ({ label, kind: 'Building', value: label })),
+      ...[...resources].map(label => ({ label, kind: 'In a building', value: label })),
+    ];
+  }
 
-    const combinedOptions = [...predefinedOptions, ...resources];
-    const filteredOptions = combinedOptions.filter(option =>
-      option.toLowerCase().includes(query.toLowerCase())
-    );
-
-    if (filteredOptions.length > 0) {
-      searchDropdown.style.display = 'block';
-      filteredOptions.forEach(option => {
-        const div = document.createElement('div');
-        div.textContent = option;
-        div.addEventListener('click', () => {
-          handleSelection(option);
-        });
-        searchDropdown.appendChild(div);
-      });
-    } else {
-      searchDropdown.style.display = 'none';
+  function setOpen(open) {
+    searchDropdown.style.display = open ? 'block' : 'none';
+    searchBar.setAttribute('aria-expanded', String(open));
+    if (!open) {
+      active = -1;
+      searchBar.removeAttribute('aria-activedescendant');
     }
   }
 
+  function updateDropdown(query) {
+    const q = query.toLowerCase();
+    options = allOptions().filter(option => option.label.toLowerCase().includes(q));
+    searchDropdown.innerHTML = '';
+    active = -1;
+    searchBar.removeAttribute('aria-activedescendant');
+    options.forEach((option, i) => {
+      const div = document.createElement('div');
+      div.id = `search-option-${i}`;
+      div.setAttribute('role', 'option');
+      div.setAttribute('aria-selected', 'false');
+      div.innerHTML = '<span class="search-option-label"></span><span class="search-option-kind"></span>';
+      div.querySelector('.search-option-label').textContent = option.label;
+      div.querySelector('.search-option-kind').textContent = `, ${option.kind}`;
+      div.addEventListener('mousedown', (e) => e.preventDefault()); // keep focus in the search box
+      div.addEventListener('click', () => handleSelection(option));
+      searchDropdown.appendChild(div);
+    });
+    setOpen(options.length > 0);
+  }
+
+  function setActive(i) {
+    const items = searchDropdown.querySelectorAll('[role="option"]');
+    if (!items.length) return;
+    active = (i + items.length) % items.length;
+    items.forEach((item, k) => item.setAttribute('aria-selected', String(k === active)));
+    searchBar.setAttribute('aria-activedescendant', items[active].id);
+    items[active].scrollIntoView({ block: 'nearest' });
+  }
+
+  searchBar.addEventListener('input', function () { updateDropdown(this.value); });
+  searchBar.addEventListener('click', function () { updateDropdown(this.value); });
+  searchBar.addEventListener('keydown', (e) => {
+    const open = searchDropdown.style.display === 'block';
+    if (e.key === 'ArrowDown') { e.preventDefault(); if (!open) updateDropdown(searchBar.value); setActive(active + 1); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); if (open) setActive(active - 1); }
+    else if (e.key === 'Enter' && open && active >= 0) { e.preventDefault(); handleSelection(options[active]); }
+    else if (e.key === 'Escape') { setOpen(false); }
+  });
+
   function handleSelection(option) {
-    searchBar.value = option;
-    searchDropdown.style.display = 'none';
-    applyFilter(option);
+    searchBar.value = option.label;
+    setOpen(false);
+    if (option.kind === 'Find all') applyFilter(predefinedOptions[option.value]);
+    else if (option.kind === 'Building') showBuilding(buildings.find(f => (f.properties.NAME || '').trim() === option.value), true);
+    else showBuilding(buildings.find(f => (f.properties.Descriptio || '').includes(option.value)), false);
   }
 
   document.addEventListener('click', function (event) {
-    if (
-      !searchBar.contains(event.target) &&
-      !searchDropdown.contains(event.target)
-    ) {
-      searchDropdown.style.display = 'none';
-    }
+    if (!searchBar.contains(event.target) && !searchDropdown.contains(event.target)) setOpen(false);
   });
-  // Handles filtering to highlight buildings based on the selected option
-  function applyFilter(option) {
-    let filterField = '';
-    switch (option) {
-      case 'Lactation Rooms': filterField = 'Lactation'; break;
-      case 'Single-use Restrooms': filterField = 'Single_res'; break;
-      case 'Group Seating': filterField = 'Seating_gr'; break;
-      case 'Individual Seating': filterField = 'Seating_in'; break;
-      case 'Printing': filterField = 'Printing'; break;
-      case 'Vending Machines': filterField = 'Food_vend'; break;
-      case 'Cafes': filterField = 'Food_cafe'; break;
-      case 'Dining': filterField = 'Food_dinin'; break;
-      default: handleResourceSelection(option); return;
-    }
-    // Highlights building if they have 'Yes' for the predefined fields
-    map.setFilter('buildings-highlighted', ['==', ['get', filterField], 'Yes']);
-    map.setPaintProperty('buildings-highlighted', 'fill-color', [
-      'case',
-      ['==', ['get', filterField], 'Yes'],
-      '#994E95',
-      'rgba(0, 0, 0, 0)'
-    ]);
-    map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
-      'case',
-      ['==', ['get', filterField], 'Yes'],
-      0.75,
-      0
-    ]);
+
+  function highlight(filter) {
+    map.setFilter('buildings-highlighted', filter);
+    map.setPaintProperty('buildings-highlighted', 'fill-color', '#994E95');
+    map.setPaintProperty('buildings-highlighted', 'fill-opacity', 0.75);
     map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
   }
-  // Highlights building if the description selected from dropdown is found in the building description field
-  function handleResourceSelection(resource) {
-    const allFeatures = map.querySourceFeatures('buildings');
 
-    const selectedFeature = allFeatures.find(feature => {
-      const description = feature.properties.Descriptio || '';
-      return description.includes(resource);
-    });
+  // Highlights buildings that have 'Yes' for a predefined field
+  function applyFilter(field) {
+    highlight(['==', ['get', field], 'Yes']);
+  }
 
-    if (selectedFeature) {
-      const featureName = selectedFeature.properties.NAME;
+  // Highlights and zooms to one building; optionally opens its information too
+  function showBuilding(feature, openInfo) {
+    if (!feature) return clearHighlight();
+    highlight(['==', ['get', 'NAME'], feature.properties.NAME]);
+    const polygons = feature.geometry.type === 'Polygon' ? [feature.geometry.coordinates] : feature.geometry.coordinates;
+    const bounds = new maplibregl.LngLatBounds();
+    polygons.forEach(polygon => polygon[0].forEach(coord => bounds.extend(coord)));
+    moveMap(map, 'fitBounds', { bounds, padding: 50, maxZoom: 17 });
+    if (openInfo) openBuildingInfo(feature.properties);
+  }
 
-      map.setFilter('buildings-highlighted', ['==', ['get', 'NAME'], featureName]);
-      map.setPaintProperty('buildings-highlighted', 'fill-color', [
-        'case',
-        ['==', ['get', 'NAME'], featureName],
-        '#994E95',
-        'rgba(0, 0, 0, 0)'
-      ]);
-      map.setPaintProperty('buildings-highlighted', 'fill-opacity', [
-        'case',
-        ['==', ['get', 'NAME'], featureName],
-        0.75,
-        0
-      ]);
-
-      // Zooms map to the selected buildings (Description field only)
-      let coordinates = selectedFeature.geometry.coordinates;
-      let bounds = new maplibregl.LngLatBounds();
-
-      if (selectedFeature.geometry.type === 'Polygon') {
-        coordinates[0].forEach(coord => bounds.extend(coord));
-      } else if (selectedFeature.geometry.type === 'MultiPolygon') {
-        coordinates.forEach(polygon =>
-          polygon[0].forEach(coord => bounds.extend(coord))
-        );
-      }
-
-      map.fitBounds(bounds, { padding: 50, maxZoom: 17 });
-      map.setLayoutProperty('buildings-highlighted', 'visibility', 'visible');
-    } else {
-      map.setFilter('buildings-highlighted', ['==', 'NAME', '']);
-      map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
-    }
+  function clearHighlight() {
+    map.setFilter('buildings-highlighted', ['==', ['get', 'NAME'], '']);
+    map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
   }
 
   //Clears highlighted buildings
@@ -161,14 +133,12 @@ document.addEventListener('DOMContentLoaded', function () {
   clearBtn.id = 'searchbar-clear-btn';
   clearBtn.style.marginLeft = '8px';
   clearBtn.type = 'button';
-  searchBar.parentNode.insertBefore(clearBtn, searchBar.nextSibling);
+  clearBtn.setAttribute('aria-label', 'Clear search');
+  searchBar.parentNode.insertBefore(clearBtn, searchDropdown.nextSibling);
 
   clearBtn.addEventListener('click', function () {
     searchBar.value = '';
-    searchDropdown.style.display = 'none';
-    map.setFilter('buildings-highlighted', ['==', 'NAME', '']);
-    map.setLayoutProperty('buildings-highlighted', 'visibility', 'none');
+    setOpen(false);
+    clearHighlight();
   });
 });
-
-

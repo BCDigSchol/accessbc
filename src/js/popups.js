@@ -59,68 +59,67 @@ function addPopupHandlers(map) {
     });
 }
 
+// Building information dialog. Opened by clicking a building on the map, or by picking a building in the
+// search box (so it's reachable without the map). Focus moves into it, Escape closes it, and focus returns
+// to wherever it was before.
+let buildingInfoReturnFocus = null;
+const escapeText = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+function openBuildingInfo(properties) {
+  const buildingName = (properties.NAME || '').trim() || 'Unknown Building';
+  const description = properties.Descriptio || '';
+
+  // Each description line becomes a paragraph; the section headers are bold
+  const headers = ['Academic Programs:', 'Dining Options:', 'Student Resources:'];
+  const descriptionHtml = description.split('\n').map(line => line.trim()).filter(Boolean).map(line =>
+    headers.includes(line) ? `<p><strong>${escapeText(line)}</strong></p>` : `<p>${escapeText(line)}</p>`
+  ).join('');
+
+  // Directions buttons, only for buildings with an accessible entrance on the path network
+  const directionsHtml = isRoutable(buildingName) ? `
+    <div class="popup-directions">
+      <button type="button" data-route-from="${escapeText(buildingName)}">Directions from here</button>
+      <button type="button" data-route-to="${escapeText(buildingName)}">Directions to here</button>
+    </div>` : '';
+
+  document.getElementById('building-info').innerHTML = `
+    <button type="button" class="close" id="building-popup-close" aria-label="Close building information">×</button>
+    <h2 id="building-name">${escapeText(buildingName)}</h2>
+    ${descriptionHtml}
+    ${directionsHtml}
+  `;
+  const popup = document.getElementById('building-popup');
+  if (!popup.classList.contains('visible')) buildingInfoReturnFocus = document.activeElement;
+  popup.classList.add('visible');
+  document.getElementById('building-popup-close').focus();
+}
+
+function closeBuildingInfo() {
+  const popup = document.getElementById('building-popup');
+  if (!popup.classList.contains('visible')) return;
+  popup.classList.remove('visible');
+  if (buildingInfoReturnFocus && document.contains(buildingInfoReturnFocus)) buildingInfoReturnFocus.focus();
+  buildingInfoReturnFocus = null;
+}
+
 // Handles popups for building to display building description
 function addBuildingHandler(map) {
   map.on('click', 'buildings', (e) => {
-    const features = map.queryRenderedFeatures(e.point, {
-      layers: ['buildings']
-    });
-
-    if (!features.length) {
-      return;
-    }
-
-    const feature = features[0];
-    const buildingName = feature.properties.NAME || 'Unknown Building';
-    const description = feature.properties.Descriptio || '';
-    
-    // Split description by line breaks into an array of lines
-    const descriptionLines = description.split('\n');
-    
-    // Map through each line of the description and create a list of paragraphs
-    const descriptionHtml = descriptionLines.map(line => {
-      // Check for description headers to bold them
-      if (line.trim() === 'Academic Programs:' || line.trim() === 'Dining Options:' || line.trim() === 'Student Resources:') {
-        return `<p><strong>${line.trim()}</strong></p>`;
-        }
-        return `<p>${line.trim()}</p>`;
-    }).join('');
-
-    // Directions buttons, only for buildings with an accessible entrance on the path network
-    const nameAttr = buildingName.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
-    const directionsHtml = isRoutable(buildingName) ? `
-      <div class="popup-directions">
-        <button type="button" data-route-from="${nameAttr}">Directions from here</button>
-        <button type="button" data-route-to="${nameAttr}">Directions to here</button>
-      </div>` : '';
-
-    const buildingInfo = `
-      <div class="close" id="building-popup-close">x</div>
-      <h2>${buildingName}</h2>
-      ${descriptionHtml} <!-- Inject the description with line breaks handled -->
-      ${directionsHtml}
-    `;
-
-    document.getElementById('building-info').innerHTML = buildingInfo;
-    document.getElementById('building-popup').classList.add('visible');
+    const features = map.queryRenderedFeatures(e.point, { layers: ['buildings'] });
+    if (features.length) openBuildingInfo(features[0].properties);
   });
 
   // Hide building popup when user clicks away from the buildings
   map.on('click', (e) => {
-    const features = map.queryRenderedFeatures(e.point, {
-      layers: ['buildings']
-    });
-
-    if (!features.length) {
-      document.getElementById('building-popup').classList.remove('visible');
-    }
+    if (!map.queryRenderedFeatures(e.point, { layers: ['buildings'] }).length) closeBuildingInfo();
   });
 
-  // Hide building popup when the close element is clicked
+  // Hide building popup when the close button is clicked, or Escape is pressed
   document.addEventListener('click', (e) => {
-    if (e.target && e.target.id === 'building-popup-close') {
-      document.getElementById('building-popup').classList.remove('visible');
-    }
+    if (e.target && e.target.id === 'building-popup-close') closeBuildingInfo();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeBuildingInfo();
   });
   // Mouse cursor styling
   map.on('mouseenter', 'buildings', () => {
