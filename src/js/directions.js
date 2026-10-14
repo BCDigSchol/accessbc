@@ -26,6 +26,7 @@ async function setupDirections(map) {
   routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null };
 
   addRouteLayers(map);
+  loadRoutePoints(); // full copies of the point layers, for showing only those near a route
   restoreOptions();
   populateBuildingSelects();
   for (const id of ['opt-stairs', 'opt-indoor', 'opt-slope']) {
@@ -55,6 +56,14 @@ async function setupDirections(map) {
   });
   from.addEventListener('change', () => updateRoute(map));
   to.addEventListener('change', () => updateRoute(map));
+
+  // Show only the map features along the route, or all of them
+  document.addEventListener('change', (e) => {
+    if (e.target.id !== 'route-focus') return;
+    focusOnRoute = e.target.checked;
+    if (focusOnRoute && routing.routeCoordinates) showOnlyPointsNear(map, routing.routeCoordinates);
+    else showAllPoints(map);
+  });
 
   // "Directions from/to here" buttons in the building popup
   document.addEventListener('click', (e) => {
@@ -233,6 +242,45 @@ function clearRoute(map) {
   map.getSource('route').setData({ type: 'FeatureCollection', features: [] });
   routeMarkers.forEach((m) => m.remove());
   routeMarkers = [];
+  showAllPoints(map);
+}
+
+// While a route is shown, point layers show only features near it, to cut the noise. How near depends on
+// the feature: curb cuts and entrances on the route itself, blue-light phones and shuttle stops a little
+// further. Each source's data is swapped for the nearby subset (the seating layer is clustered, so a
+// filter wouldn't work) and put back when the route is cleared or the option is turned off.
+const ROUTE_POINT_RADIUS_M = { entrances: 15, elevators: 15, curbcuts: 12, bluelights: 40, reststop: 30, shuttlestops: 60, bikeracks: 20 };
+let routePoints = null; // source name -> full FeatureCollection
+let pointsFiltered = false;
+let focusOnRoute = true;
+
+async function loadRoutePoints() {
+  const base = new URL('src/geojson/', document.baseURI).href;
+  const entries = await Promise.all(Object.keys(ROUTE_POINT_RADIUS_M).map(async (name) => [name, await (await fetch(`${base}${name}.geojson`)).json()]));
+  routePoints = Object.fromEntries(entries);
+}
+
+function showOnlyPointsNear(map, coordinates) {
+  if (!routePoints || !focusOnRoute) return;
+  const { proj, nearestOnSegment } = routing.module;
+  const line = coordinates.map(proj);
+  const distanceToRoute = (p) => {
+    let d = Infinity;
+    for (let i = 1; i < line.length; i++) d = Math.min(d, nearestOnSegment(p, line[i - 1], line[i]).d);
+    return d;
+  };
+  for (const [name, collection] of Object.entries(routePoints)) {
+    const radius = ROUTE_POINT_RADIUS_M[name];
+    const near = collection.features.filter((f) => f.geometry && distanceToRoute(proj(f.geometry.coordinates)) <= radius);
+    map.getSource(name)?.setData({ type: 'FeatureCollection', features: near });
+  }
+  pointsFiltered = true;
+}
+
+function showAllPoints(map) {
+  if (!routePoints || !pointsFiltered) return;
+  for (const [name, collection] of Object.entries(routePoints)) map.getSource(name)?.setData(collection);
+  pointsFiltered = false;
 }
 
 async function updateRoute(map) {
@@ -244,6 +292,7 @@ async function updateRoute(map) {
   const toValue = document.getElementById('route-to').value;
   stopGuidance(map);
   routing.current = null;
+  routing.routeCoordinates = null;
   clearRoute(map);
   if (!fromValue || !toValue) return showResult('');
   if (fromValue === toValue) return showResult('<p>Choose two different buildings.</p>');
@@ -309,6 +358,8 @@ async function updateRoute(map) {
   await addSlopes(description);
   if (request !== routeRequest) return;
   drawRoute(map, description);
+  routing.routeCoordinates = description.steps.flatMap((st) => st.coordinates);
+  showOnlyPointsNear(map, routing.routeCoordinates);
 
   const steps = description.steps.map((step, i) => {
     if (step.type === 'stairs') return `<li>Take the stairs: ${feet(step.length)}</li>`;
@@ -330,6 +381,7 @@ async function updateRoute(map) {
     ${unmet}
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
     <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
+    <div class="route-check"><input type="checkbox" id="route-focus" ${focusOnRoute ? 'checked' : ''}><label for="route-focus">Only show map features along this route</label></div>
     ${stairsNote}
     ${slopeSummary(description)}
     <ol class="route-steps">${leave}${steps.join('')}<li>Arrive at the accessible entrance of ${escapeHtml(toValue)}</li></ol>`);

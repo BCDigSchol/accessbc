@@ -955,3 +955,7 @@ html.high-contrast a {
     display: none !important;
   }
 }
+
+#route-result .route-check {
+  margin: 0.25rem 0 0.75rem;
+}
