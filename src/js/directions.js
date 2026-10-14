@@ -245,11 +245,14 @@ function clearRoute(map) {
   showAllPoints(map);
 }
 
-// While a route is shown, point layers show only features near it, to cut the noise. How near depends on
+// While a route is shown, point layers show only features near it and path lines are dimmed, to cut the noise. How near depends on
 // the feature: curb cuts and entrances on the route itself, blue-light phones and shuttle stops a little
 // further. Each source's data is swapped for the nearby subset (the seating layer is clustered, so a
 // filter wouldn't work) and put back when the route is cleared or the option is turned off.
 const ROUTE_POINT_RADIUS_M = { entrances: 15, elevators: 15, curbcuts: 12, bluelights: 40, reststop: 30, shuttlestops: 60, bikeracks: 20 };
+const DIMMED_PATH_LAYERS = ['accessiblepaths-ext', 'accessiblepaths-int', 'paths'];
+const DIMMED_OPACITY = 0.25;
+let pathOpacity = null; // each path layer's own line-opacity, kept while dimmed
 let routePoints = null; // source name -> full FeatureCollection
 let pointsFiltered = false;
 let focusOnRoute = true;
@@ -274,12 +277,25 @@ function showOnlyPointsNear(map, coordinates) {
     const near = collection.features.filter((f) => f.geometry && distanceToRoute(proj(f.geometry.coordinates)) <= radius);
     map.getSource(name)?.setData({ type: 'FeatureCollection', features: near });
   }
+  // Dim the path lines so the route stands out; the layers' own opacity rules (e.g. interior vs. exterior)
+  // are kept and scaled down.
+  if (!pathOpacity) {
+    pathOpacity = Object.fromEntries(DIMMED_PATH_LAYERS.map((id) => [id, map.getPaintProperty(id, 'line-opacity')]));
+    for (const [id, opacity] of Object.entries(pathOpacity)) {
+      const own = opacity ?? 1; // undefined means the layer uses the default, fully opaque
+      map.setPaintProperty(id, 'line-opacity', typeof own === 'number' ? own * DIMMED_OPACITY : ['*', DIMMED_OPACITY, own]);
+    }
+  }
   pointsFiltered = true;
 }
 
 function showAllPoints(map) {
   if (!routePoints || !pointsFiltered) return;
   for (const [name, collection] of Object.entries(routePoints)) map.getSource(name)?.setData(collection);
+  if (pathOpacity) {
+    for (const [id, opacity] of Object.entries(pathOpacity)) map.setPaintProperty(id, 'line-opacity', opacity);
+    pathOpacity = null;
+  }
   pointsFiltered = false;
 }
 
