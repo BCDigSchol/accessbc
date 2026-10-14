@@ -19,6 +19,7 @@ const SNAP_TO_PATH_M = 40; // a point feature counts if it's this close to a map
 const NEARBY_RESULTS = 5;
 let nearbyResults = [];
 let nearbyMarker = null;
+let nearbyFromYou = false; // whether the last search measured from your location
 
 // Candidate places for a kind on a graph: [{label, building?, lonlat, nodes, offset}], cached per graph.
 function nearbyCandidates(graph, kind) {
@@ -60,7 +61,7 @@ async function findNearby(map) {
   out.innerHTML = '<p>Searching…</p>';
 
   // Where to measure from
-  let sources, startOffset = 0, fromWhat;
+  let sources, startOffset = 0, fromWhat, notice = '', start;
   if (near === 'route') {
     if (!routing.current) return (out.innerHTML = '<p>Find a route first, then search along it.</p>');
     sources = routing.current.route.nodes;
@@ -71,14 +72,29 @@ async function findNearby(map) {
     sources = graph.entrances.filter((e) => e.building === from).map((e) => e.node);
     fromWhat = from;
   } else {
-    let here;
+    out.innerHTML = '<p>Finding your location…</p>';
+    // If your location can't be used, search near your starting building instead when there is one
+    const fromBuilding = document.getElementById('route-from').value;
+    const fallback = fromBuilding && fromBuilding !== MY_LOCATION && fromBuilding !== HERE && fromBuilding !== PLACE ? fromBuilding : null;
+    const instead = fallback
+      ? ` Showing what's nearest to ${escapeHtml(fallback)} (your starting building) instead.`
+      : ' To search anyway, choose a building under From and set Near to “My starting building”.';
+    let here, problem = null;
     try {
       here = await getPosition();
+      start = module.nearestNode(graph, here);
+      if (start.d > MAX_START_DISTANCE_M) problem = `You're ${feet(start.d)} from the nearest mapped campus path, so walking distances from you can't be measured.`;
     } catch {
-      return (out.innerHTML = '<p>Your location isn’t available. Check that location access is allowed, or search near your starting building.</p>');
+      problem = 'Your location isn’t available. Check that location access is allowed for this site and turned on for your browser.';
     }
-    const start = module.nearestNode(graph, here);
-    if (start.d > MAX_START_DISTANCE_M) return (out.innerHTML = `<p>You're ${feet(start.d)} from the nearest mapped path, so walking distances can't be measured.</p>`);
+    if (problem) {
+      if (!fallback) return (out.innerHTML = `<p>${problem}${instead}</p>`);
+      notice = `<p class="nearby-notice">${problem}${instead}</p>`;
+      sources = graph.entrances.filter((e) => e.building === fallback).map((e) => e.node);
+      fromWhat = fallback;
+    }
+  }
+  if (near === 'me' && !notice) {
     sources = [start.node];
     startOffset = start.d;
     fromWhat = 'you';
@@ -91,15 +107,18 @@ async function findNearby(map) {
     .filter((c) => Number.isFinite(c.distance))
     .sort((a, b) => a.distance - b.distance)
     .slice(0, NEARBY_RESULTS);
+  nearbyFromYou = fromWhat === 'you';
 
   const label = NEARBY_KINDS[kind].label.toLowerCase();
   if (!nearbyResults.length) {
-    out.innerHTML = `<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`;
+    out.innerHTML = `${notice}<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`;
     return;
   }
   const along = fromWhat === 'route';
   // Along a route, the start and destination buildings are already on it: say so, rather than offer them as stops.
-  const ends = along ? { [document.getElementById('route-from').value]: 'your starting building', [routing.current.to]: 'your destination' } : {};
+  const ends = along
+    ? { [document.getElementById('route-from').value]: 'your starting building', [routing.current.to]: 'your destination' }
+    : fromWhat !== 'you' ? { [fromWhat]: 'in your starting building' } : {};
   const items = nearbyResults.map((r, i) => {
     const end = r.building && ends[r.building];
     const how = end || (along ? (r.distance < 15 ? 'on your route' : `${feet(r.distance)} off your route`) : `${feet(r.distance)} walk`);
@@ -112,7 +131,7 @@ async function findNearby(map) {
       </span>
     </li>`;
   });
-  out.innerHTML = `<p class="nearby-heading">Nearest ${label}${along ? ' along your route' : ''}:</p><ol class="nearby-list">${items.join('')}</ol>`;
+  out.innerHTML = `${notice}<p class="nearby-heading">Nearest ${label}${along ? ' along your route' : ''}:</p><ol class="nearby-list">${items.join('')}</ol>`;
   const first = nearbyResults[0];
   speak(`The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`);
 }
@@ -143,13 +162,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (show !== undefined) return showNearbyOnMap(map, result);
     if (nearbyMarker) { nearbyMarker.remove(); nearbyMarker = null; }
     const from = document.getElementById('route-from');
+    const midTrip = guide.active; // in step-by-step mode: re-route from where you are now
     if (stop !== undefined) {
-      routing.stop = { label: result.phrase || result.label, building: result.building, lonlat: result.lonlat };
+      const newStop = { label: result.label, phrase: result.phrase, building: result.building, lonlat: result.lonlat };
+      insertStop(newStop);
+      if (midTrip) prepareRerouteFromHere(newStop);
+      renderStops();
     } else {
-      // Directions there: from wherever the search was measured
-      const near = document.getElementById('nearby-from').value;
-      if (near === 'me') from.value = MY_LOCATION;
-      routing.stop = null;
+      // Directions there: from wherever the search was measured, or from here mid-trip
+      if (midTrip) prepareRerouteFromHere();
+      else if (nearbyFromYou) from.value = MY_LOCATION;
       if (result.building) {
         routing.place = null;
         document.getElementById('route-to').value = result.building;

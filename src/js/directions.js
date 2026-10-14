@@ -3,6 +3,8 @@
 
 const MY_LOCATION = '__my_location__';
 const PLACE = '__place__'; // a destination that isn't a building (e.g. a bench), set by "Find nearby"
+const HERE = '__here__';   // a start that isn't a building: where you are partway through a trip
+const MAX_STOPS = 5;
 
 // Starting from the user's location only works if they're this close to a mapped accessible path.
 const MAX_START_DISTANCE_M = 150;
@@ -29,7 +31,8 @@ async function setupDirections(map) {
   const data = { paths, entrances, buildings, elevators, footpaths };
   const accessible = module.buildGraph({ paths, entrances, buildings, elevators });
   const terrain = elevation.createTerrain(terrainTileLoader(base + 'basemap/terrain.pmtiles'), accessible.buildings);
-  routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null };
+  // stops: [{label, phrase?, building?, lonlat?}] in visiting order; an unchosen stop has neither building nor lonlat
+  routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null, stops: [] };
 
   addRouteLayers(map);
   loadRoutePoints(); // full copies of the point layers, for showing only those near a route
@@ -51,19 +54,41 @@ async function setupDirections(map) {
   toggle.addEventListener('click', () => setPanelOpen(panel.hidden));
   document.getElementById('directions-close').addEventListener('click', () => setPanelOpen(false));
   document.getElementById('route-swap').addEventListener('click', () => {
-    if (from.value === MY_LOCATION) return;
+    if ([MY_LOCATION, HERE, PLACE].includes(from.value) || to.value === PLACE) return;
     [from.value, to.value] = [to.value, from.value];
+    routing.stops.reverse();
+    renderStops();
     updateRoute(map);
   });
   document.getElementById('route-clear').addEventListener('click', () => {
     from.value = '';
     to.value = '';
-    routing.stop = null;
+    routing.stops = [];
+    renderStops();
     updateRoute(map);
   });
-  document.addEventListener('click', (e) => {
-    if (e.target.id !== 'route-remove-stop') return;
-    routing.stop = null;
+
+  // Stops: add, choose, reorder, remove
+  document.getElementById('route-add-stop').addEventListener('click', () => {
+    if (routing.stops.length >= MAX_STOPS) return;
+    routing.stops.push({ label: '' });
+    renderStops();
+    document.getElementById(`stop-${routing.stops.length - 1}`)?.focus();
+  });
+  document.getElementById('route-stops').addEventListener('change', (e) => {
+    const i = e.target.dataset.stopIndex;
+    if (i === undefined) return;
+    routing.stops[i] = e.target.value ? { label: e.target.value, building: e.target.value } : { label: '' };
+    updateRoute(map);
+  });
+  document.getElementById('route-stops').addEventListener('click', (e) => {
+    const { stopUp, stopDown, stopRemove } = e.target.dataset;
+    const stops = routing.stops;
+    if (stopUp !== undefined) [stops[stopUp - 1], stops[stopUp]] = [stops[stopUp], stops[stopUp - 1]];
+    else if (stopDown !== undefined) [stops[+stopDown + 1], stops[stopDown]] = [stops[stopDown], stops[+stopDown + 1]];
+    else if (stopRemove !== undefined) stops.splice(stopRemove, 1);
+    else return;
+    renderStops();
     updateRoute(map);
   });
   from.addEventListener('change', () => updateRoute(map));
@@ -186,6 +211,7 @@ function populateBuildingSelects() {
     })
     .join('');
   const myLocation = 'geolocation' in navigator ? `<option value="${MY_LOCATION}">My location</option>` : '';
+  routing.buildingOptions = options;
   from.innerHTML = `<option value="">Choose a starting point</option>${myLocation}${options}`;
   to.innerHTML = `<option value="">Choose a destination</option>${options}`;
   // Keep the current choices if they're still in the list.
@@ -193,6 +219,9 @@ function populateBuildingSelects() {
   if (routing.place) {
     to.options[0].after(new Option(routing.place.label, PLACE));
   }
+  if (routing.fromPlace) from.options[0].after(new Option(routing.fromPlace.label, HERE));
+  if ([...from.options].some((o) => o.value === keep[0])) from.value = keep[0];
+  renderStops();
   if ([...to.options].some((o) => o.value === keep[1])) to.value = keep[1];
   document.getElementById('route-coverage').textContent =
     `${names.length} buildings currently have a mapped accessible entrance and can be routed to.`;
@@ -245,7 +274,8 @@ function addRouteLayers(map) {
 
 function getPosition() {
   return new Promise((resolve, reject) =>
-    navigator.geolocation.getCurrentPosition((p) => resolve([p.coords.longitude, p.coords.latitude]), reject, { enableHighAccuracy: true })
+    // Without a timeout, a browser with location turned off can leave this waiting forever
+    navigator.geolocation.getCurrentPosition((p) => resolve([p.coords.longitude, p.coords.latitude]), reject, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 })
   );
 }
 
@@ -352,6 +382,9 @@ async function updateRoute(map) {
     sources = [start.node];
     fromLabel = 'your location';
     if (start.d > 15) startNote = ` The route starts at the nearest mapped accessible path, ${feet(start.d)} from you.`;
+  } else if (fromValue === HERE && routing.fromPlace) {
+    sources = nodesFor(routing.fromPlace);
+    fromLabel = routing.fromPlace.label;
   } else {
     sources = doors(fromValue);
     fromLabel = fromValue;
@@ -363,14 +396,21 @@ async function updateRoute(map) {
     if (request !== routeRequest) return;
   }
 
-  // Via a stop, if one was added from "Find nearby": two legs joined into one route.
-  const stop = routing.stop;
+  // Through any stops in order: one leg per stop, joined into one route that records where each stop is.
+  const stops = routing.stops.filter((st) => st.building || st.lonlat);
+  let failedStop = null;
   const findRoute = (cost) => {
-    if (!stop) return module.shortestRoute(graph, sources, targets, cost);
-    const leg1 = module.shortestRoute(graph, sources, nodesFor(stop), cost);
-    const leg2 = leg1 && module.shortestRoute(graph, [leg1.nodes.at(-1)], targets, cost);
-    if (!leg2) return null;
-    return { ...module.joinRoutes(leg1, leg2), stops: [{ index: leg1.nodes.length - 1, label: stop.label }] };
+    let route = null, start = sources;
+    const marks = [];
+    for (const stop of [...stops, null]) {
+      const leg = module.shortestRoute(graph, start, stop ? nodesFor(stop) : targets, cost);
+      if (!leg) { failedStop = stop; return null; }
+      route = route ? module.joinRoutes(route, leg) : leg;
+      if (stop) marks.push({ index: route.nodes.length - 1, label: stop.phrase || stop.label });
+      start = [leg.nodes.at(-1)];
+    }
+    route.stops = marks;
+    return route;
   };
 
   // The best route that meets the options. If none does, show the best route without the indoor and
@@ -390,10 +430,10 @@ async function updateRoute(map) {
   if (!route) {
     const startNode = graph.nodes[sources[0]];
     const differentCampus = module.campusOf(startNode) !== module.campusOf(graph.nodes[targets[0]]);
-    const via = stop ? ` by way of ${escapeHtml(stop.label)}` : '';
+    const via = failedStop ? ` that reaches stop ${stops.indexOf(failedStop) + 1} (${escapeHtml(failedStop.phrase || failedStop.label)})` : '';
     return showResult(differentCampus
       ? `<p><strong>No walking route.</strong> ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)} are on different campuses. The BC shuttle connects the campuses; see the shuttle stops on the map.</p>`
-      : `<p><strong>No ${options.stairs ? '' : 'accessible '}route is mapped yet</strong> between ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)}${via}. The path data still has gaps. If you know a route, please tell us through the <a href="${FEEDBACK_FORM}" target="_blank" rel="noopener">feedback form</a>.</p>${stopNote(stop)}`);
+      : `<p><strong>No ${options.stairs ? '' : 'accessible '}route is mapped yet</strong> between ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)}${via}. The path data still has gaps. If you know a route, please tell us through the <a href="${FEEDBACK_FORM}" target="_blank" rel="noopener">feedback form</a>.</p>`);
   }
 
   const description = module.describeRoute(graph, route);
@@ -422,7 +462,7 @@ async function updateRoute(map) {
   showResult(`
     ${unmet}
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
-    ${stopNote(stop)}
+    ${stopNote(stops)}
     <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
     <div class="route-check"><input type="checkbox" id="route-focus" ${focusOnRoute ? 'checked' : ''}><label for="route-focus">Only show map features along this route</label></div>
     ${stairsNote}
@@ -449,8 +489,65 @@ async function ensureGrades(graph) {
   }
 }
 
-function stopNote(stop) {
-  return stop ? `<p class="route-stop">With a stop at <strong>${escapeHtml(stop.label)}</strong>. <button type="button" id="route-remove-stop">Remove stop</button></p>` : '';
+function stopNote(stops) {
+  if (!stops.length) return '';
+  const names = stops.map((st) => `<strong>${escapeHtml(st.phrase || st.label)}</strong>`);
+  return `<p class="route-stop">${stops.length === 1 ? 'With a stop at' : `With ${stops.length} stops, in order:`} ${names.join(', ')}.</p>`;
+}
+
+// The stop rows between From and To. A building stop is a dropdown; a place from "Find nearby" is text.
+function renderStops() {
+  const list = document.getElementById('route-stops');
+  const stops = routing.stops;
+  list.innerHTML = stops.map((st, i) => {
+    const place = st.lonlat && !st.building;
+    const field = place
+      ? `<span class="stop-place">${escapeHtml(st.label)}</span>`
+      : `<select id="stop-${i}" data-stop-index="${i}"><option value="">Choose a stop</option>${routing.buildingOptions || ''}</select>`;
+    return `<li class="stop-row">
+      ${place ? `<span class="stop-label">Stop ${i + 1}</span>` : `<label class="stop-label" for="stop-${i}">Stop ${i + 1}</label>`}
+      ${field}
+      <span class="stop-buttons">
+        <button type="button" data-stop-up="${i}" aria-label="Move stop ${i + 1} earlier" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" data-stop-down="${i}" aria-label="Move stop ${i + 1} later" ${i === stops.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" data-stop-remove="${i}" aria-label="Remove stop ${i + 1}">×</button>
+      </span>
+    </li>`;
+  }).join('');
+  stops.forEach((st, i) => {
+    const select = document.getElementById(`stop-${i}`);
+    if (select) select.value = st.building || '';
+  });
+  document.getElementById('route-add-stop').disabled = stops.length >= MAX_STOPS;
+}
+
+// Add a stop where it fits along the current route (before the first stop that comes later), or at the end.
+function insertStop(stop) {
+  const current = routing.current, stops = routing.stops;
+  const chosen = stops.filter((st) => st.building || st.lonlat);
+  if (!current || !chosen.length || !stop.lonlat) return stops.push(stop);
+  const { proj, dist } = routing.module;
+  const nodes = current.route.nodes, p = proj(stop.lonlat);
+  let at = 0, best = Infinity;
+  nodes.forEach((n, i) => { const d = dist(proj(current.graph.nodes[n]), p); if (d < best) { best = d; at = i; } });
+  const marks = current.route.stops || [];
+  const before = marks.findIndex((m) => m.index > at);
+  if (before === -1) return stops.push(stop);
+  stops.splice(stops.indexOf(chosen[before]), 0, stop);
+}
+
+// Start a route from a point that isn't a building (where you are partway through a trip).
+function setPlaceStart(place) {
+  routing.fromPlace = place;
+  const from = document.getElementById('route-from');
+  let option = from.querySelector(`option[value="${HERE}"]`);
+  if (!option) {
+    option = document.createElement('option');
+    option.value = HERE;
+    from.options[0].after(option);
+  }
+  option.textContent = place.label;
+  from.value = HERE;
 }
 
 // Make a place found by "Find nearby" the destination.

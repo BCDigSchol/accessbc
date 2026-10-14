@@ -113,7 +113,9 @@
     <label for="route-from">From</label>
     <select id="route-from"></select>
   </div>
+  <ol id="route-stops" class="stops-list" aria-label="Stops"></ol>
   <div class="route-actions">
+    <button type="button" id="route-add-stop">+ Add a stop</button>
     <button type="button" id="route-swap">Swap ⇅</button>
     <button type="button" id="route-clear">Clear</button>
   </div>
@@ -156,6 +158,7 @@
     </div>
     <div class="guidance-tools">
       <button type="button" id="guidance-repeat">Repeat</button>
+      <button type="button" id="guidance-add-stop">Add a stop</button>
       <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
       <button type="button" id="guidance-exit">Exit step-by-step</button>
     </div>

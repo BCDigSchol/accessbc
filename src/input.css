@@ -978,6 +978,10 @@ html.high-contrast a {
   margin-top: 0.6rem;
 }
 
+.nearby-notice {
+  font-style: italic;
+}
+
 .nearby-list {
   padding-left: 1.25rem;
   display: grid;
@@ -1025,4 +1029,84 @@ html.high-contrast a {
 
 html.high-contrast .nearby-distance {
   color: #000;
+}
+
+/* Stops */
+.stops-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.stop-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stop-label {
+  font-weight: bold;
+  font-size: 0.9rem;
+}
+
+.stop-row select {
+  min-width: 0;
+  padding: 0.4rem;
+  font-size: 0.95rem;
+  border: 0.1rem solid #888;
+  border-radius: 0.4rem;
+}
+
+.stop-place {
+  min-width: 0;
+  font-size: 0.95rem;
+}
+
+.stop-buttons {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.stop-buttons button {
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid #888;
+  border-radius: 0.3rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.stop-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stop-buttons button:focus-visible,
+.stop-row select:focus-visible {
+  outline: 3px solid #0050d0;
+  outline-offset: 2px;
+}
+
+.route-actions {
+  flex-wrap: wrap;
+}
+
+.route-actions #route-add-stop {
+  margin-right: auto;
+  background: #fff;
+  color: #0050d0;
+  border: 2px solid #0050d0;
+}
+
+.route-actions #route-add-stop:disabled {
+  opacity: 0.5;
+}
+
+/* Adding a stop mid-trip shows "Find nearby" above the current step */
+#directions-panel.guiding.adding-stop > details.nearby:not(#guidance) {
+  display: block;
+  margin-bottom: 0.75rem;
 }
