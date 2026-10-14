@@ -69,7 +69,10 @@ function createLegend(containerId, legendData, map) {
     panelToggle.type = 'button';
     panelToggle.className = 'legend-panel-toggle';
     panelToggle.setAttribute('aria-controls', 'legend-body');
-    legendContainer.appendChild(panelToggle);
+    const panelHeading = document.createElement('h2'); // the category headings below are h3s
+    panelHeading.className = 'legend-panel-heading';
+    panelHeading.appendChild(panelToggle);
+    legendContainer.appendChild(panelHeading);
 
     // Main legend content wrapper
     const content = document.createElement('div');

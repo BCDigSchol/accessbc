@@ -1,0 +1,38 @@
+# Automated accessibility checks (axe-core in a real browser, plus keyboard and screen reader behaviour
+# checks), run on pushes to dev and on pull requests into main. See tests/accessibility/check.mjs.
+# This only checks the site; it doesn't change what's deployed. To block merging when it fails, make it a
+# required check in the repository's branch protection settings for main.
+name: Accessibility checks
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tests/accessibility
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tests/accessibility/package-lock.json
+
+      - name: Install the checker and its browser
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Check accessibility
+        run: npm run check

@@ -1127,6 +1127,11 @@ html.high-contrast .nearby-distance {
   cursor: pointer;
 }
 
+.legend-panel-heading {
+  margin: 0;
+  font-size: inherit;
+}
+
 #legend:not(.panel-collapsed) .legend-panel-toggle {
   margin-bottom: 0.25rem;
 }
@@ -1136,7 +1141,7 @@ html.high-contrast .nearby-distance {
 }
 
 /* Closed: only the button shows (this also covers the elevation key, which is added after the layers) */
-#legend.panel-collapsed > :not(.legend-panel-toggle) {
+#legend.panel-collapsed > :not(.legend-panel-heading) {
   display: none !important;
 }
 

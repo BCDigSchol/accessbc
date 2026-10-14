@@ -1,0 +1,13 @@
+participant,date,device_and_assistive_tech,task,outcome (alone / with help / not completed),time_minutes,where_they_got_stuck,what_they_said,severity (critical / serious / minor),issue_link
+P1,,"e.g. iPhone 15, VoiceOver, cane",1 Find out about a building,,,,,,
+P1,,,2 Get directions,,,,,,
+P1,,,3 Review the route,,,,,,
+P1,,,4 Settings,,,,,,
+P1,,,5 Add a stop,,,,,,
+P1,,,6 Help,,,,,,
+P1,,,7 Display (low vision),,,,,,
+P1,,,8 Start guidance (walk),,,,,,
+P1,,,9 Orient (walk),,,,,,
+P1,,,10 Where am I? (walk),,,,,,
+P1,,,11 Off route (walk),,,,,,
+P1,,,12 Arrive (walk),,,,,,

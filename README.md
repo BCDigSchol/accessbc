@@ -43,6 +43,12 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
   read each section (or the whole guide) aloud. Keep it up to date when
   features change.
 
+**Testing.** Automated accessibility checks run on every push to `dev` and every pull request into `main`
+([.github/workflows/accessibility.yml](.github/workflows/accessibility.yml); run them locally with
+`cd tests/accessibility && npm ci && npx playwright install chromium && npm run check`). Testing with
+students and an orientation and mobility instructor is planned in
+[docs/usability-testing/](docs/usability-testing/).
+
 [docs/data-collection/](docs/data-collection/) has spreadsheets for collecting what the data doesn't yet record
 (automatic doors, intercom-only entrances, elevator details).
 
@@ -57,6 +63,8 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 | `src/vendor/` | MapLibre GL JS and PMTiles ([README](src/vendor/README.md)) |
 | `src/js/routing/` | Routing graph, route finder, slopes, and step-by-step instructions, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
 | `scripts/` | Local preview server and data/basemap tooling. Not deployed. |
+| `tests/accessibility/` | Automated accessibility checks (axe-core and Playwright, used by CI only). Not deployed. |
+| `docs/` | Data collection sheets and the usability testing plan |
 
 See [updatingdata.md](updatingdata.md) for editing map data.
 
