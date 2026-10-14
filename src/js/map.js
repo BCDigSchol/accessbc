@@ -42,5 +42,6 @@ document.addEventListener('DOMContentLoaded', function () {
         addPopupHandlers(map);
         addBuildingHandler(map);
         setupElevationHandler(map);
+        setupDirections(map);
     });
 });
