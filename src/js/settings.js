@@ -4,6 +4,8 @@
 const SETTINGS_KEY = 'accessbc.settings';
 const SETTINGS_DEFAULTS = {
   readAloud: false,      // speak directions (off: screen reader users already hear them)
+  screenReader: false,   // the student uses a screen reader: never speak as well, so nothing is heard twice
+  soundCues: true,       // short tones for a new step, a turn coming up, leaving the route, arriving
   speechRate: 1,
   clockFace: true,       // directions as clock positions, from the phone's compass (when it has one)
   headingUp: true,       // in step-by-step mode, turn the map to face the direction of travel
@@ -76,17 +78,24 @@ document.addEventListener('DOMContentLoaded', applySettings);
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   const opener = document.getElementById('settings-toggle');
-  const checkboxes = ['readAloud', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText'];
+  const checkboxes = ['screenReader', 'readAloud', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText'];
   const selects = ['speechRate', 'highContrast', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
+  const speech = 'speechSynthesis' in window;
+  // Reading aloud is off while "I use a screen reader" is on (the screen reader already reads everything)
+  const syncReadAloud = () => {
+    document.getElementById('set-readAloud').disabled = !speech || !!settings.screenReader;
+  };
   const fill = () => {
     checkboxes.forEach((k) => { document.getElementById(`set-${k}`).checked = !!settings[k]; });
     selects.forEach((k) => { document.getElementById(`set-${k}`).value = String(settings[k]); });
+    syncReadAloud();
   };
   checkboxes.forEach((k) => document.getElementById(`set-${k}`).addEventListener('change', (e) => {
     settings[k] = e.target.checked;
     saveSettings();
+    syncReadAloud();
   }));
   selects.forEach((k) => document.getElementById(`set-${k}`).addEventListener('change', (e) => {
     settings[k] = k === 'speechRate' ? Number(e.target.value) : toSetting(e.target.value);
@@ -122,8 +131,5 @@ document.addEventListener('DOMContentLoaded', () => {
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
     }
   });
-  if (!('speechSynthesis' in window)) {
-    document.getElementById('set-readAloud').disabled = true;
-    document.getElementById('set-testVoice').disabled = true;
-  }
+  if (!speech) document.getElementById('set-testVoice').disabled = true;
 });

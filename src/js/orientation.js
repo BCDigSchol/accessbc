@@ -81,6 +81,14 @@ function tell(text) {
 // ---- Tones ----------------------------------------------------------------------------------------
 
 let audioContext = null;
+// Phones only allow sound after a button press: call this from one so later tones (on GPS updates) play.
+function unlockAudio() {
+  try {
+    audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+    if (audioContext.state === 'suspended') audioContext.resume();
+  } catch { /* no audio */ }
+}
+
 // A short tone; pan is -1 (left ear) to 1 (right ear).
 function tone(frequency, { pan = 0, ms = 90, volume = 0.15 } = {}) {
   try {

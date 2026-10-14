@@ -25,6 +25,9 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
   of travel in 3D. **Follow my location** advances steps by GPS, warns before turns, says which way the route is
   when you leave it, and offers to re-route. Steps mention curb ramps, stairs that branch off, and seating.
 - **Audio guidance**: one button to start step-by-step mode read aloud and following your location.
+- **Hands free**: the screen stays on during step-by-step mode (Screen Wake Lock), short sounds mark a new step
+  (from the side of the turn), a turn coming up, leaving the route, and arriving, and vibration patterns tell left
+  from right (Android). An **I use a screen reader** setting stops Access BC speaking over the screen reader.
 - **Orientation without the map** ([src/js/orientation.js](src/js/orientation.js)): directions as clock positions
   from the phone's compass ("at your 2 o'clock"), **Face the right way** (a tone in the ear on the side to turn
   toward), **Where am I?** (nearest building, progress on the route, and what's around you), and each building's

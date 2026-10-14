@@ -70,17 +70,19 @@
   <p class="route-note">Saved on this device.</p>
   <fieldset>
     <legend>Directions</legend>
+    <div class="setting"><input type="checkbox" id="set-screenReader" aria-describedby="set-screenReader-help"><label for="set-screenReader">I use a screen reader</label></div>
+    <p id="set-screenReader-help" class="route-note">Your screen reader reads each step and update, so Access BC won't also speak them.</p>
     <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read directions aloud</label></div>
     <div class="setting">
       <label for="set-speechRate">Speaking speed</label>
       <select id="set-speechRate"><option value="0.8">Slower</option><option value="1">Normal</option><option value="1.25">Faster</option><option value="1.5">Fastest</option></select>
       <button type="button" id="set-testVoice">Test</button>
     </div>
-    <p class="route-note">If you use a screen reader, you'll already hear each step, so you may want this off.</p>
     <div class="setting"><input type="checkbox" id="set-clockFace"><label for="set-clockFace">Give directions as clock positions (“at your 2 o’clock”), using my phone’s compass</label></div>
     <div class="setting"><input type="checkbox" id="set-headingUp"><label for="set-headingUp">In step-by-step mode, turn the map to face my direction of travel</label></div>
     <div class="setting"><input type="checkbox" id="set-guidance3D"><label for="set-guidance3D">In step-by-step mode, show buildings in 3D</label></div>
-    <div class="setting"><input type="checkbox" id="set-vibrate"><label for="set-vibrate">Vibrate at each new step (Android phones)</label></div>
+    <div class="setting"><input type="checkbox" id="set-soundCues"><label for="set-soundCues">Play short sounds for a new step, a turn coming up, leaving the route, and arriving</label></div>
+    <div class="setting"><input type="checkbox" id="set-vibrate"><label for="set-vibrate">Vibrate at each new step: two pulses for left, three for right (Android phones)</label></div>
   </fieldset>
   <fieldset>
     <legend>Display</legend>
