@@ -15,7 +15,7 @@ function handleAboutClick() {
   popup.appendChild(instructionHeader);
 
   const instruction = document.createElement('p');
-  instruction.textContent = 'To explore the different Boston College campuses, select the campus you wish to view on the top menu. Use the legend to turn on/off different layers.';
+  instruction.textContent = 'To explore the different Boston College campuses, select the campus you wish to view on the top menu. Use the legend to turn on/off different layers. Use Directions to find an accessible route between buildings, or click a building and choose "Directions from here" or "Directions to here".';
   popup.appendChild(instruction);
 
   const hr2 = document.createElement('hr');

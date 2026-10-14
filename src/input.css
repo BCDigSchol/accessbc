@@ -334,6 +334,144 @@ hr {
 }
 
 
+
+/* Directions */
+.topnav #directions-toggle:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+#directions-panel {
+  position: absolute;
+  top: 5rem;
+  right: 3.5rem;
+  width: 22rem;
+  max-height: calc(100vh - 6rem);
+  overflow-y: auto;
+  background: #fff;
+  color: #000;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.25);
+  z-index: 20;
+}
+
+#directions-panel[hidden] {
+  display: none;
+}
+
+#directions-panel h2 {
+  font-size: 1.2rem;
+  margin: 0 2rem 0.75rem 0;
+}
+
+.directions-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.route-field label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.route-field select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 0.1rem solid #888;
+  border-radius: 0.4rem;
+  background: #fff;
+}
+
+.route-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.route-actions button,
+.popup-directions button {
+  background: #A8100B;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.route-actions button:hover,
+.popup-directions button:hover {
+  background: #8a0d09;
+}
+
+#directions-panel button:focus-visible,
+#directions-panel select:focus-visible,
+.popup-directions button:focus-visible,
+.topnav button:focus-visible {
+  outline: 3px solid #0050d0;
+  outline-offset: 2px;
+}
+
+#route-result {
+  margin-top: 0.75rem;
+}
+
+#route-result p {
+  margin-bottom: 0.5rem;
+}
+
+.route-summary strong {
+  font-size: 1.2rem;
+}
+
+.route-steps {
+  padding-left: 1.25rem;
+  line-height: 1.5;
+}
+
+.route-legend {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.route-swatch {
+  display: inline-block;
+  width: 1.5rem;
+  height: 0;
+  border-top: 5px solid #0050d0;
+}
+
+.route-swatch.indoor {
+  border-top-style: dashed;
+  margin-left: 0.75rem;
+}
+
+.route-note {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  color: #555;
+}
+
+.popup-directions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
 /* Media Queries for further adjustments */
 /* Responsive Styles */
 @media screen and (max-width: 870px) {
@@ -345,6 +483,25 @@ hr {
 
   .topnav .icon {
     display: block;
+  }
+
+  .topnav #directions-toggle {
+    display: block;
+    margin-left: auto;
+    margin-right: 3rem;
+  }
+
+  #directions-panel {
+    position: fixed;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 55vh;
+    border-radius: 0.75rem 0.75rem 0 0;
+    box-shadow: 0 -0.2rem 1rem rgba(0, 0, 0, 0.25);
+    z-index: 150;
   }
 
   .topnav.responsive {

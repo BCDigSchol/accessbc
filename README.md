@@ -23,6 +23,7 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 | `src/geojson/` | Campus data layers ([README](src/geojson/README.md)) |
 | `src/basemap/` | Self-hosted basemap, terrain, fonts, and icons |
 | `src/vendor/` | MapLibre GL JS and PMTiles ([README](src/vendor/README.md)) |
+| `src/js/routing/` | Routing graph builder and route finder, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
 | `scripts/` | Local preview server and data/basemap tooling. Not deployed. |
 
 See [updatingdata.md](updatingdata.md) for editing map data.

@@ -16,6 +16,7 @@
 <script src="src/js/elevation.js"></script>
 <script src = "src/js/menu.js"></script>
 <script src = "src/js/searchbar.js"></script>
+<script src="src/js/directions.js"></script>
 </head>
 <body>
 
@@ -39,6 +40,7 @@
   <button href="#brighton" id="brighton" class="menu-button">Brighton</button>
   <button href="#newton" id="newton" class="menu-button">Newton</button>
   <button href="#brookline" id="brookline" class="menu-button">Brookline</button>
+  <button id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
 
   <!-- Search Bars -->
   <div class="search-bar-container">
@@ -48,6 +50,26 @@
 </div>
 
     <div id="legend"></div>
+
+<section id="directions-panel" aria-labelledby="directions-title" hidden>
+  <button type="button" id="directions-close" class="directions-close" aria-label="Close directions">×</button>
+  <h2 id="directions-title">Accessible directions</h2>
+  <div class="route-field">
+    <label for="route-from">From</label>
+    <select id="route-from"></select>
+  </div>
+  <div class="route-actions">
+    <button type="button" id="route-swap">Swap ⇅</button>
+    <button type="button" id="route-clear">Clear</button>
+  </div>
+  <div class="route-field">
+    <label for="route-to">To</label>
+    <select id="route-to"></select>
+  </div>
+  <div id="route-result" aria-live="polite"></div>
+  <p class="route-legend"><span class="route-swatch"></span> Outdoors <span class="route-swatch indoor"></span> Indoors</p>
+  <p id="route-coverage" class="route-note"></p>
+</section>
 
 </body>
 </html>

@@ -1,0 +1,9 @@
+# Normalize line endings: text files are stored and checked out with LF on every platform.
+* text=auto eol=lf
+
+# Binary formats (never converted or diffed as text)
+*.pmtiles binary
+*.pbf binary
+*.png binary
+*.jpg binary
+*.ico binary

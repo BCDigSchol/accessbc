@@ -86,10 +86,19 @@ function addBuildingHandler(map) {
         return `<p>${line.trim()}</p>`;
     }).join('');
 
+    // Directions buttons, only for buildings with an accessible entrance on the path network
+    const nameAttr = buildingName.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+    const directionsHtml = isRoutable(buildingName) ? `
+      <div class="popup-directions">
+        <button type="button" data-route-from="${nameAttr}">Directions from here</button>
+        <button type="button" data-route-to="${nameAttr}">Directions to here</button>
+      </div>` : '';
+
     const buildingInfo = `
       <div class="close" id="building-popup-close">x</div>
       <h2>${buildingName}</h2>
       ${descriptionHtml} <!-- Inject the description with line breaks handled -->
+      ${directionsHtml}
     `;
 
     document.getElementById('building-info').innerHTML = buildingInfo;
