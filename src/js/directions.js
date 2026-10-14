@@ -2,9 +2,15 @@
 // The routing graph is built in the browser from the GeoJSON (see src/js/routing/network.mjs).
 
 const MY_LOCATION = '__my_location__';
+const PLACE = '__place__'; // a destination that isn't a building (e.g. a bench), set by "Find nearby"
+
 // Starting from the user's location only works if they're this close to a mapped accessible path.
 const MAX_START_DISTANCE_M = 150;
 const FEEDBACK_FORM = 'https://forms.gle/EqSt5qz31ub9eB5x7';
+
+// The deploy stamps a version onto every script URL (?v=...) so browsers never mix old and new files
+// after a release; the routing modules are loaded with the same stamp as this script.
+const ASSET_VERSION = new URL(document.currentScript.src).search;
 
 let routing = null; // {module, elevation, terrain, data, graphs: {accessible, withStairs}}
 const OPTIONS_KEY = 'accessbc.routeOptions';
@@ -16,7 +22,7 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&l
 
 async function setupDirections(map) {
   const base = new URL('src/', document.baseURI).href;
-  const [module, elevation, guidance] = await Promise.all(['network', 'elevation', 'guidance'].map((m) => import(`${base}js/routing/${m}.mjs`)));
+  const [module, elevation, guidance] = await Promise.all(['network', 'elevation', 'guidance'].map((m) => import(`${base}js/routing/${m}.mjs${ASSET_VERSION}`)));
   const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
   const names = ['accessiblepaths', 'entrances', 'buildings', 'elevators', 'paths'];
   const [paths, entrances, buildings, elevators, footpaths] = await Promise.all(names.map(load));
@@ -52,6 +58,12 @@ async function setupDirections(map) {
   document.getElementById('route-clear').addEventListener('click', () => {
     from.value = '';
     to.value = '';
+    routing.stop = null;
+    updateRoute(map);
+  });
+  document.addEventListener('click', (e) => {
+    if (e.target.id !== 'route-remove-stop') return;
+    routing.stop = null;
     updateRoute(map);
   });
   from.addEventListener('change', () => updateRoute(map));
@@ -178,6 +190,9 @@ function populateBuildingSelects() {
   to.innerHTML = `<option value="">Choose a destination</option>${options}`;
   // Keep the current choices if they're still in the list.
   if ([...from.options].some((o) => o.value === keep[0])) from.value = keep[0];
+  if (routing.place) {
+    to.options[0].after(new Option(routing.place.label, PLACE));
+  }
   if ([...to.options].some((o) => o.value === keep[1])) to.value = keep[1];
   document.getElementById('route-coverage').textContent =
     `${names.length} buildings currently have a mapped accessible entrance and can be routed to.`;
@@ -314,6 +329,11 @@ async function updateRoute(map) {
   if (fromValue === toValue) return showResult('<p>Choose two different buildings.</p>');
 
   const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
+  // Graph nodes for a building's entrances, or for a place found by "Find nearby" ({label, building} or {label, lonlat})
+  const nodesFor = (target) => (target.building ? doors(target.building) : [module.nearestNode(graph, target.lonlat).node]);
+  const toIsPlace = toValue === PLACE && !!routing.place;
+  const toLabel = toIsPlace ? routing.place.phrase || routing.place.label : toValue;
+  const targets = toIsPlace ? nodesFor(routing.place) : doors(toValue);
   let sources, fromLabel, startNote = '';
   if (fromValue === MY_LOCATION) {
     showResult('<p>Finding your location…</p>');
@@ -339,21 +359,26 @@ async function updateRoute(map) {
 
   if (Number.isFinite(options.maxGrade) && !graph.grades) {
     showResult('<p>Measuring slopes…</p>');
-    try {
-      graph.grades = await elevation.segmentGrades(terrain, graph);
-    } catch (err) {
-      console.warn('Slope estimates unavailable:', err);
-      graph.grades = new Float32Array(graph.segments.length).fill(NaN);
-    }
+    await ensureGrades(graph);
     if (request !== routeRequest) return;
   }
 
+  // Via a stop, if one was added from "Find nearby": two legs joined into one route.
+  const stop = routing.stop;
+  const findRoute = (cost) => {
+    if (!stop) return module.shortestRoute(graph, sources, targets, cost);
+    const leg1 = module.shortestRoute(graph, sources, nodesFor(stop), cost);
+    const leg2 = leg1 && module.shortestRoute(graph, [leg1.nodes.at(-1)], targets, cost);
+    if (!leg2) return null;
+    return { ...module.joinRoutes(leg1, leg2), stops: [{ index: leg1.nodes.length - 1, label: stop.label }] };
+  };
+
   // The best route that meets the options. If none does, show the best route without the indoor and
   // slope options and say which of them it breaks.
-  let route = module.shortestRoute(graph, sources, doors(toValue), edgeCost(graph, options));
+  let route = findRoute(edgeCost(graph, options));
   let unmet = '';
   if (!route && (options.indoor === 'avoid' || Number.isFinite(options.maxGrade))) {
-    route = module.shortestRoute(graph, sources, doors(toValue));
+    route = findRoute();
     if (route) {
       const limits = [
         options.indoor === 'avoid' && 'avoids indoor routes',
@@ -364,10 +389,11 @@ async function updateRoute(map) {
   }
   if (!route) {
     const startNode = graph.nodes[sources[0]];
-    const differentCampus = module.campusOf(startNode) !== module.campusOf(graph.nodes[doors(toValue)[0]]);
+    const differentCampus = module.campusOf(startNode) !== module.campusOf(graph.nodes[targets[0]]);
+    const via = stop ? ` by way of ${escapeHtml(stop.label)}` : '';
     return showResult(differentCampus
-      ? `<p><strong>No walking route.</strong> ${escapeHtml(fromLabel)} and ${escapeHtml(toValue)} are on different campuses. The BC shuttle connects the campuses; see the shuttle stops on the map.</p>`
-      : `<p><strong>No ${options.stairs ? '' : 'accessible '}route is mapped yet</strong> between ${escapeHtml(fromLabel)} and ${escapeHtml(toValue)}. The path data still has gaps. If you know a route, please tell us through the <a href="${FEEDBACK_FORM}" target="_blank" rel="noopener">feedback form</a>.</p>`);
+      ? `<p><strong>No walking route.</strong> ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)} are on different campuses. The BC shuttle connects the campuses; see the shuttle stops on the map.</p>`
+      : `<p><strong>No ${options.stairs ? '' : 'accessible '}route is mapped yet</strong> between ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)}${via}. The path data still has gaps. If you know a route, please tell us through the <a href="${FEEDBACK_FORM}" target="_blank" rel="noopener">feedback form</a>.</p>${stopNote(stop)}`);
   }
 
   const description = module.describeRoute(graph, route);
@@ -396,19 +422,49 @@ async function updateRoute(map) {
   showResult(`
     ${unmet}
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
+    ${stopNote(stop)}
     <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
     <div class="route-check"><input type="checkbox" id="route-focus" ${focusOnRoute ? 'checked' : ''}><label for="route-focus">Only show map features along this route</label></div>
     ${stairsNote}
     ${slopeSummary(description)}
-    <ol class="route-steps">${leave}${steps.join('')}<li>Arrive at the accessible entrance of ${escapeHtml(toValue)}</li></ol>`);
+    <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>`);
 
-  routing.current = { graph, route, from: fromLabel, to: toValue, fromBuilding: fromValue !== MY_LOCATION };
+  routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromValue !== MY_LOCATION };
   speak(`Route found: ${feet(description.length)}${stairs ? ', using stairs' : ''}. Choose Start step-by-step directions to begin.`);
   if (routing.autoStart) {
     const follow = routing.autoStart.follow;
     routing.autoStart = null;
     startGuidance(map, { follow });
   }
+}
+
+// Slope figures for every segment of a graph, measured the first time a slope limit is used.
+async function ensureGrades(graph) {
+  if (graph.grades) return;
+  try {
+    graph.grades = await routing.elevation.segmentGrades(routing.terrain, graph);
+  } catch (err) {
+    console.warn('Slope estimates unavailable:', err);
+    graph.grades = new Float32Array(graph.segments.length).fill(NaN);
+  }
+}
+
+function stopNote(stop) {
+  return stop ? `<p class="route-stop">With a stop at <strong>${escapeHtml(stop.label)}</strong>. <button type="button" id="route-remove-stop">Remove stop</button></p>` : '';
+}
+
+// Make a place found by "Find nearby" the destination.
+function setPlaceDestination(place) {
+  routing.place = place;
+  const to = document.getElementById('route-to');
+  let option = to.querySelector(`option[value="${PLACE}"]`);
+  if (!option) {
+    option = document.createElement('option');
+    option.value = PLACE;
+    to.options[0].after(option); // right after "Choose a destination" (later options sit inside campus groups)
+  }
+  option.textContent = place.label;
+  to.value = PLACE;
 }
 
 // Adds an elevation profile to each outdoor step. Indoor steps get none: the terrain data is the ground

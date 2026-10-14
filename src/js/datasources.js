@@ -12,7 +12,7 @@ function addMapData(map) {
           'type': 'geojson',
           'data': 'src/geojson/reststop.geojson',
           'cluster': true,
-          'clusterMaxZoom': 25,
+          'clusterMaxZoom': 17, // must be below the source's maxzoom (18); seats show individually when zoomed in
           'clusterRadius': 20
       })
       map.addSource('terrain', {
@@ -159,7 +159,6 @@ function addMapData(map) {
         id: 'reststop',
         type: 'circle',
         source: 'reststop',
-        filter: ['has', 'point_count'],
         paint: {
           'circle-color': '#73AF48',
           'circle-radius': 5

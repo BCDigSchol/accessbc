@@ -959,3 +959,70 @@ html.high-contrast a {
 #route-result .route-check {
   margin: 0.25rem 0 0.75rem;
 }
+
+/* Find nearby */
+.nearby-search {
+  margin-top: 0.6rem;
+  min-height: 40px;
+  padding: 0 1rem;
+  font-size: 1rem;
+  font-weight: bold;
+  background: #0050d0;
+  color: #fff;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+#nearby-results {
+  margin-top: 0.6rem;
+}
+
+.nearby-list {
+  padding-left: 1.25rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.nearby-name {
+  font-weight: bold;
+}
+
+.nearby-distance {
+  color: #444;
+}
+
+.nearby-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.3rem;
+}
+
+.nearby-actions button,
+#route-remove-stop {
+  background: #fff;
+  color: #0050d0;
+  border: 2px solid #0050d0;
+  border-radius: 0.4rem;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.nearby-actions button:focus-visible,
+.nearby-search:focus-visible,
+#route-remove-stop:focus-visible {
+  outline: 3px solid #0050d0;
+  outline-offset: 2px;
+}
+
+.route-stop {
+  background: #f1ebfa;
+  border-left: 4px solid #6b2fa3;
+  padding: 0.4rem 0.6rem;
+}
+
+html.high-contrast .nearby-distance {
+  color: #000;
+}

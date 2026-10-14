@@ -21,19 +21,20 @@ export function formatDistance(m) {
 
 // The route as a polyline in metres, with each piece's edge type and distance from the start.
 function routeLine(graph, route) {
-  const pts = [], types = [], at = [0];
+  const pts = [], types = [], at = [0], nodeAt = new Map([[0, 0]]);
   for (let i = 0; i < route.nodes.length; i++) {
     const p = proj(graph.nodes[route.nodes[i]]);
     if (i > 0) {
       const edge = graph.adjacency[route.nodes[i - 1]].find((e) => e.to === route.nodes[i]);
       const len = dist(pts.at(-1), p);
+      nodeAt.set(i, at.at(-1) + (len < 0.01 ? 0 : len));
       if (len < 0.01) continue;
       types.push(edge.type === 'Entrance' ? 'Exterior' : edge.type);
       at.push(at.at(-1) + len);
     }
     pts.push(p);
   }
-  return { pts, types, at, length: at.at(-1) };
+  return { pts, types, at, nodeAt, length: at.at(-1) };
 }
 
 // Point at distance s along the polyline.
@@ -82,8 +83,9 @@ function turnWord(deg) {
 }
 
 // Steps for a route: [{kind, turn, length, heading, start ([lon, lat]), coordinates, type, building, elevator,
-// landmark: {name, side}, text}]. The last step has kind 'arrive' and no length.
-export function buildSteps(graph, route, { from, to, fromBuilding = true }) {
+// landmark: {name, side}, text}]. The last step has kind 'arrive' and no length. A route may carry stops
+// ([{index, label}], index into route.nodes), each of which becomes a 'stop' step.
+export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPlace = false }) {
   const line = routeLine(graph, route);
   const kindOf = (type) => ({ Interior: 'indoor', Stairs: 'stairs' }[type] || 'outdoor');
 
@@ -111,7 +113,16 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true }) {
     }
     merged.push({ ...b });
   }
-  const kept = merged.filter((b) => b.kind !== 'turn' || Math.abs(b.turn) >= TURN_MIN_DEG);
+  let kept = merged.filter((b) => b.kind !== 'turn' || Math.abs(b.turn) >= TURN_MIN_DEG);
+
+  // Stops: a step of their own, which also stands in for any turn right at the stop (e.g. back out of a door).
+  for (const stop of route.stops || []) {
+    const s = line.nodeAt.get(stop.index);
+    if (s === undefined || s <= 0 || s >= line.length) continue;
+    kept = kept.filter((b) => b.kind !== 'turn' || Math.abs(b.s - s) > MERGE_UNDER_M);
+    kept.push({ s, kind: 'stop', label: stop.label });
+  }
+  kept.sort((a, b) => a.s - b.s);
 
   const steps = kept.map((b, k) => {
     const end = k + 1 < kept.length ? kept[k + 1].s : line.length;
@@ -120,7 +131,7 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true }) {
     const coordinates = [startPt, ...line.pts.filter((_, i) => line.at[i] > b.s && line.at[i] < end), pointAt(line, end)].map(unproj);
     const segIndex = Math.max(0, line.at.findIndex((a) => a > b.s) - 1);
     const type = kindOf(line.types[Math.min(segIndex, line.types.length - 1)]);
-    const step = { kind: b.kind, turn: b.turn, length: end - b.s, heading, start: unproj(startPt), coordinates, type };
+    const step = { kind: b.kind, turn: b.turn, label: b.label, length: end - b.s, heading, start: unproj(startPt), coordinates, type };
     if (type === 'indoor' || b.kind === 'exit') {
       const inside = nearestBuildingPoint(graph.buildings, pointAt(line, (b.s + end) / 2));
       const before = nearestBuildingPoint(graph.buildings, pointAt(line, Math.max(0, b.s - 2)));
@@ -140,12 +151,12 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true }) {
   steps.push({ kind: 'arrive', length: 0, heading: lastHeading, start: unproj(endPt), coordinates: [unproj(endPt)], type: 'outdoor',
     side: target.d < 25 && target.d > 0.5 ? sideOf(pointAt(line, line.length - 5), lastHeading, target.point) : null });
 
-  steps.forEach((step, k) => { step.text = stepText(step, k, { from, to, fromBuilding }); });
+  steps.forEach((step, k) => { step.text = stepText(step, k, { from, to, fromBuilding, toIsPlace }); });
   return steps;
 }
 
 // Plain-language instruction for a step.
-export function stepText(step, index, { from, to, fromBuilding }) {
+export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
   const distance = step.length ? ` for ${formatDistance(step.length)}` : '';
   const landmark = step.landmark ? `, with ${step.landmark.name} on your ${step.landmark.side}` : '';
   const elevator = step.elevator ? ` ${step.building} has an elevator.` : '';
@@ -164,7 +175,10 @@ export function stepText(step, index, { from, to, fromBuilding }) {
       return `Take the stairs${distance}.`;
     case 'outdoor':
       return `Continue outside${distance}${landmark}.`;
+    case 'stop':
+      return `Stop at ${step.label}. When you're ready, continue${distance}${landmark}.`;
     case 'arrive':
+      if (toIsPlace) return `Arrive at ${to}${step.side ? `, on your ${step.side}` : ''}.`;
       return `Arrive at the accessible entrance of ${to}${step.side ? `. It's on your ${step.side}` : ''}.`;
     default:
       return `Continue${distance}.`;
