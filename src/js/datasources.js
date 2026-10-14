@@ -199,5 +199,19 @@ function addMapData(map) {
         ]
       }
     });
+
+    // 3D buildings, shown when the map is tilted (see the 3D control in mapcontrols.js). Heights were
+    // measured from USGS lidar by scripts/lidar/derive-building-heights.py; small sheds without one get 3 m.
+    map.addLayer({
+      id: 'buildings-3d',
+      type: 'fill-extrusion',
+      source: 'buildings',
+      layout: { visibility: 'none' },
+      paint: {
+        'fill-extrusion-color': '#2C7FB8',
+        'fill-extrusion-height': ['coalesce', ['get', 'height_m'], 3],
+        'fill-extrusion-opacity': 0.75
+      }
+    });
   });
 }

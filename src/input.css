@@ -652,3 +652,13 @@ hr {
     margin-right: 12px;
   }
 }
+/* 3D buildings toggle (in the map controls) */
+.maplibregl-ctrl-group button.three-d-toggle {
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.maplibregl-ctrl-group button.three-d-toggle[aria-pressed="true"] {
+  background: #0050d0;
+  color: #fff;
+}

@@ -5,6 +5,36 @@ function addMapControls(map) {
         positionOptions: { enableHighAccuracy: true },
         trackUserLocation: true
     }), 'top-right');
+    map.addControl(new ThreeDControl(), 'top-right');
+}
+
+// Button that tilts the map to show buildings in 3D, and back. Tilting by hand also shows them.
+class ThreeDControl {
+    onAdd(map) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'three-d-toggle';
+        button.textContent = '3D';
+        button.setAttribute('aria-label', 'Show buildings in 3D');
+        button.addEventListener('click', () => {
+            map.easeTo(map.getPitch() > 10 ? { pitch: 0, bearing: 0 } : { pitch: 60 });
+        });
+        const sync = () => {
+            const tilted = map.getPitch() > 10;
+            button.setAttribute('aria-pressed', String(tilted));
+            if (map.getLayer('buildings-3d')) map.setLayoutProperty('buildings-3d', 'visibility', tilted ? 'visible' : 'none');
+        };
+        map.on('pitch', sync);
+        sync();
+        this.container = document.createElement('div');
+        this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        this.container.appendChild(button);
+        return this.container;
+    }
+
+    onRemove() {
+        this.container.remove();
+    }
 }
 
 //LEGEND FUNCTIONS
