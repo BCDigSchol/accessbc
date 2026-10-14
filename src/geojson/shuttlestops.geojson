@@ -1,0 +1,11 @@
+{"type":"FeatureCollection","features":[
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"No","Heater":"No","Newton":"Yes","OBJECTID":9,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1615211,42.3433877]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"No","Heater":"Yes","Newton":"Yes","OBJECTID":1,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1937344,42.341207]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"Yes","Heater":"Yes","Newton":"Yes","OBJECTID":8,"Sheltered":"No"},"geometry":{"type":"Point","coordinates":[-71.192565,42.3418969]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"No","Express":"No","Heater":"Yes","Newton":"Yes","OBJECTID":2,"Sheltered":"No"},"geometry":{"type":"Point","coordinates":[-71.1924952,42.3434908]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"Yes","Heater":"No","Newton":"Yes","OBJECTID":3,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1689562,42.3380467]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"Yes","Heater":"No","Newton":"Yes","OBJECTID":5,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1708766,42.3331375]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"No","Heater":"No","Newton":"No","OBJECTID":6,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1715472,42.3352392]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"No","Express":"No","Heater":"No","Newton":"No","OBJECTID":7,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1710644,42.3379515]}},
+{"type":"Feature","properties":{"All_Stop":"Yes","Commonwealth":"Yes","Express":"Yes","Heater":"Yes","Newton":"No","OBJECTID":4,"Sheltered":"Yes"},"geometry":{"type":"Point","coordinates":[-71.1670893,42.3360244]}}
+]}

@@ -72,7 +72,7 @@ function addBuildingHandler(map) {
 
     const feature = features[0];
     const buildingName = feature.properties.NAME || 'Unknown Building';
-    const description = feature.properties.Description || '';
+    const description = feature.properties.Descriptio || '';
     
     // Split description by line breaks into an array of lines
     const descriptionLines = description.split('\n');
