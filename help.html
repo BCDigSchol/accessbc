@@ -5,6 +5,7 @@
 <title>How to use Access BC</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link href="src/help.css" rel="stylesheet">
+<script src="src/js/help.js"></script>
 </head>
 <body>
 
@@ -12,6 +13,13 @@
   <p><a href="./">← Back to the map</a></p>
   <h1>How to use Access BC</h1>
   <p class="lead">Access BC finds accessible walking routes around Boston College, and guides you along them one step at a time. Everything on the map is also available as text, so you can use it with a screen reader and without seeing the map.</p>
+  <div id="listen-controls" class="listen-controls">
+    <button type="button" id="listen-all" class="listen-main"><span aria-hidden="true">🔊 </span>Listen to the whole guide</button>
+    <button type="button" id="listen-pause" hidden>Pause</button>
+    <button type="button" id="listen-stop" hidden>Stop</button>
+    <p id="listen-status" class="listen-status" role="status"></p>
+    <p class="note">Or use the Listen button beside any section. Reading uses your device's voice, at the speed set in the map's Accessibility settings.</p>
+  </div>
 </header>
 
 <nav aria-labelledby="contents-title">
@@ -182,7 +190,11 @@
   <p>Choose <strong>Accessibility</strong> in the top bar (in the menu on phones). Settings are saved on this device.</p>
   <ul>
     <li><strong>High contrast</strong>: darker text and borders, and thicker paths and routes on the map. “Match my device” follows your system's increased contrast setting.</li>
-    <li><strong>Larger text</strong>: bigger text in the panels and for building names on the map. You can also zoom the page with your browser.</li>
+    <li><strong>Dark mode</strong>: a dark map and dark panels, easier on the eyes for many people with light sensitivity. “Match my device” follows your phone or computer's dark mode. This help page follows it too.</li>
+    <li><strong>Larger text</strong>: bigger text in the panels, on this help page, and for building names on the map.</li>
+    <li><strong>Bigger map symbols, and thicker paths and routes</strong>: makes the map's points, icons and lines easier to see.</li>
+    <li><strong>Large step-by-step view</strong>: in step-by-step directions, the current step fills the screen with very large text and buttons. Switch it on and off with the <strong>Large view</strong> button while you're following a route.</li>
+    <li><strong>Zooming</strong>: you can zoom the page with your browser or phone, up to 400%. Access BC rearranges itself to fit, without scrolling sideways; on a small or zoomed screen the directions panel takes the whole screen, and closing it shows the map.</li>
     <li><strong>Reduce motion</strong>: the map jumps instead of gliding.</li>
     <li>Step-by-step mode can turn the map to face your direction of travel and show buildings in 3D. Turn either off if you find them confusing.</li>
     <li>On a phone, <strong>Map layers</strong> (bottom left) shows and hides the map key, so it doesn't cover the map.</li>

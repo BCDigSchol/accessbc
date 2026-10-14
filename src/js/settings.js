@@ -12,7 +12,10 @@ const SETTINGS_DEFAULTS = {
   guidance3D: true,      // in step-by-step mode, tilt the map so buildings stand up
   vibrate: true,         // vibrate on each new step (Android; iPhones don't support it)
   highContrast: 'auto',
+  darkMode: false,       // dark map and panels ('auto' follows the device)
   largerText: false,
+  largeSymbols: false,   // bigger map symbols and thicker paths and routes
+  bigSteps: false,       // step-by-step directions fill the screen, with big text and buttons
   reduceMotion: 'auto',
 };
 
@@ -41,6 +44,10 @@ function highContrast() {
   return settings.highContrast === 'auto' ? systemPrefers('(prefers-contrast: more)') : !!settings.highContrast;
 }
 
+function darkMode() {
+  return settings.darkMode === 'auto' ? systemPrefers('(prefers-color-scheme: dark)') : !!settings.darkMode;
+}
+
 // A short status message for screen readers ("Route found…"), through the page's polite live region.
 // Cleared first so the same message twice is still announced.
 function announce(text) {
@@ -65,6 +72,8 @@ const settingsListeners = [];
 function applySettings() {
   document.documentElement.classList.toggle('high-contrast', highContrast());
   document.documentElement.classList.toggle('larger-text', !!settings.largerText);
+  document.documentElement.classList.toggle('dark', darkMode());
+  document.documentElement.classList.toggle('big-steps', !!settings.bigSteps);
   settingsListeners.forEach((fn) => fn(settings));
 }
 function onSettingsChange(fn) {
@@ -72,14 +81,18 @@ function onSettingsChange(fn) {
 }
 
 document.addEventListener('DOMContentLoaded', applySettings);
+// "Match my device" settings follow the device when it changes (e.g. dark mode at sunset)
+for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)', '(prefers-reduced-motion: reduce)']) {
+  window.matchMedia?.(query).addEventListener?.('change', applySettings);
+}
 
 // ---- Settings dialog --------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   const opener = document.getElementById('settings-toggle');
-  const checkboxes = ['screenReader', 'readAloud', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText'];
-  const selects = ['speechRate', 'highContrast', 'reduceMotion'];
+  const checkboxes = ['screenReader', 'readAloud', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
+  const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
   const speech = 'speechSynthesis' in window;

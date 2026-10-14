@@ -9,7 +9,7 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --text: #f2f2f2;
     --muted: #c8c8c8;
     --bg: #121212;
@@ -84,4 +84,84 @@ li {
 
 footer {
   margin-top: 2rem;
+}
+
+/* Dark mode chosen in the map's settings */
+:root[data-theme="dark"] {
+  --text: #f2f2f2;
+  --muted: #c8c8c8;
+  --bg: #121212;
+  --panel: #1f1f1f;
+  --link: #8ab4ff;
+  --accent: #ff8a80;
+}
+
+html.larger-text {
+  font-size: 125%;
+}
+
+/* Listening */
+.listen-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.listen-controls .note {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.listen-status {
+  margin: 0;
+  color: var(--muted);
+}
+
+button {
+  font: inherit;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 0.4rem;
+  border: 2px solid var(--link);
+  background: var(--bg);
+  color: var(--link);
+  cursor: pointer;
+}
+
+button.listen-main,
+button[aria-pressed="true"] {
+  background: var(--link);
+  color: var(--bg);
+  font-weight: bold;
+}
+
+button:focus-visible {
+  outline: 3px solid var(--link);
+  outline-offset: 2px;
+}
+
+button.listen {
+  min-height: 36px;
+  padding: 0 0.75rem;
+  font-size: 0.95rem;
+}
+
+.speaking {
+  background: var(--panel);
+  outline: 3px solid var(--link);
+  outline-offset: 4px;
+  border-radius: 0.25rem;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }

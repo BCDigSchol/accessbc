@@ -37,7 +37,10 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 - Keyboard and screen reader support throughout: real buttons, labelled controls, dialogs that manage focus, live
   announcements of results and steps, a skip link, headings and landmarks, and building information reachable from
   search without the map.
-- **Help**: [help.html](help.html) is the user guide, including screen reader tips. Keep it up to date when
+- **Low vision**: dark mode (a dark basemap flavor plus dark panels), bigger map symbols and thicker lines, a
+  large step-by-step view that fills the screen, and layouts that work at 200-400% zoom without sideways scrolling.
+- **Help**: [help.html](help.html) is the user guide, including screen reader tips, with Listen buttons that
+  read each section (or the whole guide) aloud. Keep it up to date when
   features change.
 
 [docs/data-collection/](docs/data-collection/) has spreadsheets for collecting what the data doesn't yet record

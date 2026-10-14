@@ -11,6 +11,6 @@ replace its files with the same files from the newer npm package.
 The basemap in `src/basemap/` is built by [scripts/build-basemap.sh](../../scripts/build-basemap.sh) from:
 
 - Basemap tiles: [Protomaps](https://protomaps.com) daily build, OpenStreetMap data © OpenStreetMap contributors (ODbL)
-- Style layers: [@protomaps/basemaps](https://github.com/protomaps/basemaps) 5.7.2 (BSD-3-Clause), `white` flavor
+- Style layers: [@protomaps/basemaps](https://github.com/protomaps/basemaps) 5.7.2 (BSD-3-Clause), `white` and `dark` flavors (dark mode). `scripts/build-basemap.sh --style-only` regenerates just the styles, fonts, and sprites
 - Fonts and sprites: [protomaps/basemaps-assets](https://github.com/protomaps/basemaps-assets) (Noto Sans, OFL)
 - Terrain: [Terrain Tiles on AWS Open Data](https://registry.opendata.aws/terrain-tiles/), Terrarium encoding (mostly USGS 3DEP in this area)

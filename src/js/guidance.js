@@ -77,6 +77,11 @@ function syncAudioButton() {
   button.setAttribute('aria-pressed', String(!!settings.readAloud));
 }
 
+// The "Large view" button shows whether the large step-by-step view is on.
+function syncBigButton() {
+  document.getElementById('guidance-big').setAttribute('aria-pressed', String(!!settings.bigSteps));
+}
+
 function guidanceStatus(html) {
   document.getElementById('guidance-status').innerHTML = html;
 }
@@ -103,6 +108,7 @@ async function startGuidance(map, { follow = false } = {}) {
   document.getElementById('guidance').hidden = false;
   guidanceStatus('');
   syncAudioButton();
+  syncBigButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
   await showStep(map, 0);
@@ -344,6 +350,11 @@ document.addEventListener('DOMContentLoaded', () => {
     syncAudioButton();
     if (settings.readAloud) speak(guide.steps[guide.index].text);
     else window.speechSynthesis.cancel();
+  });
+  document.getElementById('guidance-big').addEventListener('click', () => {
+    settings.bigSteps = !settings.bigSteps;
+    saveSettings();
+    syncBigButton();
   });
   document.getElementById('guidance-repeat').addEventListener('click', () => {
     const step = guide.steps[guide.index];

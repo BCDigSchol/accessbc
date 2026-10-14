@@ -83,7 +83,10 @@ function createLegend(containerId, legendData, map) {
         panelToggle.setAttribute('aria-expanded', String(open));
         panelToggle.innerHTML = `Map layers <span class="legend-arrow" aria-hidden="true">${open ? '▼' : '▲'}</span>`;
     };
-    setLegendOpen(!window.matchMedia('(max-width: 870px)').matches);
+    const narrow = window.matchMedia('(max-width: 870px)');
+    setLegendOpen(!narrow.matches);
+    // Zooming the page in (or rotating a tablet) can make the screen narrow: close the legend then too
+    narrow.addEventListener('change', (e) => setLegendOpen(!e.matches));
     panelToggle.addEventListener('click', () => setLegendOpen(content.hidden));
 
     const setItem = (item, visible) => {

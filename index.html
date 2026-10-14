@@ -90,7 +90,13 @@
       <label for="set-highContrast">High contrast</label>
       <select id="set-highContrast"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
     </div>
+    <div class="setting">
+      <label for="set-darkMode">Dark mode (dark map and panels)</label>
+      <select id="set-darkMode"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
+    </div>
     <div class="setting"><input type="checkbox" id="set-largerText"><label for="set-largerText">Larger text</label></div>
+    <div class="setting"><input type="checkbox" id="set-largeSymbols"><label for="set-largeSymbols">Bigger map symbols, and thicker paths and routes</label></div>
+    <div class="setting"><input type="checkbox" id="set-bigSteps"><label for="set-bigSteps">Large step-by-step view: big text and buttons that fill the screen</label></div>
     <div class="setting">
       <label for="set-reduceMotion">Reduce motion (no map animations)</label>
       <select id="set-reduceMotion"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
@@ -177,6 +183,7 @@
     </div>
     <div class="guidance-tools">
       <button type="button" id="guidance-audio" aria-pressed="false">Speak directions</button>
+      <button type="button" id="guidance-big" aria-pressed="false">Large view</button>
       <button type="button" id="guidance-repeat">Repeat</button>
       <button type="button" id="guidance-orient">Face the right way</button>
       <button type="button" class="where-am-i">Where am I?</button>
