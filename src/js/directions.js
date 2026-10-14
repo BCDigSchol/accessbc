@@ -6,19 +6,21 @@ const MY_LOCATION = '__my_location__';
 const MAX_START_DISTANCE_M = 150;
 const FEEDBACK_FORM = 'https://forms.gle/EqSt5qz31ub9eB5x7';
 
-let routing = null; // {module, graph}
+let routing = null; // {module, graph, elevation, terrain}
 let routeMarkers = [];
+let routeRequest = 0; // so a slow, superseded route lookup never overwrites a newer one
 
 const feet = (m) => (m > 805 ? (m / 1609.34).toFixed(1) + ' mi' : Math.round(m * 3.28084).toLocaleString() + ' ft');
 const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 async function setupDirections(map) {
   const base = new URL('src/', document.baseURI).href;
-  const module = await import(base + 'js/routing/network.mjs');
+  const [module, elevation] = await Promise.all([import(base + 'js/routing/network.mjs'), import(base + 'js/routing/elevation.mjs')]);
   const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
   const [paths, entrances, buildings] = await Promise.all(['accessiblepaths', 'entrances', 'buildings'].map(load));
   const graph = module.buildGraph({ paths, entrances, buildings });
-  routing = { module, graph };
+  const terrain = elevation.createTerrain(terrainTileLoader(base + 'basemap/terrain.pmtiles'), graph.buildings);
+  routing = { module, graph, elevation, terrain };
 
   addRouteLayers(map);
   populateBuildingSelects();
@@ -53,6 +55,21 @@ async function setupDirections(map) {
     setPanelOpen(true);
     updateRoute(map);
   });
+}
+
+// Reads terrain tiles straight from the PMTiles file and decodes them to RGBA pixels.
+function terrainTileLoader(url) {
+  const archive = new pmtiles.PMTiles(url);
+  return async (z, x, y) => {
+    const tile = await archive.getZxy(z, x, y);
+    if (!tile) return null;
+    // Decode without colour management, which would alter the encoded elevation values.
+    const bitmap = await createImageBitmap(new Blob([tile.data], { type: 'image/png' }), { colorSpaceConversion: 'none', premultiplyAlpha: 'none' });
+    const canvas = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(bitmap.width, bitmap.height) : Object.assign(document.createElement('canvas'), { width: bitmap.width, height: bitmap.height });
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(bitmap, 0, 0);
+    return ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+  };
 }
 
 // Whether a building has an accessible entrance linked to the path network.
@@ -99,7 +116,10 @@ function addRouteLayers(map) {
   map.addLayer({
     id: 'route-outdoor', type: 'line', source: 'route', filter: ['==', ['get', 'type'], 'outdoor'],
     layout: { 'line-cap': 'round', 'line-join': 'round' },
-    paint: { 'line-color': '#0050d0', 'line-width': 6 },
+    paint: {
+      'line-color': ['match', ['get', 'grade'], 'very-steep', '#c00000', 'steep', '#e07000', 'unreliable', '#8a8a8a', '#0050d0'],
+      'line-width': 6,
+    },
   }, before);
   map.addLayer({
     id: 'route-indoor', type: 'line', source: 'route', filter: ['==', ['get', 'type'], 'indoor'],
@@ -126,6 +146,7 @@ function clearRoute(map) {
 
 async function updateRoute(map) {
   const { module, graph } = routing;
+  const request = ++routeRequest;
   const fromValue = document.getElementById('route-from').value;
   const toValue = document.getElementById('route-to').value;
   clearRoute(map);
@@ -140,8 +161,10 @@ async function updateRoute(map) {
     try {
       here = await getPosition();
     } catch {
+      if (request !== routeRequest) return;
       return showResult('<p>Your location isn\'t available. Check that location access is allowed, or choose a building to start from.</p>');
     }
+    if (request !== routeRequest) return;
     const start = module.nearestNode(graph, here);
     if (start.d > MAX_START_DISTANCE_M) {
       return showResult(`<p>You're ${feet(start.d)} from the nearest mapped accessible path. Choose a building to start from instead.</p>`);
@@ -164,25 +187,80 @@ async function updateRoute(map) {
   }
 
   const description = module.describeRoute(graph, route);
+  await addSlopes(description);
+  if (request !== routeRequest) return;
   drawRoute(map, description);
 
   const steps = description.steps.map((step, i) => {
     const text = step.type === 'indoor'
       ? `Go through ${step.building ? escapeHtml(step.building) : 'the building'} (indoor accessible route)`
       : i === 0 ? 'Follow the outdoor accessible path' : 'Continue on the outdoor accessible path';
-    return `<li>${text}: ${feet(step.length)}</li>`;
+    return `<li>${text}: ${feet(step.length)}${stepSlope(step)}</li>`;
   });
   const leave = fromValue === MY_LOCATION ? '' : `<li>Leave ${escapeHtml(fromValue)} by its accessible entrance</li>`;
   const indoor = description.indoorLength ? `, ${feet(description.indoorLength)} of it indoors` : '';
   showResult(`
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
+    ${slopeSummary(description)}
     <ol class="route-steps">${leave}${steps.join('')}<li>Arrive at the accessible entrance of ${escapeHtml(toValue)}</li></ol>`);
+}
+
+// Adds an elevation profile to each outdoor step. Indoor steps get none: the terrain data is the ground
+// outside, and says nothing about floors, ramps, or elevators inside a building.
+async function addSlopes(description) {
+  const { elevation, terrain } = routing;
+  try {
+    await Promise.all(description.steps.filter((s) => s.type === 'outdoor').map(async (step) => {
+      step.profile = await elevation.profile(terrain, step.coordinates);
+    }));
+  } catch (err) {
+    console.warn('Slope estimates unavailable:', err);
+    description.steps.forEach((s) => delete s.profile);
+  }
+}
+
+// Slope details for one outdoor step, e.g. ", 3 ft up, 12 ft down, steepest 6.2% downhill (steeper than 1:20)".
+function stepSlope(step) {
+  const p = step.profile;
+  if (!p || step.length < 15) return '';
+  if (step.length - p.unreliableLength < 15) return ', elevation unknown (see note above)';
+  const unknown = p.unreliableLength >= 3 ? `; elevation unknown for ${feet(p.unreliableLength)}` : '';
+  return `, ${feet(p.climb)} up, ${feet(p.descent)} down, steepest ${gradeText(p.maxGrade)}${unknown}`;
+}
+
+// e.g. "6.2% uphill (steeper than 1:20)"
+function gradeText(grade) {
+  const { elevation } = routing;
+  const percent = (Math.abs(grade) * 100).toFixed(1);
+  const direction = Math.abs(grade) < 0.005 ? '' : grade > 0 ? ' uphill' : ' downhill';
+  const note = { 'very-steep': ' (steeper than 1:12)', steep: ' (steeper than 1:20)', gentle: '', unreliable: '' }[elevation.gradeClass(grade)];
+  return `${percent}%${direction}${note}`;
+}
+
+function slopeSummary(description) {
+  const profiles = description.steps.map((s) => s.profile).filter(Boolean);
+  if (!profiles.length) return '';
+  const climb = profiles.reduce((sum, p) => sum + p.climb, 0);
+  const descent = profiles.reduce((sum, p) => sum + p.descent, 0);
+  const steepest = profiles.reduce((m, p) => (Math.abs(p.maxGrade) > Math.abs(m) ? p.maxGrade : m), 0);
+  const unreliable = profiles.reduce((sum, p) => sum + p.unreliableLength, 0);
+  const cls = routing.elevation.gradeClass(steepest);
+  const warning = {
+    'very-steep': '<p class="route-warning">Part of this route is steeper than 1:12, the maximum allowed for an accessible ramp.</p>',
+    steep: '<p class="route-warning">Part of this route is steeper than 1:20, the recommended maximum for an accessible walkway.</p>',
+    gentle: '',
+  }[cls];
+  const unknown = unreliable >= 3
+    ? `<p class="route-note">On ${feet(unreliable)} of this route (shown in grey) the elevation data can't be trusted, usually because of a bridge, a passage between buildings, or stairs. It's left out of these numbers.</p>` : '';
+  return `<p>Outdoors it climbs <strong>${feet(climb)}</strong> and descends ${feet(descent)}. Steepest stretch: about ${gradeText(steepest)}.</p>${warning}${unknown}`;
 }
 
 function drawRoute(map, description) {
   map.getSource('route').setData({
     type: 'FeatureCollection',
-    features: description.steps.map((s) => ({ type: 'Feature', properties: { type: s.type }, geometry: { type: 'LineString', coordinates: s.coordinates } })),
+    features: description.steps.flatMap((s) => (s.profile
+      ? s.profile.pieces.map((p) => ({ type: 'Feature', properties: { type: 'outdoor', grade: p.class }, geometry: { type: 'LineString', coordinates: p.coordinates } }))
+      : [{ type: 'Feature', properties: { type: s.type }, geometry: { type: 'LineString', coordinates: s.coordinates } }])),
   });
   const all = description.steps.flatMap((s) => s.coordinates);
   routeMarkers = [

@@ -459,6 +459,26 @@ hr {
   margin-left: 0.75rem;
 }
 
+.route-swatch.steep {
+  border-top-color: #e07000;
+}
+
+.route-swatch.very-steep {
+  border-top-color: #c00000;
+  margin-left: 0.75rem;
+}
+
+.route-swatch.unreliable {
+  border-top-color: #8a8a8a;
+  margin-left: 0.75rem;
+}
+
+.route-warning {
+  background: #fff4e5;
+  border-left: 4px solid #e07000;
+  padding: 0.4rem 0.6rem;
+}
+
 .route-note {
   margin-top: 0.5rem;
   font-size: 0.8rem;

@@ -22,6 +22,24 @@ The paths were drawn without enforced topology, so the builder repairs the netwo
 
 Anything less certain is left alone and reported for review.
 
+## Slope and climb
+
+Each route's outdoor stretches get an elevation profile from the terrain tiles
+([src/js/routing/elevation.mjs](../../src/js/routing/elevation.mjs)), sampled every 3 m and measured over 15 m so
+pixel noise doesn't read as a steep spot. The terrain data (about 3.5 m per pixel) includes building rooftops, so
+pixels on a building footprint are skipped. Indoor stretches get no slope: the data is the ground outside.
+
+| On the map | Grade | Meaning (ADA) |
+|---|---|---|
+| Blue | ≤ 5% | Within 1:20, the maximum for an accessible walkway |
+| Orange | 5–8.33% | Steeper than 1:20 |
+| Red | 8.33–20% | Steeper than 1:12, the maximum for an accessible ramp |
+| Grey | > 20% | Not a real slope on an accessible path: almost always a footbridge (the data shows the ground below), a passage between buildings, or stairs. Left out of the climb and steepest-grade figures |
+
+Known grey stretch: the O'Neill Library–Maloney Hall link (paths FID 32/33), where the terrain drops 13 m over
+about 25 m. It needs a site check: if it's a bridge the route is fine; if it's stairs, those paths shouldn't be in
+the accessible network.
+
 ## Scripts
 
 ```bash

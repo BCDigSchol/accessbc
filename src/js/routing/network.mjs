@@ -53,10 +53,17 @@ function pointInRing(p, ring) {
 }
 
 export function projectBuildings(buildingFeatures) {
-  return buildingFeatures.map((b) => ({
-    name: b.properties.NAME,
-    rings: (b.geometry.type === 'MultiPolygon' ? b.geometry.coordinates.flat(1) : b.geometry.coordinates).map((r) => r.map(proj)),
-  }));
+  return buildingFeatures.map((b) => {
+    const rings = (b.geometry.type === 'MultiPolygon' ? b.geometry.coordinates.flat(1) : b.geometry.coordinates).map((r) => r.map(proj));
+    const xs = rings.flat().map((p) => p[0]), ys = rings.flat().map((p) => p[1]);
+    return { name: b.properties.NAME, rings, bbox: [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)] };
+  });
+}
+
+// Whether projected point p is inside any building footprint (even-odd, so courtyards count as outside).
+export function insideBuilding(buildings, p) {
+  return buildings.some((b) => p[0] >= b.bbox[0] && p[0] <= b.bbox[2] && p[1] >= b.bbox[1] && p[1] <= b.bbox[3] &&
+    b.rings.filter((r) => pointInRing(p, r)).length % 2 === 1);
 }
 
 // The building containing p (distance 0), else the one with the nearest outline.
