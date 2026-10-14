@@ -43,5 +43,27 @@ document.addEventListener('DOMContentLoaded', function () {
         addBuildingHandler(map);
         setupElevationHandler(map);
         setupDirections(map);
+        onSettingsChange(() => applyMapSettings(map));
+        applyMapSettings(map);
     });
 });
+
+// Map styling that follows the accessibility settings: high contrast thickens paths and routes and darkens
+// labels; larger text enlarges building labels. Layers added later (labels load asynchronously) call this too.
+function applyMapSettings(map) {
+    const strong = highContrast();
+    const set = (layer, prop, value) => { if (map.getLayer(layer)) map.setPaintProperty(layer, prop, value); };
+    set('accessiblepaths-ext', 'line-width', strong ? 4 : 2);
+    set('accessiblepaths-int', 'line-width', strong ? 4 : 2);
+    set('paths', 'line-width', strong ? 5 : 3);
+    set('buildings', 'fill-opacity', strong ? 0.55 : 0.3);
+    set('route-outdoor', 'line-width', strong ? 9 : 6);
+    set('route-indoor', 'line-width', strong ? 9 : 6);
+    set('route-stairs', 'line-width', strong ? 10 : 7);
+    set('building-labels', 'text-color', strong ? '#000000' : '#1b1b1b');
+    set('building-labels', 'text-halo-width', strong ? 3 : 1.6);
+    if (map.getLayer('building-labels')) {
+        const k = settings.largerText ? 1.35 : 1;
+        map.setLayoutProperty('building-labels', 'text-size', ['interpolate', ['linear'], ['zoom'], 16, 11 * k, 19, 15 * k]);
+    }
+}

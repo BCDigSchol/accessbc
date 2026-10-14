@@ -16,14 +16,14 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&l
 
 async function setupDirections(map) {
   const base = new URL('src/', document.baseURI).href;
-  const [module, elevation] = await Promise.all([import(base + 'js/routing/network.mjs'), import(base + 'js/routing/elevation.mjs')]);
+  const [module, elevation, guidance] = await Promise.all(['network', 'elevation', 'guidance'].map((m) => import(`${base}js/routing/${m}.mjs`)));
   const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
   const names = ['accessiblepaths', 'entrances', 'buildings', 'elevators', 'paths'];
   const [paths, entrances, buildings, elevators, footpaths] = await Promise.all(names.map(load));
   const data = { paths, entrances, buildings, elevators, footpaths };
   const accessible = module.buildGraph({ paths, entrances, buildings, elevators });
   const terrain = elevation.createTerrain(terrainTileLoader(base + 'basemap/terrain.pmtiles'), accessible.buildings);
-  routing = { module, elevation, terrain, data, graphs: { accessible } };
+  routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null };
 
   addRouteLayers(map);
   restoreOptions();
@@ -62,10 +62,13 @@ async function setupDirections(map) {
     if (!button) return;
     if (button.dataset.routeFrom) from.value = button.dataset.routeFrom;
     if (button.dataset.routeTo) to.value = button.dataset.routeTo;
-    document.getElementById('building-popup').classList.remove('visible');
+    closeBuildingInfo();
     setPanelOpen(true);
     updateRoute(map);
   });
+
+  // Open by default on wider screens. On phones the panel would cover half the map, so it's one tap away.
+  if (window.matchMedia('(min-width: 871px)').matches) setPanelOpen(true, false);
 }
 
 // Reads terrain tiles straight from the PMTiles file and decodes them to RGBA pixels.
@@ -136,12 +139,13 @@ function isRoutable(building) {
   return !!routing && currentGraph().entrances.some((e) => e.building === building);
 }
 
-function setPanelOpen(open) {
+function setPanelOpen(open, moveFocus = true) {
   const panel = document.getElementById('directions-panel');
   panel.hidden = !open;
   document.getElementById('directions-toggle').setAttribute('aria-expanded', String(open));
   document.querySelector('.topnav').classList.remove('responsive');
-  if (open) document.getElementById('route-from').focus();
+  document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
+  if (open && moveFocus) document.getElementById('route-from').focus();
 }
 
 function populateBuildingSelects() {
@@ -196,6 +200,23 @@ function addRouteLayers(map) {
     layout: { 'line-join': 'round' },
     paint: { 'line-color': '#b8860b', 'line-width': 7, 'line-dasharray': [0.6, 0.4] },
   }, before);
+
+  // The current step in step-by-step mode: drawn on top, with a ring where the step starts.
+  map.addSource('route-step', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+  map.addLayer({
+    id: 'route-step-casing', type: 'line', source: 'route-step', filter: ['==', ['get', 'kind'], 'line'],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#ffffff', 'line-width': 14 },
+  }, before);
+  map.addLayer({
+    id: 'route-step-line', type: 'line', source: 'route-step', filter: ['==', ['get', 'kind'], 'line'],
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: { 'line-color': '#0050d0', 'line-width': 9 },
+  }, before);
+  map.addLayer({
+    id: 'route-step-point', type: 'circle', source: 'route-step', filter: ['==', ['get', 'kind'], 'point'],
+    paint: { 'circle-radius': 9, 'circle-color': '#ffffff', 'circle-stroke-color': '#0050d0', 'circle-stroke-width': 4 },
+  });
 }
 
 function getPosition() {
@@ -221,6 +242,8 @@ async function updateRoute(map) {
   const graph = currentGraph();
   const fromValue = document.getElementById('route-from').value;
   const toValue = document.getElementById('route-to').value;
+  stopGuidance(map);
+  routing.current = null;
   clearRoute(map);
   if (!fromValue || !toValue) return showResult('');
   if (fromValue === toValue) return showResult('<p>Choose two different buildings.</p>');
@@ -306,9 +329,18 @@ async function updateRoute(map) {
   showResult(`
     ${unmet}
     <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
+    <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
     ${stairsNote}
     ${slopeSummary(description)}
     <ol class="route-steps">${leave}${steps.join('')}<li>Arrive at the accessible entrance of ${escapeHtml(toValue)}</li></ol>`);
+
+  routing.current = { graph, route, from: fromLabel, to: toValue, fromBuilding: fromValue !== MY_LOCATION };
+  speak(`Route found: ${feet(description.length)}${stairs ? ', using stairs' : ''}. Choose Start step-by-step directions to begin.`);
+  if (routing.autoStart) {
+    const follow = routing.autoStart.follow;
+    routing.autoStart = null;
+    startGuidance(map, { follow });
+  }
 }
 
 // Adds an elevation profile to each outdoor step. Indoor steps get none: the terrain data is the ground
@@ -374,7 +406,7 @@ function drawRoute(map, description) {
     new maplibregl.Marker({ color: '#A8100B' }).setLngLat(all.at(-1)).addTo(map),
   ];
   const bounds = all.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(all[0], all[0]));
-  map.fitBounds(bounds, { padding: unobstructedPadding(map), maxZoom: 18 });
+  moveMap(map, 'fitBounds', { bounds, padding: unobstructedPadding(map), maxZoom: 18 });
 }
 
 // Map padding that keeps the route clear of the top bar, legend, and directions panel,

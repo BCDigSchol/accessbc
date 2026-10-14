@@ -7,28 +7,22 @@ function createElevationLegend(containerId) {
     elevSection.classList.add('legend-section');
     elevSection.id = 'legend-elevation-section';
 
-    const elevHeader = document.createElement('h4');
+    const elevHeader = document.createElement('h3');
     elevHeader.classList.add('legend-subheader');
-
-    const elevToggleSpan = document.createElement('span');
-    elevToggleSpan.textContent = '►';
-    elevToggleSpan.style.marginLeft = '0.5rem';
-    elevToggleSpan.style.cursor = 'pointer';
-
-    const elevHeaderLabel = document.createElement('span');
-    elevHeaderLabel.textContent = 'Elevation';
-    elevHeaderLabel.classList.add('legend-category-label');
-    elevHeaderLabel.style.cursor = 'pointer';
-    elevHeaderLabel.style.fontWeight = 'bold';
-
-    elevHeader.textContent = '';
-    elevHeader.appendChild(elevHeaderLabel);
-    elevHeader.appendChild(elevToggleSpan);
+    const elevToggle = document.createElement('button');
+    elevToggle.type = 'button';
+    elevToggle.classList.add('legend-category-toggle');
+    elevToggle.setAttribute('aria-expanded', 'false');
+    elevToggle.setAttribute('aria-controls', 'elevation-content');
+    elevToggle.innerHTML = '<span class="legend-category-label">Elevation</span><span class="legend-arrow" aria-hidden="true">►</span>';
+    const elevToggleSpan = elevToggle.querySelector('.legend-arrow');
+    elevHeader.appendChild(elevToggle);
 
     elevSection.appendChild(elevHeader);
 
     const elevContent = document.createElement('div');
     elevContent.classList.add('legend-category-content', 'collapsed');
+    elevContent.id = 'elevation-content';
     elevContent.style.maxHeight = '0';
     elevContent.style.overflow = 'hidden';
 
@@ -37,6 +31,7 @@ function createElevationLegend(containerId) {
     elevInfo.style.fontSize = '0.9rem';
     elevInfo.style.color = '#444';
     elevInfo.style.padding = '0.5rem 0';
+    elevInfo.setAttribute('aria-live', 'polite');
     elevInfo.innerHTML = 'Click on the map to get elevation change.';
     elevContent.appendChild(elevInfo);
 
@@ -47,6 +42,7 @@ function createElevationLegend(containerId) {
         const isCollapsed = elevContent.classList.toggle('collapsed');
         elevContent.style.maxHeight = isCollapsed ? '0' : 'none';
         elevToggleSpan.textContent = isCollapsed ? '►' : '▼';
+        elevToggle.setAttribute('aria-expanded', String(!isCollapsed));
         elevationActive = !isCollapsed;
         if (isCollapsed && marker1) {
         marker1.remove();
@@ -59,11 +55,7 @@ function createElevationLegend(containerId) {
     }
     };
 
-    elevHeader.addEventListener('click', toggleElevation);
-    elevToggleSpan.addEventListener('click', (e) => {
-        e.stopPropagation();
-        toggleElevation();
-    });  
+    elevToggle.addEventListener('click', toggleElevation);
 }
 // Sets up coordinate variables for elevation handler
 let coord0 = null;
