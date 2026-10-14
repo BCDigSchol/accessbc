@@ -86,6 +86,7 @@ function openBuildingInfo(properties) {
     <button type="button" class="close" id="building-popup-close" aria-label="Close building information">×</button>
     <h2 id="building-name">${escapeText(buildingName)}</h2>
     ${descriptionHtml}
+    ${typeof buildingSurroundingsHtml === 'function' ? buildingSurroundingsHtml(buildingName) : ''}
     ${directionsHtml}
   `;
   const popup = document.getElementById('building-popup');

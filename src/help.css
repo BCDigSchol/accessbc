@@ -1,0 +1,87 @@
+/* The help page: plain, readable, and high contrast */
+:root {
+  --text: #1b1b1b;
+  --muted: #444;
+  --bg: #ffffff;
+  --panel: #f4f2ee;
+  --link: #0050d0;
+  --accent: #8a0d09;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #f2f2f2;
+    --muted: #c8c8c8;
+    --bg: #121212;
+    --panel: #1f1f1f;
+    --link: #8ab4ff;
+    --accent: #ff8a80;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  max-width: 46rem;
+  padding: 1rem 1rem 3rem;
+  font-family: 'Lato', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin: 0.5rem 0;
+  color: var(--accent);
+}
+
+h2 {
+  font-size: 1.4rem;
+  margin: 2rem 0 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 2px solid var(--panel);
+}
+
+h3 {
+  font-size: 1.1rem;
+  margin: 1.25rem 0 0.25rem;
+}
+
+.lead {
+  font-size: 1.15rem;
+}
+
+nav {
+  background: var(--panel);
+  border-radius: 0.5rem;
+  padding: 0.25rem 1rem 0.75rem;
+  margin: 1rem 0;
+}
+
+nav h2 {
+  border: none;
+  margin-top: 0.5rem;
+}
+
+a {
+  color: var(--link);
+}
+
+a:focus-visible {
+  outline: 3px solid var(--link);
+  outline-offset: 2px;
+}
+
+li {
+  margin: 0.3rem 0;
+}
+
+footer {
+  margin-top: 2rem;
+}

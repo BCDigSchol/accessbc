@@ -5,6 +5,7 @@ const SETTINGS_KEY = 'accessbc.settings';
 const SETTINGS_DEFAULTS = {
   readAloud: false,      // speak directions (off: screen reader users already hear them)
   speechRate: 1,
+  clockFace: true,       // directions as clock positions, from the phone's compass (when it has one)
   headingUp: true,       // in step-by-step mode, turn the map to face the direction of travel
   guidance3D: true,      // in step-by-step mode, tilt the map so buildings stand up
   vibrate: true,         // vibrate on each new step (Android; iPhones don't support it)
@@ -75,7 +76,7 @@ document.addEventListener('DOMContentLoaded', applySettings);
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   const opener = document.getElementById('settings-toggle');
-  const checkboxes = ['readAloud', 'headingUp', 'guidance3D', 'vibrate', 'largerText'];
+  const checkboxes = ['readAloud', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText'];
   const selects = ['speechRate', 'highContrast', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
@@ -115,7 +116,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Escape') close();
     if (e.key === 'Tab') {
       // keep keyboard focus inside the dialog while it's open
-      const focusable = [...dialog.querySelectorAll('button, input, select')];
+      const focusable = [...dialog.querySelectorAll('button, input, select, a[href]')];
       const first = focusable[0], last = focusable[focusable.length - 1];
       if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
       else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }

@@ -29,6 +29,10 @@ function handleAboutClick() {
   instruction.textContent = 'To explore the different Boston College campuses, select the campus you wish to view on the top menu. Use the legend to turn on/off different layers. Use Directions to find an accessible route between buildings, or click a building and choose "Directions from here" or "Directions to here". Start step-by-step directions to be guided one instruction at a time. The Accessibility button has settings for reading directions aloud, high contrast, larger text, and reduced motion.';
   popup.appendChild(instruction);
 
+  const help = document.createElement('p');
+  help.innerHTML = 'New here, or using a screen reader? Read <a href="help.html" style="color: #fff; font-weight: bold;">how to use Access BC</a>.';
+  popup.appendChild(help);
+
   const hr2 = document.createElement('hr');
   popup.appendChild(hr2);
 

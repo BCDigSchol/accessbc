@@ -12,13 +12,16 @@ const guide = {
   marker: null,       // "you are here" marker while following
   offRouteFixes: 0,
   announcedApproach: -1,
+  backToRoute: null,  // while off the route: the bearing back to it, for "Face the right way"
 };
 
 // Speak text if reading aloud is on. Uses the browser's built-in speech; nothing is sent anywhere.
 function speak(text) {
   if (!settings.readAloud || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Say units in full ("ft" is read as letters by some voices)
+  const words = text.replace(/(\d) ft\b/g, '$1 feet').replace(/(\d) mi\b/g, '$1 miles');
+  const utterance = new SpeechSynthesisUtterance(words);
   utterance.rate = Number(settings.speechRate) || 1;
   utterance.lang = 'en-US';
   window.speechSynthesis.speak(utterance);
@@ -40,11 +43,13 @@ async function startGuidance(map, { follow = false } = {}) {
   if (!current) return;
   const { guidance, module } = routing;
   guide.steps = guidance.buildSteps(current.graph, current.route, current);
+  guide.steps.forEach((step) => { step.cues = stepCues(step); });
   guide.starts = guide.steps.reduce((acc, step, i) => (acc.push(i ? acc[i - 1] + guide.steps[i - 1].length : 0), acc), []);
   guide.line = guide.steps.flatMap((s) => s.coordinates).map(module.proj);
   guide.active = true;
   guide.announcedApproach = -1;
   guide.offRouteFixes = 0;
+  guide.backToRoute = null;
 
   const panel = document.getElementById('directions-panel');
   panel.classList.add('guiding');
@@ -63,6 +68,7 @@ function stopGuidance(map) {
   if (!guide.active) return;
   guide.active = false;
   stopFollowing();
+  stopPointing();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   const panel = document.getElementById('directions-panel');
   panel.classList.remove('guiding', 'adding-stop');
@@ -106,6 +112,11 @@ async function showStep(map, index) {
   const total = guide.steps.length;
   document.getElementById('guidance-progress').textContent = `Step ${guide.index + 1} of ${total}`;
   document.getElementById('guidance-instruction').textContent = step.text;
+  // Setting off (at the start, after a stop, out of a building): which way that is from where you face
+  const hint = ['depart', 'stop', 'exit'].includes(step.kind) && facing() !== null && settings.clockFace
+    ? `The way to go is ${directionWords(step.heading)}.` : '';
+  const cues = [hint, ...(step.cues || [])].filter(Boolean);
+  document.getElementById('guidance-cues').innerHTML = cues.map((c) => `<li>${escapeHtml(c)}</li>`).join('');
   document.getElementById('guidance-prev').disabled = guide.index === 0;
   document.getElementById('guidance-next').disabled = guide.index === total - 1;
   document.getElementById('guidance-detail').textContent = '';
@@ -123,7 +134,7 @@ async function showStep(map, index) {
   });
 
   if (!guide.watch) frameStep(map, step);
-  speak(`Step ${guide.index + 1}. ${step.text}`);
+  speak([`Step ${guide.index + 1}. ${step.text}`, ...cues].join(' '));
   if (settings.vibrate && navigator.vibrate) navigator.vibrate(80);
 }
 
@@ -173,7 +184,7 @@ function locateOnRoute(p) {
   for (let i = 1; i < guide.line.length; i++) {
     const a = guide.line[i - 1], b = guide.line[i], len = dist(a, b);
     const r = nearestOnSegment(p, a, b);
-    if (r.d < best.off) best = { off: r.d, along: travelled + r.t * len };
+    if (r.d < best.off) best = { off: r.d, along: travelled + r.t * len, point: r.point };
     travelled += len;
   }
   return best;
@@ -202,12 +213,17 @@ function onPosition(map, position) {
   // Off the route for several fixes in a row: offer to re-route from here.
   if (off > Math.max(25, accuracy * 1.5)) {
     if (++guide.offRouteFixes >= 3) {
-      guidanceStatus('You seem to be off the route. <button type="button" id="guidance-reroute">Re-route from here</button>');
-      speak('You seem to be off the route.');
+      // Say which way the route is, so you can head back to it (or let "Face the right way" turn you to it)
+      const back = locateOnRoute(routing.module.proj(here)).point;
+      guide.backToRoute = lonlatBearing(here, routing.module.unproj(back));
+      const said = `You seem to be off the route. It’s about ${feet(off)} away, ${directionWords(guide.backToRoute)}.`;
+      if (guide.offRouteFixes === 3 || guide.offRouteFixes % 10 === 0) speak(said);
+      guidanceStatus(`${escapeHtml(said)} <button type="button" id="guidance-reroute">Re-route from here</button>`);
     }
     return;
   }
   guide.offRouteFixes = 0;
+  guide.backToRoute = null;
 
   // Advance (never go back automatically) once past the start of a later step.
   let next = guide.index;
@@ -254,6 +270,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.id === 'guidance-start') startGuidance(window.map);
     // Audio guidance: steps read aloud, advancing on their own as you walk
     if (e.target.closest('#guidance-start-audio')) {
+      if (settings.clockFace) startCompass(); // asks for compass access on iPhones, which needs this button press
       settings.readAloud = true;
       saveSettings();
       startGuidance(window.map, { follow: true });

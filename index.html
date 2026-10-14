@@ -20,6 +20,7 @@
 <script src="src/js/directions.js"></script>
 <script src="src/js/guidance.js"></script>
 <script src="src/js/nearby.js"></script>
+<script src="src/js/orientation.js"></script>
 </head>
 <body>
 
@@ -44,6 +45,7 @@
   <button type="button" id="brookline" class="menu-button" aria-label="Show Brookline campus on the map">Brookline</button>
   <button type="button" id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
   <button type="button" id="settings-toggle" class="menu-button" aria-haspopup="dialog">Accessibility</button>
+  <a href="help.html" class="menu-button nav-link">Help</a>
 
   <!-- Search Bars -->
   <div class="search-bar-container">
@@ -75,6 +77,7 @@
       <button type="button" id="set-testVoice">Test</button>
     </div>
     <p class="route-note">If you use a screen reader, you'll already hear each step, so you may want this off.</p>
+    <div class="setting"><input type="checkbox" id="set-clockFace"><label for="set-clockFace">Give directions as clock positions (“at your 2 o’clock”), using my phone’s compass</label></div>
     <div class="setting"><input type="checkbox" id="set-headingUp"><label for="set-headingUp">In step-by-step mode, turn the map to face my direction of travel</label></div>
     <div class="setting"><input type="checkbox" id="set-guidance3D"><label for="set-guidance3D">In step-by-step mode, show buildings in 3D</label></div>
     <div class="setting"><input type="checkbox" id="set-vibrate"><label for="set-vibrate">Vibrate at each new step (Android phones)</label></div>
@@ -91,11 +94,17 @@
       <select id="set-reduceMotion"><option value="auto">Match my device</option><option value="true">On</option><option value="false">Off</option></select>
     </div>
   </fieldset>
+  <p class="route-note"><a href="help.html">Help: how to use Access BC, including with a screen reader</a></p>
 </div>
 
 <section id="directions-panel" aria-labelledby="directions-title" hidden>
   <button type="button" id="directions-close" class="directions-close" aria-label="Close directions">×</button>
   <h2 id="directions-title">Accessible directions</h2>
+  <div class="where-row">
+    <button type="button" class="where-am-i">Where am I?</button>
+    <a href="help.html" class="help-link">How to use directions</a>
+  </div>
+  <div id="where-result" class="where-result"></div>
   <details class="route-options nearby">
     <summary>Find something nearby</summary>
     <div class="route-field">
@@ -157,6 +166,7 @@
     <div aria-live="polite" aria-atomic="true">
       <p id="guidance-progress" class="guidance-progress"></p>
       <p id="guidance-instruction" class="guidance-instruction"></p>
+      <ul id="guidance-cues" class="guidance-cues"></ul>
     </div>
     <p id="guidance-detail" class="guidance-detail"></p>
     <div class="guidance-nav">
@@ -166,6 +176,8 @@
     <div class="guidance-tools">
       <button type="button" id="guidance-audio" aria-pressed="false">Speak directions</button>
       <button type="button" id="guidance-repeat">Repeat</button>
+      <button type="button" id="guidance-orient">Face the right way</button>
+      <button type="button" class="where-am-i">Where am I?</button>
       <button type="button" id="guidance-add-stop">Add a stop</button>
       <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
       <button type="button" id="guidance-exit">Exit step-by-step</button>
