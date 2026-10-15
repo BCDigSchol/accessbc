@@ -35,10 +35,9 @@ async function setupDirections(map) {
   routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null, stops: [] };
 
   addRouteLayers(map);
-  loadRoutePoints(); // full copies of the point layers, for showing only those near a route
+  routing.pointsLoaded = loadRoutePoints(); // full copies of the point layers, for showing only those near a route
   restoreOptions();
   populateBuildingSelects();
-  startFromMyLocation();
   for (const id of ['opt-stairs', 'opt-indoor', 'opt-slope']) {
     document.getElementById(id).addEventListener('change', () => {
       saveOptions();
@@ -125,6 +124,78 @@ async function setupDirections(map) {
 
   // Open by default on wider screens. On phones the panel would cover half the map, so it's one tap away.
   if (window.matchMedia('(min-width: 871px)').matches) setPanelOpen(true, false);
+
+  // A trip in the page address (after a reload, or from a shared link) comes back; otherwise start from your location
+  if (!(await restoreTripFromUrl(map))) await startFromMyLocation();
+}
+
+// ---- The trip in the page address -------------------------------------------------------------------
+// The trip (start, stops, destination, and in step-by-step mode the step you're on and whether your location is
+// followed) is kept in the address, so reloading the page doesn't lose it and the link can be shared:
+//   ?from=Gasson Hall&stop=Fulton Hall&to=McElroy Commons&step=3&follow=1
+// "me" is your location; a place that isn't a building is "place:lon,lat:label". The address is replaced, not
+// added to history, so Back still leaves the page.
+
+const placeParam = (place) => `place:${place.lonlat[0].toFixed(6)},${place.lonlat[1].toFixed(6)}:${place.label}`;
+
+// A place from the address. Destinations and stops are "Find nearby" places, which read as "the outdoor seating near…".
+function parsePlace(value, withPhrase = false) {
+  const m = /^place:(-?[\d.]+),(-?[\d.]+):(.+)$/.exec(value);
+  if (!m) return null;
+  const label = m[3];
+  return { label, lonlat: [Number(m[1]), Number(m[2])], ...(withPhrase ? { phrase: `the ${label[0].toLowerCase()}${label.slice(1)}` } : {}) };
+}
+
+function saveTripToUrl() {
+  if (!routing) return;
+  const from = document.getElementById('route-from').value, to = document.getElementById('route-to').value;
+  const params = new URLSearchParams();
+  // "My location" by default isn't saved: it's the default again after a reload
+  if (from === MY_LOCATION && routing.fromChosen) params.set('from', 'me');
+  else if (from === HERE && routing.fromPlace) params.set('from', placeParam(routing.fromPlace));
+  else if (from && from !== MY_LOCATION) params.set('from', from);
+  for (const stop of routing.stops) if (stop.building || stop.lonlat) params.append('stop', stop.building || placeParam(stop));
+  if (to === MY_LOCATION) params.set('to', 'me');
+  else if (to === PLACE && routing.place) params.set('to', placeParam(routing.place));
+  else if (to) params.set('to', to);
+  if (guide.active) {
+    params.set('step', String(guide.index + 1));
+    if (guide.watch !== null) params.set('follow', '1');
+  }
+  const query = params.toString();
+  const url = query ? `?${query}` : location.pathname;
+  if (url !== location.search) history.replaceState(null, '', url);
+}
+
+// Restores a trip from the address. Returns whether there was one. Unknown buildings are ignored.
+async function restoreTripFromUrl(map) {
+  const params = new URLSearchParams(location.search);
+  if (!params.has('to') && !params.has('from')) return false;
+  const from = document.getElementById('route-from'), to = document.getElementById('route-to');
+  const listed = (select, value) => [...select.options].some((o) => o.value === value);
+  const f = params.get('from');
+  if (f === 'me' && listed(from, MY_LOCATION)) from.value = MY_LOCATION;
+  else if (f?.startsWith('place:') && parsePlace(f)) setPlaceStart(parsePlace(f));
+  else if (f && listed(from, f)) from.value = f;
+  if (from.value) routing.fromChosen = true;
+  else await startFromMyLocation(); // none given, or not one we know
+  routing.stops = params.getAll('stop')
+    .map((v) => (v.startsWith('place:') ? parsePlace(v, true) : listed(to, v) ? { label: v, building: v } : null))
+    .filter(Boolean).slice(0, MAX_STOPS);
+  renderStops();
+  const t = params.get('to');
+  if (t === 'me' && listed(to, MY_LOCATION)) to.value = MY_LOCATION;
+  else if (t?.startsWith('place:')) { const place = parsePlace(t, true); if (place) setPlaceDestination(place); }
+  else if (t && listed(to, t)) to.value = t;
+
+  // Back into step-by-step directions at the same step. Phones only allow speech and sound after a button press,
+  // so say how to hear the step again.
+  const step = Number(params.get('step'));
+  if (step >= 1) routing.autoStart = { follow: params.get('follow') === '1', step: step - 1, restored: true, keepFocus: true };
+  await routing.pointsLoaded; // step cues need the point layers
+  setPanelOpen(true, false);
+  updateRoute(map);
+  return true;
 }
 
 // Reads terrain tiles straight from the PMTiles file and decodes them to RGBA pixels.
@@ -384,6 +455,7 @@ async function updateRoute(map) {
   routing.current = null;
   routing.routeCoordinates = null;
   clearRoute(map);
+  saveTripToUrl();
   if (!fromValue || !toValue) return showResult('');
   if (fromValue === toValue) return showResult('<p>Choose two different buildings.</p>');
 
@@ -520,9 +592,10 @@ async function updateRoute(map) {
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
   speak(message);
   if (routing.autoStart) {
-    const follow = routing.autoStart.follow;
+    const { follow, step, intro, keepFocus, restored } = routing.autoStart;
     routing.autoStart = null;
-    startGuidance(map, { follow });
+    await startGuidance(map, { follow, step: step || 0, intro, keepFocus });
+    if (restored && (settings.readAloud || settings.soundCues)) guidanceStatus('Your trip is back where you left it. Choose Repeat to hear the current step.');
   }
 }
 

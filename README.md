@@ -23,7 +23,9 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
   from you, your starting building, or along your route.
 - **Step-by-step mode**: one instruction at a time with turns and landmarks; the map follows, facing the direction
   of travel in 3D. **Follow my location** advances steps by GPS, warns before turns, says which way the route is
-  when you leave it, and offers to re-route. Steps mention curb ramps, stairs that branch off, and seating.
+  when you leave it, and (by default) finds a new route from where you are, keeping stops not yet reached. The
+  trip, including the current step, is kept in the page address (`?from=…&stop=…&to=…&step=…&follow=1`), so a reload
+  doesn't lose it and a link shares it. Steps mention curb ramps, stairs that branch off, and seating.
 - **Audio guidance**: one button to start step-by-step mode read aloud and following your location.
 - **Hands free**: the screen stays on during step-by-step mode (Screen Wake Lock), short sounds mark a new step
   (from the side of the turn), a turn coming up, leaving the route, and arriving, and vibration patterns tell left

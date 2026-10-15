@@ -5,6 +5,7 @@ const SETTINGS_KEY = 'accessbc.settings';
 const SETTINGS_DEFAULTS = {
   readAloud: false,      // speak directions (off: screen reader users already hear them)
   screenReader: false,   // the student uses a screen reader: never speak as well, so nothing is heard twice
+  autoReroute: true,     // find a new route when you leave it while your location is followed
   soundCues: true,       // short tones for a new step, a turn coming up, leaving the route, arriving
   speechRate: 1,
   clockFace: true,       // directions as clock positions, from the phone's compass (when it has one)
@@ -91,7 +92,7 @@ for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)',
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   const opener = document.getElementById('settings-toggle');
-  const checkboxes = ['screenReader', 'readAloud', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
+  const checkboxes = ['screenReader', 'readAloud', 'autoReroute', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
   const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
