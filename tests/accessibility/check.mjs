@@ -19,6 +19,10 @@ const BASE = `http://localhost:${PORT}/`;
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 const FAIL_ON = new Set(['serious', 'critical']);
 const ON_CAMPUS = { longitude: -71.17, latitude: 42.3355 }; // near Gasson Hall
+// CI machines have no graphics card, so the map is drawn in software. Tilting it into 3D (buildings and terrain)
+// in step-by-step mode is then slow enough to freeze the page, so these checks keep the map flat and still.
+// That doesn't change anything the checks look at: the panels, dialogs, and announcements.
+const LIGHT_MAP = { guidance3D: false, headingUp: false, reduceMotion: true };
 
 const problems = [];   // failures: axe serious/critical, and failed behaviour checks
 const notes = [];      // axe minor/moderate, reported but not failing
@@ -42,9 +46,11 @@ const appReady = (page) => page.waitForFunction(() => typeof routing !== 'undefi
 
 async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {} } = {}) {
   const context = await browser.newContext({ viewport, geolocation: ON_CAMPUS, permissions: ['geolocation'] });
-  await context.addInitScript((s) => localStorage.setItem('accessbc.settings', JSON.stringify(s)), settings);
+  await context.addInitScript((s) => localStorage.setItem('accessbc.settings', JSON.stringify(s)), { ...LIGHT_MAP, ...settings });
   const page = await context.newPage();
+  page.setDefaultTimeout(60000);
   page.on('pageerror', (err) => problems.push(`[page error] ${err.message}`));
+  page.on('crash', () => problems.push('[page crashed]'));
   await page.goto(BASE);
   await appReady(page);
   return page;

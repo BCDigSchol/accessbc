@@ -13,7 +13,11 @@ const guide = {
   offRouteFixes: 0,
   announcedApproach: -1,
   backToRoute: null,  // while off the route: the bearing back to it, for "Face the right way"
+  lastReroute: 0,     // when the route was last found again automatically (ms)
 };
+
+const REROUTE_AFTER_FIXES = 3;  // location readings off the route in a row before finding a new route
+const REROUTE_GAP_MS = 20000;   // at most one automatic re-route this often, so a bad GPS patch can't loop
 
 // ---- Hands-free: sounds, vibration, and keeping the screen on ------------------------------------------
 
@@ -86,7 +90,9 @@ function guidanceStatus(html) {
   document.getElementById('guidance-status').innerHTML = html;
 }
 
-async function startGuidance(map, { follow = false } = {}) {
+// step: the step to show first (when a trip is restored from the page address). intro: said before the first step
+// (e.g. "New route."). keepFocus: leave keyboard focus where it is (after an automatic re-route mid-walk).
+async function startGuidance(map, { follow = false, step = 0, intro = '', keepFocus = false } = {}) {
   const current = routing.current;
   if (!current) return;
   const { guidance, module } = routing;
@@ -111,8 +117,8 @@ async function startGuidance(map, { follow = false } = {}) {
   syncBigButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
-  await showStep(map, 0);
-  document.getElementById('guidance-next').focus();
+  await showStep(map, step, intro);
+  if (!keepFocus) document.getElementById('guidance-next').focus();
 }
 
 function stopGuidance(map) {
@@ -130,6 +136,7 @@ function stopGuidance(map) {
   map.getSource('route-step').setData({ type: 'FeatureCollection', features: [] });
   setRouteDimmed(map, false);
   moveMap(map, 'easeTo', { pitch: 0, bearing: 0 });
+  saveTripToUrl();
 }
 
 function setRouteDimmed(map, dimmed) {
@@ -158,7 +165,7 @@ async function stepSlopeNote(step) {
   }
 }
 
-async function showStep(map, index) {
+async function showStep(map, index, intro = '') {
   guide.index = Math.max(0, Math.min(guide.steps.length - 1, index));
   const step = guide.steps[guide.index];
   const total = guide.steps.length;
@@ -186,7 +193,8 @@ async function showStep(map, index) {
   });
 
   if (!guide.watch) frameStep(map, step);
-  speak([`Step ${guide.index + 1}. ${step.text}`, ...cues].join(' '));
+  speak([intro, `Step ${guide.index + 1}. ${step.text}`, ...cues].filter(Boolean).join(' '));
+  saveTripToUrl();
   soundCue(step.kind === 'arrive' || step.kind === 'stop' ? 'arrive' : 'step', step);
   buzz(vibrationFor(step));
 }
@@ -212,12 +220,18 @@ function startFollowing(map) {
   guidanceStatus('Finding your location…');
   guide.watch = navigator.geolocation.watchPosition(
     (position) => onPosition(map, position),
-    () => {
-      guidanceStatus('Your location isn’t available. Check that location access is allowed, and use Next and Back instead.');
-      stopFollowing();
+    (error) => {
+      // Refused: stop. Lost for a moment (no GPS signal, a timeout): keep following; it often comes back.
+      if (error.code === error.PERMISSION_DENIED) {
+        guidanceStatus('Location access isn’t allowed, so Access BC can’t follow you. Allow it for this site, or use Next and Back.');
+        stopFollowing();
+      } else {
+        guidanceStatus('Your location is unavailable for the moment. Keep going, or use Next and Back.');
+      }
     },
     { enableHighAccuracy: true, maximumAge: 2000 }
   );
+  saveTripToUrl();
 }
 
 function stopFollowing() {
@@ -228,6 +242,7 @@ function stopFollowing() {
   const button = document.getElementById('guidance-follow');
   button.setAttribute('aria-pressed', 'false');
   button.textContent = 'Follow my location';
+  saveTripToUrl();
 }
 
 // Nearest point on the route to a position: distance along the route and distance off it (metres).
@@ -263,9 +278,20 @@ function onPosition(map, position) {
   const step = guide.steps[guide.index];
   moveMap(map, 'easeTo', { center: here, zoom: 18.5, bearing: settings.headingUp ? step.heading : 0, pitch: settings.guidance3D ? 50 : 0, duration: 600 });
 
-  // Off the route for several fixes in a row: offer to re-route from here.
+  // Off the route for several fixes in a row: find a new route from here (like other map apps), or if that's
+  // off or not possible, say which way the route is and offer to re-route.
   if (off > Math.max(25, accuracy * 1.5)) {
-    if (++guide.offRouteFixes >= 3) {
+    if (++guide.offRouteFixes >= REROUTE_AFTER_FIXES && settings.autoReroute && Date.now() - guide.lastReroute > REROUTE_GAP_MS
+      && routing.module.nearestNode(routing.current.graph, here).d <= MAX_START_DISTANCE_M) {
+      guide.lastReroute = Date.now();
+      soundCue('offRoute');
+      buzz([500]);
+      speak('Off route. Finding a new route from here.');
+      guidanceStatus('You left the route. Finding a new route from here…');
+      rerouteFromHere(map, { automatic: true });
+      return;
+    }
+    if (guide.offRouteFixes >= REROUTE_AFTER_FIXES) {
       // Say which way the route is, so you can head back to it (or let "Face the right way" turn you to it)
       const back = locateOnRoute(routing.module.proj(here)).point;
       guide.backToRoute = lonlatBearing(here, routing.module.unproj(back));
@@ -307,6 +333,13 @@ function onPosition(map, position) {
 // Partway through a trip, before changing it: drop the stops already passed, start the new route from where
 // you are (your GPS position if following, else the start of the current step), and resume guidance after.
 // A stop just added that turns out to be behind you becomes the next stop.
+// Find a new route from here and carry on with step-by-step directions, keeping the stops not yet reached.
+function rerouteFromHere(map, { automatic = false } = {}) {
+  prepareRerouteFromHere();
+  if (automatic) Object.assign(routing.autoStart, { intro: 'New route.', keepFocus: true });
+  updateRoute(map);
+}
+
 function prepareRerouteFromHere(newStop) {
   const chosen = routing.stops.filter((st) => st.building || st.lonlat);
   const reached = guide.steps.slice(0, guide.index + 1).filter((st) => st.kind === 'stop').length;
@@ -334,13 +367,7 @@ document.addEventListener('DOMContentLoaded', () => {
       saveSettings();
       startGuidance(window.map, { follow: true });
     }
-    if (e.target.id === 'guidance-reroute') {
-      // Re-route from the current location, then carry on following
-      stopGuidance(window.map);
-      routing.autoStart = { follow: true };
-      document.getElementById('route-from').value = '__my_location__';
-      updateRoute(window.map);
-    }
+    if (e.target.id === 'guidance-reroute') rerouteFromHere(window.map);
   });
   document.getElementById('guidance-prev').addEventListener('click', () => go(-1));
   document.getElementById('guidance-next').addEventListener('click', () => go(1));
@@ -361,6 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const live = document.getElementById('guidance-instruction');
     live.textContent = '';
     setTimeout(() => { live.textContent = step.text; }, 50); // re-announce to screen readers
+    unlockAudio(); // after a reload, sound only starts once you press something
     if (settings.readAloud) speak(step.text);
   });
   document.getElementById('guidance-follow').addEventListener('click', () => {
