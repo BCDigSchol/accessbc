@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>How to use Access BC</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="src/help.css" rel="stylesheet">
+<script src="src/js/help.js"></script>
+</head>
+<body>
+
+<header>
+  <p><a href="./">← Back to the map</a></p>
+  <h1>How to use Access BC</h1>
+  <p class="lead">Access BC finds accessible walking routes around Boston College, and guides you along them one step at a time. Everything on the map is also available as text, so you can use it with a screen reader and without seeing the map.</p>
+  <div id="listen-controls" class="listen-controls">
+    <button type="button" id="listen-all" class="listen-main"><span aria-hidden="true">🔊 </span>Listen to the whole guide</button>
+    <button type="button" id="listen-pause" hidden>Pause</button>
+    <button type="button" id="listen-stop" hidden>Stop</button>
+    <p id="listen-status" class="listen-status" role="status"></p>
+    <p class="note">Or use the Listen button beside any section. Reading uses your device's voice, at the speed set in the map's Accessibility settings.</p>
+  </div>
+</header>
+
+<nav aria-labelledby="contents-title">
+  <h2 id="contents-title">Contents</h2>
+  <ol>
+    <li><a href="#quick-start">Quick start</a></li>
+    <li><a href="#directions">Getting directions</a></li>
+    <li><a href="#stops">Adding stops</a></li>
+    <li><a href="#nearby">Finding something nearby</a></li>
+    <li><a href="#step-by-step">Step-by-step directions</a></li>
+    <li><a href="#audio">Audio guidance</a></li>
+    <li><a href="#facing">Facing the right way, and clock directions</a></li>
+    <li><a href="#where">Where am I?</a></li>
+    <li><a href="#buildings">Building information</a></li>
+    <li><a href="#screen-readers">Using a screen reader</a></li>
+    <li><a href="#low-vision">Low vision and display settings</a></li>
+    <li><a href="#limits">What Access BC can and can't tell you</a></li>
+    <li><a href="#feedback">Feedback and reporting problems</a></li>
+  </ol>
+</nav>
+
+<main>
+
+<section id="quick-start" aria-labelledby="quick-start-title">
+  <h2 id="quick-start-title">Quick start</h2>
+  <ol>
+    <li>Open <strong>Directions</strong> (top right). On a computer it's already open.</li>
+    <li><strong>From</strong> starts as <strong>My location</strong>, like other map apps. To start somewhere else, choose a building under From. (If your location isn't available, or you're off campus, Access BC asks you to choose a starting point instead.)</li>
+    <li>Choose where you're going under <strong>To</strong>. The route appears straight away, with its length and a list of steps.</li>
+    <li>Choose <strong>Start audio guidance</strong> to have each step spoken as you walk, or <strong>Start step-by-step directions</strong> to read them one at a time.</li>
+  </ol>
+</section>
+
+<section id="directions" aria-labelledby="directions-title">
+  <h2 id="directions-title">Getting directions</h2>
+  <p>Routes use paths that have been checked for accessibility, and the indoor accessible routes through buildings. They start and end at accessible entrances.</p>
+  <p><strong>My location</strong> can also be the destination, under <strong>To</strong>: use <strong>Swap</strong> to get directions back to where you are.</p>
+  <p>Other ways to start a route:</p>
+  <ul>
+    <li>Select a building on the map, or find it with the search box, then choose <strong>Directions from here</strong> or <strong>Directions to here</strong>.</li>
+    <li>Use <strong>Find something nearby</strong> and choose <strong>Directions</strong> next to a result.</li>
+  </ul>
+  <h3>Route options</h3>
+  <p>Open <strong>Route options</strong> in the directions panel to change how routes are chosen. Your choices are remembered on this device.</p>
+  <ul>
+    <li><strong>Avoid stairs</strong> is on to start with. Turning it off also allows footpaths that haven't been checked for accessibility.</li>
+    <li><strong>Routes through buildings</strong>: use them when shorter, prefer them (indoors is where the elevators are), or avoid them (for example after hours, when buildings may be locked).</li>
+    <li><strong>Steepest slope allowed</strong>: 1:12 is the steepest an accessible ramp may be; 1:20 is the steepest an accessible walkway should be.</li>
+  </ul>
+  <h3>Reading the route</h3>
+  <p>On the map, the route is a thick blue line, dashed where it goes indoors. Orange and red parts are steeper than 1:20 and 1:12, grey is where the slope isn't known, and dotted dark yellow is stairs. The same information is in the step list as text.</p>
+  <p>While a route is showing, the map only shows features along it, and other paths are faded. Turn off <strong>Only show map features along this route</strong> to see everything.</p>
+</section>
+
+<section id="stops" aria-labelledby="stops-title">
+  <h2 id="stops-title">Adding stops</h2>
+  <p>A trip can have up to five stops between the start and the destination, visited in order.</p>
+  <ul>
+    <li>Choose <strong>Add a stop</strong> (between From and To) and pick a building. Use the up and down buttons to change the order, and the remove button to take a stop out.</li>
+    <li>From <strong>Find something nearby</strong>, choose <strong>Add as a stop</strong> to add a vending machine, restroom, bench and so on. It's put in the right place along your route.</li>
+    <li>During step-by-step directions, choose <strong>Add a stop</strong> to search along your route. The new route starts from where you are, and stops you've already passed are dropped.</li>
+  </ul>
+  <p>Each stop is a step of its own: “Stop at Fulton Hall. When you're ready, continue…”.</p>
+</section>
+
+<section id="nearby" aria-labelledby="nearby-title">
+  <h2 id="nearby-title">Finding something nearby</h2>
+  <p>Open <strong>Find something nearby</strong> at the top of the directions panel. Choose what to find (vending machines, cafés, single-use restrooms, lactation rooms, printing, seating, blue-light phones, shuttle stops, elevators and more), and where to measure from:</p>
+  <ul>
+    <li><strong>My location</strong>. If your location isn't available, or you're off campus, it searches near your starting building instead, and says so.</li>
+    <li><strong>My starting building</strong>, the building under From.</li>
+    <li><strong>Along my route</strong>, for something on the way.</li>
+  </ul>
+  <p>Results are ordered by walking distance on accessible paths, using your route options. Each one can become your destination, or a stop.</p>
+</section>
+
+<section id="step-by-step" aria-labelledby="step-by-step-title">
+  <h2 id="step-by-step-title">Step-by-step directions</h2>
+  <p>Choose <strong>Start step-by-step directions</strong> under a route. You'll see one instruction at a time, such as “Turn left and continue for 120 feet, with Gasson Hall on your right”, and the map turns to face the way you're walking.</p>
+  <ul>
+    <li><strong>Next</strong> and <strong>Back</strong> move between steps. You can also use the left and right arrow keys, or swipe left and right on the instruction.</li>
+    <li><strong>Repeat</strong> says the current step again.</li>
+    <li><strong>Follow my location</strong> uses your phone's location to move to the next step as you walk, warns you shortly before each turn, and tells you if you seem to have left the route, which way the route is, and offers to re-route from where you are.</li>
+    <li>Under each instruction you may see cues for that step: curb ramps ahead (often where you cross a street or driveway), stairs that branch off the path, and outdoor seating. The slope of the step is shown too.</li>
+    <li><strong>Exit step-by-step</strong> goes back to the full route.</li>
+  </ul>
+</section>
+
+<section id="audio" aria-labelledby="audio-title">
+  <h2 id="audio-title">Audio guidance</h2>
+  <p>Choose <strong>Start audio guidance</strong> under a route. It starts step-by-step directions with each step read aloud, and follows your location so steps move on as you walk. You can keep your phone in your hand or pocket.</p>
+  <ul>
+    <li>It turns on <strong>Read directions aloud</strong>, and leaves it on for next time. Use the <strong>Speak directions</strong> button in step-by-step mode, or the Accessibility settings, to turn it off.</li>
+    <li>Change the speaking speed under <strong>Accessibility</strong>, and use <strong>Test</strong> to hear it.</li>
+    <li>Speech uses your device's own voice; nothing is sent anywhere.</li>
+  </ul>
+  <h3>Hands free, phone in your pocket</h3>
+  <ul>
+    <li><strong>The screen stays on</strong> during step-by-step directions, because phones stop updating your location and stop speaking when they lock. Avoid pressing the side button; if the phone does lock, unlock it and guidance carries on.</li>
+    <li><strong>Short sounds</strong> mark what's happening, so you don't have to listen to a whole sentence:
+      <ul>
+        <li>one tone: a new step. For a turn, it comes from that side (with headphones);</li>
+        <li>two quick high tones: a turn is coming up;</li>
+        <li>two falling tones: you seem to have left the route;</li>
+        <li>three rising tones: you've reached a stop or your destination.</li>
+      </ul>
+      Turn them off with <strong>Play short sounds</strong> in the Accessibility settings.</li>
+    <li><strong>Vibration</strong> (Android phones): two pulses for a left turn, three for a right turn, long-short-long at a stop or the destination, and one long buzz if you leave the route. You'll feel the same pattern shortly before a turn, as a heads-up. iPhones don't let web pages vibrate.</li>
+    <li>Use headphones or bone-conduction headphones if you can, so you can hear the directions and still hear what's around you.</li>
+  </ul>
+</section>
+
+<section id="facing" aria-labelledby="facing-title">
+  <h2 id="facing-title">Facing the right way, and clock directions</h2>
+  <p>On a phone, Access BC can use the compass to tell you which way to go from the way you're facing, as a clock position: 12 o'clock is straight ahead, 3 o'clock is to your right, 6 o'clock is behind you, and 9 o'clock is to your left.</p>
+  <ul>
+    <li>When you set off, after a stop, and when you come out of a building, the step says which way to go: “The way to go is at your 2 o'clock.”</li>
+    <li><strong>Face the right way</strong>, in step-by-step mode, guides you with sound. Hold your phone flat in front of you, top pointing ahead, and turn slowly. You'll hear a tick in the ear on the side to turn toward (wear headphones to hear the side), getting quicker as you get closer. Two rising tones and “Facing the right way” mean you're there. If you're off the route, it turns you toward the route instead.</li>
+    <li><strong>Where am I?</strong> and the things around you also use clock positions.</li>
+  </ul>
+  <p>On an iPhone, you'll be asked to allow access to motion and orientation the first time; choose Allow. If the compass seems wrong, move your phone in a figure of eight to recalibrate it, and step away from metal railings, cars, and steel doors, which upset compasses.</p>
+  <p>Without a compass (on a computer, or if access isn't allowed), directions use compass points such as “to the northeast” instead. To always use compass points, turn off <strong>Give directions as clock positions</strong> in the Accessibility settings.</p>
+</section>
+
+<section id="where" aria-labelledby="where-title">
+  <h2 id="where-title">Where am I?</h2>
+  <p>Choose <strong>Where am I?</strong> at the top of the directions panel, or in step-by-step mode. It tells you:</p>
+  <ul>
+    <li>the nearest building, how far it is, and which way;</li>
+    <li>during a route, whether you're on it, which way it is if you're not, and what's next;</li>
+    <li>what's around you: the nearest accessible entrances, an elevator, a blue-light emergency phone, a shuttle stop, and outdoor seating, each with a distance and direction.</li>
+  </ul>
+  <p>The summary and the two nearest things are spoken; the full list is shown in the panel. These are straight-line distances, not walking distances.</p>
+</section>
+
+<section id="buildings" aria-labelledby="buildings-title">
+  <h2 id="buildings-title">Building information</h2>
+  <p>Select a building on the map, or choose it in the search box, to open its information. It lists what's in the building, where its accessible entrances are (“Accessible entrance on the north side”), its elevators, and the nearest blue-light phone, shuttle stop and seating. Entrances and elevators that have been reported as not working are marked.</p>
+</section>
+
+<section id="screen-readers" aria-labelledby="screen-readers-title">
+  <h2 id="screen-readers-title">Using a screen reader</h2>
+  <p>Access BC works with VoiceOver (iPhone, iPad and Mac), TalkBack (Android), and NVDA and JAWS (Windows). You don't need the map: search, directions, Find nearby, Where am I? and building information all work as text.</p>
+  <p><strong>First, turn on “I use a screen reader”</strong> in the Accessibility settings. Your screen reader then reads every step, cue and update, and Access BC won't also speak them, so you don't hear everything twice. Sounds and vibration still work.</p>
+  <ul>
+    <li>The first thing on the page is a <strong>Skip to accessible directions</strong> link, which opens the directions panel.</li>
+    <li>The page has headings and landmarks: the top bar is a banner, and the map and panels are the main region. Use your screen reader's heading or landmark navigation to move around.</li>
+    <li>The search box is a combo box: type, then use the down arrow to move through results and Enter to choose one. Choosing a building opens its information.</li>
+    <li>From, To, the stops, and the route options are standard form controls.</li>
+    <li>When a route is found, you'll hear a short summary. The full step list follows the start buttons.</li>
+    <li>In step-by-step mode, each new step is read automatically, with its cues. Focus starts on <strong>Next</strong>.</li>
+    <li>Map layer buttons say whether each layer is shown, and dialogs (Accessibility, About, building information) keep focus inside until you close them with the Close button or Escape.</li>
+  </ul>
+  <h3>VoiceOver on iPhone</h3>
+  <ul>
+    <li>Set the rotor to Headings to jump between sections of the directions panel and this page.</li>
+    <li>With <strong>Follow my location</strong> or audio guidance on, steps move on as you walk; you don't need to find the Next button.</li>
+    <li>If you hear steps twice, turn on <strong>I use a screen reader</strong> in the Accessibility settings.</li>
+  </ul>
+  <h3>TalkBack on Android</h3>
+  <ul>
+    <li>Use the reading controls to move by headings or controls.</li>
+    <li>Android phones can also vibrate at each new step; it's on by default under Accessibility.</li>
+  </ul>
+</section>
+
+<section id="low-vision" aria-labelledby="low-vision-title">
+  <h2 id="low-vision-title">Low vision and display settings</h2>
+  <p>Choose <strong>Accessibility</strong> in the top bar (in the menu on phones). Settings are saved on this device.</p>
+  <ul>
+    <li><strong>High contrast</strong>: darker text and borders, and thicker paths and routes on the map. “Match my device” follows your system's increased contrast setting.</li>
+    <li><strong>Dark mode</strong>: a dark map and dark panels, easier on the eyes for many people with light sensitivity. “Match my device” follows your phone or computer's dark mode. This help page follows it too.</li>
+    <li><strong>Larger text</strong>: bigger text in the panels, on this help page, and for building names on the map.</li>
+    <li><strong>Bigger map symbols, and thicker paths and routes</strong>: makes the map's points, icons and lines easier to see.</li>
+    <li><strong>Large step-by-step view</strong>: in step-by-step directions, the current step fills the screen with very large text and buttons. Switch it on and off with the <strong>Large view</strong> button while you're following a route.</li>
+    <li><strong>Zooming</strong>: you can zoom the page with your browser or phone, up to 400%. Access BC rearranges itself to fit, without scrolling sideways; on a small or zoomed screen the directions panel takes the whole screen, and closing it shows the map.</li>
+    <li><strong>Reduce motion</strong>: the map jumps instead of gliding.</li>
+    <li>Step-by-step mode can turn the map to face your direction of travel and show buildings in 3D. Turn either off if you find them confusing.</li>
+    <li>On a phone, <strong>Map layers</strong> (bottom left) shows and hides the map key, so it doesn't cover the map.</li>
+  </ul>
+</section>
+
+<section id="limits" aria-labelledby="limits-title">
+  <h2 id="limits-title">What Access BC can and can't tell you</h2>
+  <ul>
+    <li><strong>Location is approximate.</strong> Phone location is usually accurate to 15 to 30 feet outdoors, worse near tall buildings, and unreliable indoors. Use the landmarks and cues, and Next and Back, rather than relying on exact distances.</li>
+    <li><strong>Slopes are estimates</strong> from elevation data, and can miss short ramps and curbs.</li>
+    <li><strong>Things change.</strong> Construction, closures, snow, and broken elevators or door openers aren't always shown.</li>
+    <li><strong>Not every building can be routed to yet.</strong> Some don't have a mapped accessible entrance connected to the path network.</li>
+    <li>Access BC supports your own orientation and mobility skills, your cane or guide dog, and asking for help; it doesn't replace them.</li>
+  </ul>
+</section>
+
+<section id="feedback" aria-labelledby="feedback-title">
+  <h2 id="feedback-title">Feedback and reporting problems</h2>
+  <p>If a route is wrong, an entrance or elevator isn't working, or something in Access BC is hard to use, please tell us with the <a href="https://forms.gle/EqSt5qz31ub9eB5x7">feedback form</a>. Reports from students who use the app every day are the best way to make it better.</p>
+</section>
+
+</main>
+
+<footer>
+  <p><a href="./">← Back to the map</a></p>
+</footer>
+
+</body>
+</html>

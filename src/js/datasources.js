@@ -108,6 +108,7 @@ function addMapData(map) {
           'icon-size': 0.2
         }
       });
+      applyMapSettings(map); // icon size follows the bigger-symbols setting
     });
 
       map.addLayer({
@@ -177,6 +178,7 @@ function addMapData(map) {
           'icon-size': 0.04
         }
       });
+      applyMapSettings(map); // icon size follows the bigger-symbols setting
     });
 
     map.addLayer({

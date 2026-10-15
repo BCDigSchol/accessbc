@@ -17,14 +17,37 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 
 ## Accessibility features
 
-- **Directions** between buildings on mapped accessible paths, with slope and climb, written steps, and options to
-  allow stairs, prefer or avoid indoor routes, and limit the steepest slope.
+- **Directions** between buildings on mapped accessible paths, with slope and climb, written steps, up to five
+  stops, and options to allow stairs, prefer or avoid indoor routes, and limit the steepest slope.
+- **Find nearby**: the nearest vending machine, restroom, seating, blue-light phone and so on, by walking distance
+  from you, your starting building, or along your route.
 - **Step-by-step mode**: one instruction at a time with turns and landmarks; the map follows, facing the direction
-  of travel in 3D. **Follow my location** advances steps by GPS, warns before turns, and offers to re-route.
+  of travel in 3D. **Follow my location** advances steps by GPS, warns before turns, says which way the route is
+  when you leave it, and offers to re-route. Steps mention curb ramps, stairs that branch off, and seating.
+- **Audio guidance**: one button to start step-by-step mode read aloud and following your location.
+- **Hands free**: the screen stays on during step-by-step mode (Screen Wake Lock), short sounds mark a new step
+  (from the side of the turn), a turn coming up, leaving the route, and arriving, and vibration patterns tell left
+  from right (Android). An **I use a screen reader** setting stops Access BC speaking over the screen reader.
+- **Orientation without the map** ([src/js/orientation.js](src/js/orientation.js)): directions as clock positions
+  from the phone's compass ("at your 2 o'clock"), **Face the right way** (a tone in the ear on the side to turn
+  toward), **Where am I?** (nearest building, progress on the route, and what's around you), and each building's
+  entrances, elevators, and nearby facilities in its information dialog.
 - **Accessibility settings** (saved per device): read directions aloud, speaking speed, heading-up map, 3D in
   step-by-step mode, vibration, high contrast, larger text, reduce motion (both follow the device setting by default).
 - Keyboard and screen reader support throughout: real buttons, labelled controls, dialogs that manage focus, live
-  announcements of results and steps, and building information reachable from search without the map.
+  announcements of results and steps, a skip link, headings and landmarks, and building information reachable from
+  search without the map.
+- **Low vision**: dark mode (a dark basemap flavor plus dark panels), bigger map symbols and thicker lines, a
+  large step-by-step view that fills the screen, and layouts that work at 200-400% zoom without sideways scrolling.
+- **Help**: [help.html](help.html) is the user guide, including screen reader tips, with Listen buttons that
+  read each section (or the whole guide) aloud. Keep it up to date when
+  features change.
+
+**Testing.** Automated accessibility checks run on every push to `dev` and every pull request into `main`
+([.github/workflows/accessibility.yml](.github/workflows/accessibility.yml); run them locally with
+`cd tests/accessibility && npm ci && npx playwright install chromium && npm run check`). Testing with
+students and an orientation and mobility instructor is planned in
+[docs/usability-testing/](docs/usability-testing/).
 
 [docs/data-collection/](docs/data-collection/) has spreadsheets for collecting what the data doesn't yet record
 (automatic doors, intercom-only entrances, elevator details).
@@ -34,18 +57,21 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 | Path | Contents |
 |---|---|
 | `index.html`, `src/js/`, `src/input.css` | The app |
+| `help.html`, `src/help.css` | The user guide |
 | `src/geojson/` | Campus data layers ([README](src/geojson/README.md)) |
 | `src/basemap/` | Self-hosted basemap, terrain, fonts, and icons |
 | `src/vendor/` | MapLibre GL JS and PMTiles ([README](src/vendor/README.md)) |
 | `src/js/routing/` | Routing graph, route finder, slopes, and step-by-step instructions, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
 | `scripts/` | Local preview server and data/basemap tooling. Not deployed. |
+| `tests/accessibility/` | Automated accessibility checks (axe-core and Playwright, used by CI only). Not deployed. |
+| `docs/` | Data collection sheets and the usability testing plan |
 
 See [updatingdata.md](updatingdata.md) for editing map data.
 
 ## Deployment
 
-Pushing to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml), which publishes `index.html`
-and `src/` to GitHub Pages.
+Pushing to `main` runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml), which publishes `index.html`,
+`help.html`, and `src/` to GitHub Pages.
 
 ---
 

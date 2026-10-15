@@ -12,16 +12,74 @@ const guide = {
   marker: null,       // "you are here" marker while following
   offRouteFixes: 0,
   announcedApproach: -1,
+  backToRoute: null,  // while off the route: the bearing back to it, for "Face the right way"
 };
+
+// ---- Hands-free: sounds, vibration, and keeping the screen on ------------------------------------------
+
+// Short sounds, so not everything has to be a sentence. A new step's tone comes from the side of the turn.
+const SOUND_CUES = {
+  step: (step) => tone(660, { ms: 90, pan: step.kind === 'turn' ? Math.sign(step.turn) * 0.8 : 0 }),
+  soon: () => { tone(880, { ms: 70 }); setTimeout(() => tone(880, { ms: 70 }), 140); },
+  offRoute: () => { tone(392, { ms: 200 }); setTimeout(() => tone(262, { ms: 260 }), 230); },
+  arrive: () => [523, 659, 784].forEach((f, i) => setTimeout(() => tone(f, { ms: 160 }), i * 170)),
+};
+function soundCue(name, step) {
+  if (settings.soundCues) SOUND_CUES[name](step);
+}
+
+// Vibration you can tell apart in a pocket: two pulses for a left turn, three for a right, a long-short-long
+// at a stop or the destination, one long buzz for leaving the route. (Android; iPhones can't vibrate from web pages.)
+function vibrationFor(step) {
+  if (step.kind === 'arrive' || step.kind === 'stop') return [300, 100, 100, 100, 300];
+  if (step.kind === 'turn') return step.turn < 0 ? [120, 120, 120] : [120, 120, 120, 120, 120];
+  return [80];
+}
+function buzz(pattern) {
+  if (settings.vibrate && navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// Keep the screen on during step-by-step directions: phones stop location updates and speech when they lock.
+let wakeLock = null;
+async function keepScreenOn() {
+  if (!('wakeLock' in navigator) || !guide.active || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch { /* refused, e.g. in battery saver */ }
+}
+function letScreenSleep() {
+  if (wakeLock) wakeLock.release().catch(() => {});
+  wakeLock = null;
+}
+// The browser drops the lock when the page is hidden; take it again on return
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') keepScreenOn();
+});
 
 // Speak text if reading aloud is on. Uses the browser's built-in speech; nothing is sent anywhere.
 function speak(text) {
-  if (!settings.readAloud || !('speechSynthesis' in window)) return;
+  // Screen reader users hear the same text through the page's live regions, so don't say it twice
+  if (!settings.readAloud || settings.screenReader || !('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
+  // Say units in full ("ft" is read as letters by some voices)
+  const words = text.replace(/(\d) ft\b/g, '$1 feet').replace(/(\d) mi\b/g, '$1 miles');
+  const utterance = new SpeechSynthesisUtterance(words);
   utterance.rate = Number(settings.speechRate) || 1;
   utterance.lang = 'en-US';
   window.speechSynthesis.speak(utterance);
+}
+
+// The "Speak directions" button in step-by-step mode shows whether reading aloud is on.
+function syncAudioButton() {
+  const button = document.getElementById('guidance-audio');
+  button.hidden = !('speechSynthesis' in window) || !!settings.screenReader;
+  button.setAttribute('aria-pressed', String(!!settings.readAloud));
+}
+
+// The "Large view" button shows whether the large step-by-step view is on.
+function syncBigButton() {
+  document.getElementById('guidance-big').setAttribute('aria-pressed', String(!!settings.bigSteps));
 }
 
 function guidanceStatus(html) {
@@ -33,11 +91,15 @@ async function startGuidance(map, { follow = false } = {}) {
   if (!current) return;
   const { guidance, module } = routing;
   guide.steps = guidance.buildSteps(current.graph, current.route, current);
+  guide.steps.forEach((step) => { step.cues = stepCues(step); });
   guide.starts = guide.steps.reduce((acc, step, i) => (acc.push(i ? acc[i - 1] + guide.steps[i - 1].length : 0), acc), []);
   guide.line = guide.steps.flatMap((s) => s.coordinates).map(module.proj);
   guide.active = true;
+  unlockAudio(); // sounds need a button press to start on phones; startGuidance runs from one
+  keepScreenOn();
   guide.announcedApproach = -1;
   guide.offRouteFixes = 0;
+  guide.backToRoute = null;
 
   const panel = document.getElementById('directions-panel');
   panel.classList.add('guiding');
@@ -45,6 +107,8 @@ async function startGuidance(map, { follow = false } = {}) {
   document.getElementById('directions-title').textContent = 'Step-by-step directions';
   document.getElementById('guidance').hidden = false;
   guidanceStatus('');
+  syncAudioButton();
+  syncBigButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
   await showStep(map, 0);
@@ -54,7 +118,9 @@ async function startGuidance(map, { follow = false } = {}) {
 function stopGuidance(map) {
   if (!guide.active) return;
   guide.active = false;
+  letScreenSleep();
   stopFollowing();
+  stopPointing();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   const panel = document.getElementById('directions-panel');
   panel.classList.remove('guiding', 'adding-stop');
@@ -98,6 +164,11 @@ async function showStep(map, index) {
   const total = guide.steps.length;
   document.getElementById('guidance-progress').textContent = `Step ${guide.index + 1} of ${total}`;
   document.getElementById('guidance-instruction').textContent = step.text;
+  // Setting off (at the start, after a stop, out of a building): which way that is from where you face
+  const hint = ['depart', 'stop', 'exit'].includes(step.kind) && facing() !== null && settings.clockFace
+    ? `The way to go is ${directionWords(step.heading)}.` : '';
+  const cues = [hint, ...(step.cues || [])].filter(Boolean);
+  document.getElementById('guidance-cues').innerHTML = cues.map((c) => `<li>${escapeHtml(c)}</li>`).join('');
   document.getElementById('guidance-prev').disabled = guide.index === 0;
   document.getElementById('guidance-next').disabled = guide.index === total - 1;
   document.getElementById('guidance-detail').textContent = '';
@@ -115,8 +186,9 @@ async function showStep(map, index) {
   });
 
   if (!guide.watch) frameStep(map, step);
-  speak(`Step ${guide.index + 1}. ${step.text}`);
-  if (settings.vibrate && navigator.vibrate) navigator.vibrate(80);
+  speak([`Step ${guide.index + 1}. ${step.text}`, ...cues].join(' '));
+  soundCue(step.kind === 'arrive' || step.kind === 'stop' ? 'arrive' : 'step', step);
+  buzz(vibrationFor(step));
 }
 
 // Camera for a step: fit it, facing the direction of travel if heading-up is on, tilted if 3D is on.
@@ -165,7 +237,7 @@ function locateOnRoute(p) {
   for (let i = 1; i < guide.line.length; i++) {
     const a = guide.line[i - 1], b = guide.line[i], len = dist(a, b);
     const r = nearestOnSegment(p, a, b);
-    if (r.d < best.off) best = { off: r.d, along: travelled + r.t * len };
+    if (r.d < best.off) best = { off: r.d, along: travelled + r.t * len, point: r.point };
     travelled += len;
   }
   return best;
@@ -194,12 +266,21 @@ function onPosition(map, position) {
   // Off the route for several fixes in a row: offer to re-route from here.
   if (off > Math.max(25, accuracy * 1.5)) {
     if (++guide.offRouteFixes >= 3) {
-      guidanceStatus('You seem to be off the route. <button type="button" id="guidance-reroute">Re-route from here</button>');
-      speak('You seem to be off the route.');
+      // Say which way the route is, so you can head back to it (or let "Face the right way" turn you to it)
+      const back = locateOnRoute(routing.module.proj(here)).point;
+      guide.backToRoute = lonlatBearing(here, routing.module.unproj(back));
+      const said = `You seem to be off the route. It’s about ${feet(off)} away, ${directionWords(guide.backToRoute)}.`;
+      if (guide.offRouteFixes === 3 || guide.offRouteFixes % 10 === 0) {
+        soundCue('offRoute');
+        buzz([500]);
+        speak(said);
+      }
+      guidanceStatus(`${escapeHtml(said)} <button type="button" id="guidance-reroute">Re-route from here</button>`);
     }
     return;
   }
   guide.offRouteFixes = 0;
+  guide.backToRoute = null;
 
   // Advance (never go back automatically) once past the start of a later step.
   let next = guide.index;
@@ -215,6 +296,8 @@ function onPosition(map, position) {
     guide.announcedApproach = guide.index;
     const upcoming = guide.steps[guide.index + 1].text;
     guidanceStatus(`In about ${Math.max(5, Math.round((toNext * 3.28084) / 5) * 5)} feet: ${upcoming}`);
+    soundCue('soon');
+    buzz(vibrationFor(guide.steps[guide.index + 1]));
     speak(`Soon: ${upcoming}`);
   } else if (step.type === 'indoor' && guide.announcedApproach !== guide.index) {
     guidanceStatus('Location is less reliable indoors. Use Next when you reach the end of this step.');
@@ -244,6 +327,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.addEventListener('click', (e) => {
     if (e.target.id === 'guidance-start') startGuidance(window.map);
+    // Audio guidance: steps read aloud, advancing on their own as you walk
+    if (e.target.closest('#guidance-start-audio')) {
+      if (settings.clockFace) startCompass(); // asks for compass access on iPhones, which needs this button press
+      if (!settings.screenReader) settings.readAloud = true;
+      saveSettings();
+      startGuidance(window.map, { follow: true });
+    }
     if (e.target.id === 'guidance-reroute') {
       // Re-route from the current location, then carry on following
       stopGuidance(window.map);
@@ -254,6 +344,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('guidance-prev').addEventListener('click', () => go(-1));
   document.getElementById('guidance-next').addEventListener('click', () => go(1));
+  document.getElementById('guidance-audio').addEventListener('click', () => {
+    settings.readAloud = !settings.readAloud;
+    saveSettings();
+    syncAudioButton();
+    if (settings.readAloud) speak(guide.steps[guide.index].text);
+    else window.speechSynthesis.cancel();
+  });
+  document.getElementById('guidance-big').addEventListener('click', () => {
+    settings.bigSteps = !settings.bigSteps;
+    saveSettings();
+    syncBigButton();
+  });
   document.getElementById('guidance-repeat').addEventListener('click', () => {
     const step = guide.steps[guide.index];
     const live = document.getElementById('guidance-instruction');

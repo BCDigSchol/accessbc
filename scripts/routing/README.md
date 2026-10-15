@@ -87,6 +87,14 @@ Open it in QGIS over `accessiblepaths.geojson` and style by the `issue` field:
 | `entrance-unlinked` | Entrance > 15 m from any accessible path, so it can't be routed to. |
 | `island` | Path segments not connected to their campus's main network. |
 
+```bash
+node scripts/routing/sample-instructions.mjs
+```
+
+Writes [docs/usability-testing/instruction-samples.md](../../docs/usability-testing/instruction-samples.md): the
+step-by-step directions for a set of real routes, for an orientation and mobility instructor to review. Run it
+after changing how instructions are worded.
+
 ## Fixing the data
 
 Work from the `check-routes.mjs` fix list: each stranded piece shows the buildings it cuts off and where it

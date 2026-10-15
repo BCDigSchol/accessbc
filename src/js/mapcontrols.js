@@ -63,10 +63,34 @@ function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear existing legend content
 
+    // A "Map layers" button opens and closes the whole legend. It starts closed on phones, where an open
+    // legend would cover much of the map.
+    const panelToggle = document.createElement('button');
+    panelToggle.type = 'button';
+    panelToggle.className = 'legend-panel-toggle';
+    panelToggle.setAttribute('aria-controls', 'legend-body');
+    const panelHeading = document.createElement('h2'); // the category headings below are h3s
+    panelHeading.className = 'legend-panel-heading';
+    panelHeading.appendChild(panelToggle);
+    legendContainer.appendChild(panelHeading);
+
     // Main legend content wrapper
     const content = document.createElement('div');
     content.classList.add('legend-content');
+    content.id = 'legend-body';
     legendContainer.appendChild(content);
+
+    const setLegendOpen = (open) => {
+        legendContainer.classList.toggle('panel-collapsed', !open);
+        content.hidden = !open;
+        panelToggle.setAttribute('aria-expanded', String(open));
+        panelToggle.innerHTML = `Map layers <span class="legend-arrow" aria-hidden="true">${open ? '▼' : '▲'}</span>`;
+    };
+    const narrow = window.matchMedia('(max-width: 870px)');
+    setLegendOpen(!narrow.matches);
+    // Zooming the page in (or rotating a tablet) can make the screen narrow: close the legend then too
+    narrow.addEventListener('change', (e) => setLegendOpen(!e.matches));
+    panelToggle.addEventListener('click', () => setLegendOpen(content.hidden));
 
     const setItem = (item, visible) => {
         item.classList.toggle('disabled', !visible);
