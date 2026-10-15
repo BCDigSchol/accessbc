@@ -38,6 +38,7 @@ async function setupDirections(map) {
   loadRoutePoints(); // full copies of the point layers, for showing only those near a route
   restoreOptions();
   populateBuildingSelects();
+  startFromMyLocation();
   for (const id of ['opt-stairs', 'opt-indoor', 'opt-slope']) {
     document.getElementById(id).addEventListener('change', () => {
       saveOptions();
@@ -54,8 +55,9 @@ async function setupDirections(map) {
   toggle.addEventListener('click', () => setPanelOpen(panel.hidden));
   document.getElementById('directions-close').addEventListener('click', () => setPanelOpen(false));
   document.getElementById('route-swap').addEventListener('click', () => {
-    if ([MY_LOCATION, HERE, PLACE].includes(from.value) || to.value === PLACE) return;
+    if ([HERE, PLACE].includes(from.value) || to.value === PLACE) return;
     [from.value, to.value] = [to.value, from.value];
+    routing.fromChosen = true;
     routing.stops.reverse();
     renderStops();
     updateRoute(map);
@@ -63,6 +65,8 @@ async function setupDirections(map) {
   document.getElementById('route-clear').addEventListener('click', () => {
     from.value = '';
     to.value = '';
+    routing.fromChosen = false;
+    startFromMyLocation(); // back to the default start
     routing.stops = [];
     renderStops();
     updateRoute(map);
@@ -91,7 +95,10 @@ async function setupDirections(map) {
     renderStops();
     updateRoute(map);
   });
-  from.addEventListener('change', () => updateRoute(map));
+  from.addEventListener('change', () => {
+    routing.fromChosen = true; // the student picked a start, so keep it even if it's "My location" and that fails
+    updateRoute(map);
+  });
   to.addEventListener('change', () => updateRoute(map));
 
   // Show only the map features along the route, or all of them
@@ -106,7 +113,10 @@ async function setupDirections(map) {
   document.addEventListener('click', (e) => {
     const button = e.target.closest('[data-route-from], [data-route-to]');
     if (!button) return;
-    if (button.dataset.routeFrom) from.value = button.dataset.routeFrom;
+    if (button.dataset.routeFrom) {
+      from.value = button.dataset.routeFrom;
+      routing.fromChosen = true;
+    }
     if (button.dataset.routeTo) to.value = button.dataset.routeTo;
     closeBuildingInfo();
     setPanelOpen(true);
@@ -194,6 +204,20 @@ function setPanelOpen(open, moveFocus = true) {
   if (open && moveFocus) document.getElementById('route-from').focus();
 }
 
+// Like other map apps, directions start from your location unless you choose somewhere else. Not when location
+// access has been refused; when it hasn't been asked yet, the browser asks when the first route needs it (after
+// the student picks a destination), not as the page loads.
+async function startFromMyLocation() {
+  const from = document.getElementById('route-from');
+  if (!('geolocation' in navigator)) return;
+  let state = 'prompt';
+  try {
+    state = (await navigator.permissions.query({ name: 'geolocation' })).state;
+  } catch { /* the Permissions API isn't available: assume we can ask */ }
+  if (state === 'denied' || routing.fromChosen || from.value) return;
+  from.value = MY_LOCATION;
+}
+
 function populateBuildingSelects() {
   const { module } = routing;
   const graph = currentGraph();
@@ -213,7 +237,7 @@ function populateBuildingSelects() {
   const myLocation = 'geolocation' in navigator ? `<option value="${MY_LOCATION}">My location</option>` : '';
   routing.buildingOptions = options;
   from.innerHTML = `<option value="">Choose a starting point</option>${myLocation}${options}`;
-  to.innerHTML = `<option value="">Choose a destination</option>${options}`;
+  to.innerHTML = `<option value="">Choose a destination</option>${myLocation}${options}`;
   // Keep the current choices if they're still in the list.
   if ([...from.options].some((o) => o.value === keep[0])) from.value = keep[0];
   if (routing.place) {
@@ -366,24 +390,38 @@ async function updateRoute(map) {
   const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
   // Graph nodes for a building's entrances, or for a place found by "Find nearby" ({label, building} or {label, lonlat})
   const nodesFor = (target) => (target.building ? doors(target.building) : [module.nearestNode(graph, target.lonlat).node]);
-  const toIsPlace = toValue === PLACE && !!routing.place;
-  const toLabel = toIsPlace ? routing.place.phrase || routing.place.label : toValue;
-  const targets = toIsPlace ? nodesFor(routing.place) : doors(toValue);
-  let sources, fromLabel, startNote = '';
-  if (fromValue === MY_LOCATION) {
+  // Your location, for a route from it (the default) or to it
+  let start = null;
+  if (fromValue === MY_LOCATION || toValue === MY_LOCATION) {
     showResult('<p>Finding your location…</p>');
     let here;
     try {
       here = await getPosition();
     } catch {
       if (request !== routeRequest) return;
-      return showResult('<p>Your location isn\'t available. Check that location access is allowed, or choose a building to start from.</p>');
+      // From was only "My location" by default: ask for a starting point instead
+      if (fromValue === MY_LOCATION && !routing.fromChosen) {
+        document.getElementById('route-from').value = '';
+        return showResult('<p>Choose where you’re starting from under From. (Your location isn’t available; to use it, allow location access for this site.)</p>');
+      }
+      return showResult('<p>Your location isn\'t available. Check that location access is allowed, or choose a building instead.</p>');
     }
     if (request !== routeRequest) return;
-    const start = module.nearestNode(graph, here);
+    start = module.nearestNode(graph, here);
     if (start.d > MAX_START_DISTANCE_M) {
-      return showResult(`<p>You're ${feet(start.d)} from the nearest mapped path. Choose a building to start from instead.</p>`);
+      if (fromValue === MY_LOCATION && !routing.fromChosen) {
+        document.getElementById('route-from').value = '';
+        return showResult(`<p>Choose where you’re starting from under From. (You’re ${feet(start.d)} from the nearest mapped campus path, so directions can’t start from where you are.)</p>`);
+      }
+      return showResult(`<p>You're ${feet(start.d)} from the nearest mapped path. Choose a building instead.</p>`);
     }
+  }
+  const toMe = toValue === MY_LOCATION;
+  const toIsPlace = toMe || (toValue === PLACE && !!routing.place);
+  const toLabel = toMe ? 'your location' : toIsPlace ? routing.place.phrase || routing.place.label : toValue;
+  const targets = toMe ? [start.node] : toIsPlace ? nodesFor(routing.place) : doors(toValue);
+  let sources, fromLabel, startNote = '';
+  if (fromValue === MY_LOCATION) {
     sources = [start.node];
     fromLabel = 'your location';
     if (start.d > 15) startNote = ` The route starts at the nearest mapped accessible path, ${feet(start.d)} from you.`;
@@ -460,7 +498,8 @@ async function updateRoute(map) {
     const text = i === 0 ? 'Follow the outdoor path' : 'Continue on the outdoor path';
     return `<li>${text}${unverified}: ${feet(step.length)}${stepSlope(step)}</li>`;
   });
-  const leave = fromValue === MY_LOCATION ? '' : `<li>Leave ${escapeHtml(fromValue)} by its accessible entrance</li>`;
+  const fromIsBuilding = fromValue !== MY_LOCATION && fromValue !== HERE; // not your location, or a spot mid-trip
+  const leave = fromIsBuilding ? `<li>Leave ${escapeHtml(fromValue)} by its accessible entrance</li>` : '';
   const indoor = description.indoorLength ? `, ${feet(description.indoorLength)} of it indoors` : '';
   const stairs = description.steps.filter((st) => st.type === 'stairs').reduce((sum, st) => sum + st.length, 0);
   const stairsNote = stairs ? `<p class="route-warning">This route uses stairs (${feet(stairs)}).</p>` : '';
@@ -478,7 +517,7 @@ async function updateRoute(map) {
     ${slopeSummary(description)}
     <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>`, message);
 
-  routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromValue !== MY_LOCATION };
+  routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
   speak(message);
   if (routing.autoStart) {
     const follow = routing.autoStart.follow;
