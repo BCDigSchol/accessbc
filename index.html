@@ -44,6 +44,15 @@
   <h2 id="settings-title">Accessibility settings</h2>
   <p class="route-note">Saved on this device.</p>
   <fieldset>
+    <legend>Getting around</legend>
+    <div class="setting"><input type="checkbox" id="set-avoidStairs"><label for="set-avoidStairs">Avoid stairs (and footpaths not checked for accessibility)</label></div>
+    <div class="setting">
+      <label for="set-slope">Steepest slope allowed</label>
+      <select id="set-slope"></select>
+    </div>
+    <p class="route-note">The same as the route options in Edit trip. Every route also has an Avoid steep slopes button.</p>
+  </fieldset>
+  <fieldset>
     <legend>Directions</legend>
     <div class="setting"><input type="checkbox" id="set-screenReader" aria-describedby="set-screenReader-help"><label for="set-screenReader">I use a screen reader</label></div>
     <p id="set-screenReader-help" class="route-note">Your screen reader reads each step and update, so Access BC won't also speak them.</p>
@@ -178,7 +187,7 @@
           <label for="opt-slope">Steepest slope allowed</label>
           <select id="opt-slope">
             <option value="">No limit</option>
-            <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
+            <option value="0.08333" data-label="1:12 (8.3%)" selected>1:12 (8.3%), the steepest an accessible ramp may be</option>
             <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
           </select>
         </div>

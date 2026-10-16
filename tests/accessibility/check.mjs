@@ -89,6 +89,14 @@ async function main() {
     await page.waitForFunction(() => document.getElementById('announcer').textContent.startsWith('Route found'));
     expect(true, 'route', 'a found route is announced');
     await axe(page, 'route');
+    // Avoid steep slopes: on to start with; one tap turns the limit off, finds the route again, and keeps focus
+    expect(await page.evaluate(() => document.getElementById('slope-toggle').getAttribute('aria-pressed') === 'true'), 'route', 'Avoid steep slopes is on to start with');
+    await page.click('#slope-toggle');
+    await page.waitForFunction(() => document.getElementById('slope-toggle')?.getAttribute('aria-pressed') === 'false');
+    expect(await page.evaluate(() => document.activeElement.id === 'slope-toggle' && document.getElementById('set-slope').value === '' && document.getElementById('opt-slope').value === ''),
+      'route', 'Avoid steep slopes turns off the limit, in Edit trip and settings too, with focus kept on it');
+    await page.click('#slope-toggle');
+    await page.waitForFunction(() => document.getElementById('slope-toggle')?.getAttribute('aria-pressed') === 'true');
     await page.click('#edit-trip summary');
     await axe(page, 'route, Edit trip open');
 

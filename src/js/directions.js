@@ -38,13 +38,19 @@ async function setupDirections(map) {
   routing.pointsLoaded = loadRoutePoints(); // full copies of the point layers, for showing only those near a route
   restoreOptions();
   populateBuildingSelects();
+  // The route options, in Edit trip, also in Accessibility settings (to set once), and Avoid steep slopes on the route
+  document.getElementById('set-slope').innerHTML = document.getElementById('opt-slope').innerHTML;
+  syncOptionMirrors();
   for (const id of ['opt-stairs', 'opt-indoor', 'opt-slope']) {
-    document.getElementById(id).addEventListener('change', () => {
-      saveOptions();
-      if (id === 'opt-stairs') populateBuildingSelects();
-      updateRoute(map);
-    });
+    document.getElementById(id).addEventListener('change', (e) => setRouteOption(id, e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   }
+  document.getElementById('set-avoidStairs').addEventListener('change', (e) => setRouteOption('opt-stairs', e.target.checked));
+  document.getElementById('set-slope').addEventListener('change', (e) => setRouteOption('opt-slope', e.target.value));
+  document.addEventListener('click', async (e) => {
+    if (e.target.id !== 'slope-toggle') return;
+    await setRouteOption('opt-slope', document.getElementById('opt-slope').value ? '' : SLOPE_LIMIT_DEFAULT);
+    document.getElementById('slope-toggle')?.focus(); // the route card is redrawn
+  });
 
   const from = document.getElementById('route-from');
   const to = document.getElementById('route-to');
@@ -236,11 +242,13 @@ function routeOptions() {
   };
 }
 
-// Options are remembered per browser; nothing breaks if storage is unavailable.
+// Options are remembered per browser; nothing breaks if storage is unavailable. Version 2: a 1:12 slope limit
+// became the default (accessibility first), after no limit.
+const OPTIONS_VERSION = 2;
 function saveOptions() {
   try {
     const { stairs, indoor } = routeOptions();
-    localStorage.setItem(OPTIONS_KEY, JSON.stringify({ stairs, indoor, slope: document.getElementById('opt-slope').value }));
+    localStorage.setItem(OPTIONS_KEY, JSON.stringify({ version: OPTIONS_VERSION, stairs, indoor, slope: document.getElementById('opt-slope').value }));
   } catch { /* storage unavailable */ }
 }
 function restoreOptions() {
@@ -249,8 +257,31 @@ function restoreOptions() {
     if (!saved) return;
     document.getElementById('opt-stairs').checked = !saved.stairs;
     document.getElementById('opt-indoor').value = saved.indoor || 'auto';
-    document.getElementById('opt-slope').value = saved.slope || '';
+    // Options saved before version 2 had no slope limit by default: those get the new default (1:12) once
+    if ((saved.version || 1) >= 2) document.getElementById('opt-slope').value = saved.slope || '';
   } catch { /* storage unavailable */ }
+}
+
+// Change a route option from any of its controls: remember it, keep the other controls in step, and find the
+// route again (partway through a walk, from where you are, carrying on with walking directions).
+const SLOPE_LIMIT_DEFAULT = '0.08333'; // Avoid steep slopes: 1:12, the steepest an accessible ramp may be
+async function setRouteOption(id, value) {
+  const control = document.getElementById(id);
+  if (control.type === 'checkbox') control.checked = value;
+  else control.value = value;
+  saveOptions();
+  syncOptionMirrors();
+  if (id === 'opt-stairs') populateBuildingSelects();
+  if (guide.active && routing.current) {
+    prepareRerouteFromHere();
+    Object.assign(routing.autoStart, { intro: 'New route, with your new route options.', keepFocus: true });
+  }
+  await updateRoute(window.map);
+}
+
+function syncOptionMirrors() {
+  document.getElementById('set-avoidStairs').checked = document.getElementById('opt-stairs').checked;
+  document.getElementById('set-slope').value = document.getElementById('opt-slope').value;
 }
 
 // The graph for the current options: accessible paths only, or with footpaths and stairs (built when first needed).
@@ -616,11 +647,17 @@ async function updateRoute(map) {
   const stopsSaid = stops.length ? `, with ${stops.length === 1 ? 'a stop' : `${stops.length} stops`}` : '';
   // A gentle walking pace (about 1.2 m/s); wheelchair and cane users vary, so it's only a guide
   const minutes = Math.max(1, Math.round(description.length / 1.2 / 60));
-  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}.${routing.autoStart ? '' : ' Press Start to begin.'}`;
+  const slopeLimit = Number.isFinite(options.maxGrade) ? document.getElementById('opt-slope').selectedOptions[0].dataset.label : '';
+  const slopeSaid = slopeLimit && !unmet ? `, nothing steeper than ${slopeLimit}` : '';
+  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${routing.autoStart ? '' : ' Press Start to begin.'}`;
   const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
     ${unmet}
     <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stairs ? '' : ' · <span class="badge">Step-free</span>'}</p>
+    <div class="quick-option">
+      <button type="button" id="slope-toggle" class="option-toggle" aria-pressed="${!!slopeLimit}" aria-describedby="slope-toggle-note">Avoid steep slopes</button>
+      <span id="slope-toggle-note" class="route-note">${slopeLimit ? `On: nothing steeper than ${slopeLimit}` : 'Off: the route may have steep parts'}</span>
+    </div>
     ${startNote ? `<p class="route-note">${startNote.trim()}</p>` : ''}
     ${stopNote(stops)}
     ${stairsNote}
