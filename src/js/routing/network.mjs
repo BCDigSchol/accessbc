@@ -13,11 +13,18 @@
 // Optionally, OpenStreetMap footpaths and steps (paths.geojson) can be added for people who can use
 // stairs. Footpaths are treated like outdoor paths but aren't checked for accessibility; steps never
 // get junctions where they cross something, since they're often above or below it.
+//
+// For routes between campuses or from off campus, city sidewalks and crossings from OpenStreetMap
+// (sidewalks.geojson, see scripts/osm-sidewalks.mjs) can be added too. They're joined to BC's outdoor
+// paths where one ends within CITY_LINK_M of the other, and aren't checked for accessibility either.
 
 export const SAME_POINT_M = 0.25;
 export const JOIN_GAP_M = 2;
 export const REVIEW_GAP_M = 10;
 export const ENTRANCE_LINK_M = 15;
+export const CITY_LINK_M = 20;
+// Edge types from city sidewalk data, and the links joining them to BC's paths
+export const CITY_TYPES = new Set(['Sidewalk', 'Crossing', 'Street', 'Link']);
 
 // ---- Geometry: flat projection to metres around the campus (error well under 1% across all campuses)
 
@@ -114,7 +121,7 @@ export function buildNetwork(pathFeatures) {
         length += len;
       }
       ids.forEach((n) => nodes[n].lines.add(line));
-      lines.push({ fid: f.properties.FID, type: f.properties.Type, comment: (f.properties.Comment || '').trim(), length, coordinates: ids.map((n) => unproj(nodes[n].xy)) });
+      lines.push({ fid: f.properties.FID, type: f.properties.Type, comment: (f.properties.Comment || '').trim(), length, coordinates: ids.map((n) => unproj(nodes[n].xy)), city: f.properties.city });
     }
   }
   const degree = new Array(nodes.length).fill(0);
@@ -195,16 +202,17 @@ export function nearestSegment({ nodes, segments, near }, p, type, maxDistance =
 
 // Edge types: 'Exterior' and 'Interior' (accessible paths), 'Entrance' (door links), and with footpaths,
 // 'Footpath' and 'Stairs'.
-const GROUND_LEVEL = new Set(['Exterior', 'Footpath']);
+const GROUND_LEVEL = new Set(['Exterior', 'Footpath', 'Sidewalk', 'Crossing', 'Street']);
 
 // Returns {nodes: [[lon, lat]], adjacency: [[{to, length, type, seg}]], entrances: [{id, building, node, linkMeters}],
 // segments, lines, buildings, elevatorBuildings}. Pass footpaths (paths.geojson features) to include them.
-export function buildGraph({ paths, entrances, buildings, elevators = [], footpaths = [] }) {
+export function buildGraph({ paths, entrances, buildings, elevators = [], footpaths = [], sidewalks = [] }) {
   const osm = footpaths.map((f) => ({
     ...f,
     properties: { Type: f.properties.highway === 'steps' ? 'Stairs' : 'Footpath', FID: `osm-${f.properties.OBJECTID}`, Comment: '' },
   }));
-  const net = buildNetwork([...paths, ...osm]);
+  const city = sidewalks.map((f) => ({ ...f, properties: { Type: f.properties.Type, FID: `osm-way-${f.properties.osm}`, Comment: '', city: f.properties } }));
+  const net = buildNetwork([...paths, ...osm, ...city]);
   const { nodes, segments } = net;
   const projectedBuildings = projectBuildings(buildings);
   const xy = nodes.map((n) => n.xy);
@@ -225,7 +233,7 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
     if (g.d <= JOIN_GAP_M) extraEdges.push([g.node, nodeOnSegment(g.seg, g.t, g.point), g.seg.type]);
   }
   for (const c of findCrossings(net)) {
-    if (!c.segs.every((seg) => GROUND_LEVEL.has(seg.type))) continue;
+    if (!c.segs.every((seg) => GROUND_LEVEL.has(seg.type) && !net.lines[seg.line].city?.level)) continue;
     const [s, u] = c.segs;
     const node = nodeOnSegment(s, c.t, c.point);
     const other = nodeOnSegment(u, c.u, c.point);
@@ -241,6 +249,25 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
       if (r.d < SAME_POINT_M) extraEdges.push([i, nodeOnSegment(s, r.t, r.point), s.type]);
     }
   }
+  // City sidewalks and BC's outdoor paths: a dangling end of either, within CITY_LINK_M of the other, is joined to it
+  if (city.length) {
+    const isCityLine = (l) => !!net.lines[l].city;
+    const outdoorBC = new Set(['Exterior', 'Footpath']), outdoorCity = new Set(['Sidewalk', 'Crossing', 'Street']);
+    for (let i = 0; i < nodes.length; i++) {
+      if (net.degree[i] !== 1) continue;
+      const [line] = nodes[i].lines;
+      const fromCity = isCityLine(line);
+      if (!fromCity && net.lines[line].type !== 'Exterior') continue;
+      let best = { d: CITY_LINK_M };
+      for (const s of net.near(nodes[i].xy, CITY_LINK_M)) {
+        if (isCityLine(s.line) === fromCity || !(fromCity ? outdoorBC : outdoorCity).has(s.type) || net.lines[s.line].city?.level) continue;
+        const r = nearestOnSegment(nodes[i].xy, xy[s.a], xy[s.b]);
+        if (r.d < best.d) best = { ...r, seg: s };
+      }
+      if (best.seg) extraEdges.push([i, nodeOnSegment(best.seg, best.t, best.point), 'Link']);
+    }
+  }
+
   // An entrance is where inside meets outside, so link it to the nearest outdoor path and to the
   // nearest indoor path of its own building (never into a neighbouring building's corridor).
   const linkedEntrances = [];
@@ -282,7 +309,7 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
   return {
     nodes: xy.map(unproj), adjacency, entrances: linkedEntrances, buildings: projectedBuildings, elevatorBuildings,
     segments: segments.map(({ line, type, from, to }) => ({ line, type, from, to })),
-    lines: net.lines.map(({ type, coordinates }) => ({ type, coordinates })),
+    lines: net.lines.map(({ type, coordinates, city, length }) => ({ type, coordinates, city, length })),
   };
 }
 
@@ -322,11 +349,12 @@ export function describeRoute(graph, route) {
     const type = { Interior: 'indoor', Stairs: 'stairs' }[edge.type] || 'outdoor';
     let step = steps.at(-1);
     if (!step || step.type !== type) {
-      step = { type, length: 0, unverifiedLength: 0, coordinates: [graph.nodes[a]], nodes: [a] };
+      step = { type, length: 0, unverifiedLength: 0, cityLength: 0, coordinates: [graph.nodes[a]], nodes: [a] };
       steps.push(step);
     }
     step.length += edge.length;
-    if (edge.type === 'Footpath') step.unverifiedLength += edge.length;
+    if (edge.type === 'Footpath' || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
+    if (CITY_TYPES.has(edge.type)) step.cityLength = (step.cityLength || 0) + edge.length;
     step.coordinates.push(graph.nodes[b]);
     step.nodes.push(b);
   }

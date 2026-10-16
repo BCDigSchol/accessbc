@@ -40,6 +40,23 @@ It's the main roof height, so towers and spires aren't included. 258 of 298 buil
 small garages and sheds with too few lidar points, so they're `null` (the 3D view shows them at 3 m). Re-run
 the script after adding or reshaping buildings.
 
+## City sidewalks (`sidewalks.geojson`)
+
+City sidewalks, street crossings and footways around the campuses, from OpenStreetMap, built by
+[scripts/osm-sidewalks.mjs](../../scripts/osm-sidewalks.mjs). Routes use them only when BC's own paths can't make
+the trip: between campuses, or from off campus. The app loads the file only then.
+
+**Licence:** © OpenStreetMap contributors, under the [Open Database License (ODbL)](https://opendatacommons.org/licenses/odbl/).
+Unlike the rest of this folder, this file must stay under the ODbL, and anything derived from it must be shared
+under the ODbL too. The map credits OpenStreetMap.
+
+Each feature is one OpenStreetMap way. `Type` is `Sidewalk`, `Crossing`, `Street` (a road tagged as having a
+sidewalk that isn't drawn separately), or `Stairs`. Crossings carry `crossing` (the kind of crosswalk) and `kerb`
+(the worst curb at either end: `lowered`, `flush`, `raised`, or `unknown`). `rough`, `campus`, and `level` mark
+unpaved ways, ways inside a BC campus boundary, and bridges and tunnels. None of it has been checked for
+accessibility, and the app says so on every route that uses it. Many curb ramps aren't tagged in OpenStreetMap
+yet; adding them there (`kerb=lowered` on the crossing's end nodes) improves the routes after the next refresh.
+
 ## Known quirks
 
 - Field names were cut to 10 characters by the shapefile export (`Descriptio`, `Food_dinin`,
