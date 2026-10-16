@@ -6,7 +6,8 @@ const NEARBY_KINDS = {
   vending: { label: 'Vending machines', fields: ['Food_vend'] },
   cafe: { label: 'Cafés', fields: ['Food_cafe'] },
   dining: { label: 'Dining halls', fields: ['Food_dinin'] },
-  restroom: { label: 'Single-use restrooms', fields: ['Single_res'] },
+  restroom: { label: 'Single-stall restrooms', fields: ['Single_res'] },
+  food: { label: 'Food and vending', fields: ['Food_vend', 'Food_cafe', 'Food_dinin'] },
   lactation: { label: 'Lactation rooms', fields: ['Lactation'] },
   printing: { label: 'Printing', fields: ['Printing'] },
   seating: { label: 'Indoor seating', fields: ['Seating_gr', 'Seating_in'] },
@@ -20,6 +21,8 @@ const NEARBY_RESULTS = 5;
 let nearbyResults = [];
 let nearbyMarker = null;
 let nearbyFromYou = false; // whether the last search measured from your location
+let nearbyFromBuilding = null; // or the building it measured from
+let nearbyChosenBuilding = null; // a building picked under Near, used again next time (e.g. when off campus)
 
 // Candidate places for a kind on a graph: [{label, building?, lonlat, nodes, offset}], cached per graph.
 function nearbyCandidates(graph, kind) {
@@ -66,46 +69,35 @@ async function findNearby(map) {
   const out = document.getElementById('nearby-results');
   out.innerHTML = '<p>Searching…</p>';
 
-  // Where to measure from
-  let sources, startOffset = 0, fromWhat, notice = '', start;
+  // Where to measure from: your location, your route, or a building chosen under Near
+  let sources, startOffset = 0, fromWhat;
   if (near === 'route') {
-    if (!routing.current) return nearbyMessage(out, '<p>Find a route first, then search along it.</p>');
+    if (!routing.current) return nearbyMessage(out, '<p>There’s no route yet. Choose My location or a building under Near.</p>');
     sources = routing.current.route.nodes;
     fromWhat = 'route';
-  } else if (near === 'start') {
-    const from = document.getElementById('route-from').value;
-    if (!from || from === MY_LOCATION) return nearbyMessage(out, '<p>Choose a starting building under From first.</p>');
-    sources = graph.entrances.filter((e) => e.building === from).map((e) => e.node);
-    fromWhat = from;
-  } else {
+  } else if (near === 'me') {
     out.innerHTML = '<p>Finding your location…</p>';
-    // If your location can't be used, search near your starting building instead when there is one
-    const fromBuilding = document.getElementById('route-from').value;
-    const fallback = fromBuilding && fromBuilding !== MY_LOCATION && fromBuilding !== HERE && fromBuilding !== PLACE ? fromBuilding : null;
-    const instead = fallback
-      ? ` Showing what's nearest to ${escapeHtml(fallback)} (your starting building) instead.`
-      : ' To search anyway, choose a building under From and set Near to “My starting building”.';
-    let here, problem = null;
+    let problem = null, start;
     try {
-      here = await getPosition();
-      start = module.nearestNode(graph, here);
-      if (start.d > MAX_START_DISTANCE_M) problem = `You're ${feet(start.d)} from the nearest mapped campus path, so walking distances from you can't be measured.`;
+      start = module.nearestNode(graph, await getPosition());
+      if (start.d > MAX_START_DISTANCE_M) problem = `You’re ${feet(start.d)} from the nearest mapped campus path, so walking distances from you can’t be measured.`;
     } catch {
-      problem = 'Your location isn’t available. Check that location access is allowed for this site and turned on for your browser.';
+      problem = 'Your location isn’t available (check that location access is allowed for this site).';
     }
     if (problem) {
-      if (!fallback) return nearbyMessage(out, `<p>${problem}${instead}</p>`);
-      notice = `<p class="nearby-notice">${problem}${instead}</p>`;
-      sources = graph.entrances.filter((e) => e.building === fallback).map((e) => e.node);
-      fromWhat = fallback;
+      // Straight to the Near list, to pick a building to search from instead
+      nearbyMessage(out, `<p>${problem} Choose a building under <strong>Near</strong> to search from there.</p>`);
+      document.getElementById('nearby-from').focus();
+      return;
     }
-  }
-  if (near === 'me' && !notice) {
     sources = [start.node];
     startOffset = start.d;
     fromWhat = 'you';
+  } else {
+    sources = graph.entrances.filter((e) => e.building === near).map((e) => e.node);
+    if (!sources.length) return nearbyMessage(out, `<p>${escapeHtml(near)} has no mapped accessible entrance, so walking distances from it can’t be measured.</p>`);
+    fromWhat = near;
   }
-
   if (Number.isFinite(options.maxGrade)) await ensureGrades(graph);
   const distances = module.walkingDistances(graph, sources, edgeCost(graph, options));
   nearbyResults = nearbyCandidates(graph, kind)
@@ -114,16 +106,17 @@ async function findNearby(map) {
     .sort((a, b) => a.distance - b.distance)
     .slice(0, NEARBY_RESULTS);
   nearbyFromYou = fromWhat === 'you';
+  nearbyFromBuilding = fromWhat !== 'you' && fromWhat !== 'route' ? fromWhat : null;
 
   const label = NEARBY_KINDS[kind].label.toLowerCase();
   if (!nearbyResults.length) {
-    return nearbyMessage(out, `${notice}<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`);
+    return nearbyMessage(out, `<p>No ${label} can be reached on mapped ${options.stairs ? '' : 'accessible '}paths from ${fromWhat === 'route' ? 'your route' : fromWhat === 'you' ? 'your location' : escapeHtml(fromWhat)}.</p>`);
   }
   const along = fromWhat === 'route';
   // Along a route, the start and destination buildings are already on it: say so, rather than offer them as stops.
   const ends = along
     ? { [document.getElementById('route-from').value]: 'your starting building', [routing.current.to]: 'your destination' }
-    : fromWhat !== 'you' ? { [fromWhat]: 'in your starting building' } : {};
+    : nearbyFromBuilding ? { [nearbyFromBuilding]: 'in the building you searched from' } : {};
   const items = nearbyResults.map((r, i) => {
     const end = r.building && ends[r.building];
     const how = end || (along ? (r.distance < 15 ? 'on your route' : `${feet(r.distance)} off your route`) : `${feet(r.distance)} walk`);
@@ -136,11 +129,42 @@ async function findNearby(map) {
       </span>
     </li>`;
   });
-  out.innerHTML = `${notice}<p class="nearby-heading">Nearest ${label}${along ? ' along your route' : ''}:</p><ol class="nearby-list">${items.join('')}</ol>`;
+  out.innerHTML = `<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
   const first = nearbyResults[0];
   const said = `The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
-  announce(`${notice ? out.querySelector('.nearby-notice').textContent + ' ' : ''}${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);
+  announce(`${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);
   speak(said);
+}
+
+// The results view: the nearest things of a kind, along your route when there is one, else near you. With no kind
+// (adding a stop mid-trip), the student picks one. Back returns to wherever they came from.
+let nearbyReturn = 'home';
+function setResultsTitle() {
+  const kind = NEARBY_KINDS[document.getElementById('nearby-kind').value];
+  document.getElementById('results-title').textContent = `Nearest ${kind.label.toLowerCase()}`;
+}
+// The Near list: My location, Along my route (when there is one), then every building that can be routed from
+function fillNearbyFrom() {
+  const select = document.getElementById('nearby-from');
+  const keep = select.value;
+  select.innerHTML = `<option value="me">My location</option>${routing.current ? '<option value="route">Along my route</option>' : ''}`
+    + (routing.buildingOptions || '').replace(/<optgroup label="([^"]+)">/g, '<optgroup label="A building: $1">');
+  if ([...select.options].some((o) => o.value === keep)) select.value = keep;
+}
+
+function openNearby(kind, { near } = {}) {
+  const kindSelect = document.getElementById('nearby-kind');
+  if (kind) kindSelect.value = kind;
+  fillNearbyFrom();
+  const listed = (v) => v && [...document.getElementById('nearby-from').options].some((o) => o.value === v);
+  document.getElementById('nearby-from').value = near || (routing.current ? 'route' : listed(nearbyChosenBuilding) ? nearbyChosenBuilding : 'me');
+  nearbyReturn = guide.active ? 'walk' : routing.current ? 'route' : 'home';
+  document.getElementById('nearby-results').innerHTML = '';
+  setView('results');
+  setResultsTitle();
+  if (!kind) return kindSelect.focus();
+  document.getElementById('results-title').focus();
+  findNearby(window.map);
 }
 
 function showNearbyOnMap(map, result) {
@@ -152,12 +176,41 @@ function showNearbyOnMap(map, result) {
 document.addEventListener('DOMContentLoaded', () => {
   const select = document.getElementById('nearby-kind');
   select.innerHTML = Object.entries(NEARBY_KINDS).map(([k, c]) => `<option value="${k}">${c.label}</option>`).join('');
-  document.getElementById('nearby-search').addEventListener('click', () => {
-    if (routing) findNearby(window.map);
+  // Changing what to find, or where from, searches again
+  for (const id of ['nearby-kind', 'nearby-from']) {
+    document.getElementById(id).addEventListener('change', (e) => {
+      if (!routing) return;
+      if (id === 'nearby-from') nearbyChosenBuilding = ['me', 'route'].includes(e.target.value) ? null : e.target.value;
+      setResultsTitle();
+      findNearby(window.map);
+    });
+  }
+  // "More…" under the quick searches: every kind of thing that can be found, spelled out
+  const more = document.getElementById('more-kinds'), moreButton = document.getElementById('chip-more');
+  more.innerHTML = Object.entries(NEARBY_KINDS).map(([k, c]) => `<button type="button" class="chip" data-find="${k}">${c.label}</button>`).join('');
+  const setMoreOpen = (open) => {
+    more.hidden = !open;
+    moreButton.setAttribute('aria-expanded', String(open));
+    moreButton.textContent = open ? 'Fewer' : 'More…';
+  };
+  moreButton.addEventListener('click', () => {
+    setMoreOpen(more.hidden);
+    if (!more.hidden) more.querySelector('button').focus();
   });
-  // Default to searching along the route when there is one
-  document.querySelector('.nearby').addEventListener('toggle', (e) => {
-    if (e.target.open && routing?.current) document.getElementById('nearby-from').value = 'route';
+  // Quick searches under Where to?
+  document.addEventListener('click', (e) => {
+    const kind = e.target.closest('[data-find]')?.dataset.find;
+    if (!kind || !routing) return;
+    setMoreOpen(false);
+    openNearby(kind);
+  });
+  document.getElementById('results-back').addEventListener('click', () => {
+    if (nearbyMarker) { nearbyMarker.remove(); nearbyMarker = null; }
+    setView(nearbyReturn);
+    clearWhereTo();
+    if (nearbyReturn === 'walk') document.getElementById('guidance-repeat').focus();
+    else if (nearbyReturn === 'route') document.getElementById('guidance-start-audio')?.focus();
+    else document.getElementById('where-to').focus();
   });
 
   document.addEventListener('click', (e) => {
@@ -179,6 +232,10 @@ document.addEventListener('DOMContentLoaded', () => {
       // Directions there: from wherever the search was measured, or from here mid-trip
       if (midTrip) prepareRerouteFromHere();
       else if (nearbyFromYou) from.value = MY_LOCATION;
+      else if (nearbyFromBuilding) {
+        from.value = nearbyFromBuilding;
+        routing.fromChosen = true;
+      }
       if (result.building) {
         routing.place = null;
         document.getElementById('route-to').value = result.building;
@@ -187,6 +244,5 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     updateRoute(map);
-    document.getElementById('route-result').scrollIntoView({ block: 'nearest' });
   });
 });

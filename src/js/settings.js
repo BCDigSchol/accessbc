@@ -89,9 +89,12 @@ for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)',
 
 // ---- Settings dialog --------------------------------------------------------------------------------
 
+// Opens the settings dialog (from the menu, or More in walk mode). Closing it returns focus to whatever opened it.
+let openSettings = () => {};
+
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
-  const opener = document.getElementById('settings-toggle');
+  let returnFocus = null;
   const checkboxes = ['screenReader', 'readAloud', 'autoReroute', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
   const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
@@ -126,14 +129,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const close = () => {
     dialog.hidden = true;
-    opener.focus();
+    const back = returnFocus && document.contains(returnFocus) && returnFocus.offsetParent !== null ? returnFocus : document.getElementById('menu-toggle');
+    back.focus();
   };
-  opener.addEventListener('click', () => {
+  openSettings = () => {
+    returnFocus = document.activeElement;
     fill();
     dialog.hidden = false;
-    document.querySelector('.topnav').classList.remove('responsive');
     document.getElementById('settings-close').focus();
-  });
+  };
   document.getElementById('settings-close').addEventListener('click', close);
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();

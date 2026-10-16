@@ -17,6 +17,12 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
 
 ## Accessibility features
 
+**The interface** works like other map apps: one **Where to?** box (buildings, things in them, or kinds of
+thing like single-stall restrooms, with quick buttons and a **More…** list under it), a route preview from your
+location with one **Start** button, and walking directions with **Mute**, **Repeat**, **More**, and **End**. Trip
+details (start, stops, route options) are under **Edit trip**; settings, the map key, and help are in the ☰ menu.
+On computers it's a column down the left; on phones a search bar at the top and a sheet at the bottom.
+
 - **Directions** between buildings on mapped accessible paths, with slope and climb, written steps, up to five
   stops, and options to allow stairs, prefer or avoid indoor routes, and limit the steepest slope.
 - **Find nearby**: the nearest vending machine, restroom, seating, blue-light phone and so on, by walking distance
@@ -26,7 +32,8 @@ Then open http://localhost:8000. Use this script rather than `python3 -m http.se
   when you leave it, and (by default) finds a new route from where you are, keeping stops not yet reached. The
   trip, including the current step, is kept in the page address (`?from=…&stop=…&to=…&step=…&follow=1`), so a reload
   doesn't lose it and a link shares it. Steps mention curb ramps, stairs that branch off, and seating.
-- **Audio guidance**: one button to start step-by-step mode read aloud and following your location.
+- **Start** begins walking directions read aloud and following your location; **Preview the steps one by one**
+  goes through them without following.
 - **Hands free**: the screen stays on during step-by-step mode (Screen Wake Lock), short sounds mark a new step
   (from the side of the turn), a turn coming up, leaving the route, and arriving, and vibration patterns tell left
   from right (Android). An **I use a screen reader** setting stops Access BC speaking over the screen reader.

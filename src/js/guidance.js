@@ -74,11 +74,18 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
-// The "Speak directions" button in step-by-step mode shows whether reading aloud is on.
+// The Mute button in walk mode: pressed when directions aren't read aloud. Hidden without speech, and for
+// screen reader users (their screen reader does the reading).
 function syncAudioButton() {
   const button = document.getElementById('guidance-audio');
   button.hidden = !('speechSynthesis' in window) || !!settings.screenReader;
-  button.setAttribute('aria-pressed', String(!!settings.readAloud));
+  button.setAttribute('aria-pressed', String(!settings.readAloud));
+}
+
+// The More menu in walk mode
+function setWalkMore(open) {
+  document.getElementById('walk-more-menu').hidden = !open;
+  document.getElementById('walk-more').setAttribute('aria-expanded', String(open));
 }
 
 // The "Large view" button shows whether the large step-by-step view is on.
@@ -107,18 +114,18 @@ async function startGuidance(map, { follow = false, step = 0, intro = '', keepFo
   guide.offRouteFixes = 0;
   guide.backToRoute = null;
 
-  const panel = document.getElementById('directions-panel');
-  panel.classList.add('guiding');
   document.body.classList.add('guiding');
-  document.getElementById('directions-title').textContent = 'Step-by-step directions';
-  document.getElementById('guidance').hidden = false;
+  setView('walk');
+  setWalkMore(false);
+  document.getElementById('walk-where').innerHTML = '';
   guidanceStatus('');
   syncAudioButton();
   syncBigButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
   await showStep(map, step, intro);
-  if (!keepFocus) document.getElementById('guidance-next').focus();
+  // Following: steps move on by themselves, so focus Repeat; previewing: focus Next
+  if (!keepFocus) document.getElementById(follow ? 'guidance-repeat' : 'guidance-next').focus();
 }
 
 function stopGuidance(map) {
@@ -128,11 +135,9 @@ function stopGuidance(map) {
   stopFollowing();
   stopPointing();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  const panel = document.getElementById('directions-panel');
-  panel.classList.remove('guiding', 'adding-stop');
   document.body.classList.remove('guiding');
-  document.getElementById('directions-title').textContent = 'Accessible directions';
-  document.getElementById('guidance').hidden = true;
+  // Back to the route preview, unless a new route is about to go straight back into walking directions
+  if (!routing.autoStart) setView(routing.current ? 'route' : 'home');
   map.getSource('route-step').setData({ type: 'FeatureCollection', features: [] });
   setRouteDimmed(map, false);
   moveMap(map, 'easeTo', { pitch: 0, bearing: 0 });
@@ -261,6 +266,7 @@ function locateOnRoute(p) {
 function onPosition(map, position) {
   const { latitude, longitude, accuracy } = position.coords;
   const here = [longitude, latitude];
+  guide.lastFix = { lonlat: here, accuracy, at: Date.now() }; // for Where am I? while walking
   if (!guide.marker) {
     const dot = document.createElement('div');
     dot.className = 'you-are-here';
@@ -401,18 +407,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   // Add a stop mid-trip: show "Find nearby", searching along the route
+  // Add a stop mid-trip: find something along the route (the directions carry on meanwhile)
   document.getElementById('guidance-add-stop').addEventListener('click', () => {
-    const panel = document.getElementById('directions-panel');
-    const adding = panel.classList.toggle('adding-stop');
-    if (!adding) return;
-    const nearby = document.querySelector('.nearby');
-    nearby.open = true;
-    document.getElementById('nearby-from').value = 'route';
-    document.getElementById('nearby-kind').focus();
+    setWalkMore(false);
+    openNearby(null, { near: 'route' });
+  });
+  document.getElementById('walk-more').addEventListener('click', () => {
+    setWalkMore(document.getElementById('walk-more-menu').hidden);
+  });
+  document.getElementById('walk-settings').addEventListener('click', () => {
+    setWalkMore(false);
+    openSettings();
   });
   document.getElementById('guidance-exit').addEventListener('click', () => {
     stopGuidance(window.map);
-    document.getElementById('guidance-start')?.focus();
+    document.getElementById('guidance-start-audio')?.focus();
   });
 
   // Arrow keys and swipes move between steps.

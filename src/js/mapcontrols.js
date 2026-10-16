@@ -6,6 +6,39 @@ function addMapControls(map) {
         trackUserLocation: true
     }), 'top-right');
     map.addControl(new ThreeDControl(), 'top-right');
+    map.addControl(new LayersControl(), 'top-right');
+}
+
+// Opens and closes the map key (the legend), which is closed to start with so the map stays clear.
+function setLegendOpen(open, { focus = true } = {}) {
+    const legend = document.getElementById('legend');
+    legend.hidden = !open;
+    document.querySelectorAll('.layers-toggle').forEach((b) => b.setAttribute('aria-expanded', String(open)));
+    if (!focus) return;
+    if (open) legend.querySelector('.legend-close')?.focus();
+    else (document.querySelector('.layers-toggle') || document.getElementById('menu-toggle')).focus();
+}
+
+// "Layers" button on the map, for the legend
+class LayersControl {
+    onAdd() {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'layers-toggle';
+        button.textContent = 'Layers';
+        button.setAttribute('aria-label', 'Map layers');
+        button.setAttribute('aria-controls', 'legend');
+        button.setAttribute('aria-expanded', 'false');
+        button.addEventListener('click', () => setLegendOpen(document.getElementById('legend').hidden));
+        this.container = document.createElement('div');
+        this.container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+        this.container.appendChild(button);
+        return this.container;
+    }
+
+    onRemove() {
+        this.container.remove();
+    }
 }
 
 // Button that tilts the map to show buildings in 3D, and back. Tilting by hand also shows them.
@@ -63,34 +96,19 @@ function createLegend(containerId, legendData, map) {
     const legendContainer = document.getElementById(containerId);
     legendContainer.innerHTML = ''; // Clear existing legend content
 
-    // A "Map layers" button opens and closes the whole legend. It starts closed on phones, where an open
-    // legend would cover much of the map.
-    const panelToggle = document.createElement('button');
-    panelToggle.type = 'button';
-    panelToggle.className = 'legend-panel-toggle';
-    panelToggle.setAttribute('aria-controls', 'legend-body');
-    const panelHeading = document.createElement('h2'); // the category headings below are h3s
-    panelHeading.className = 'legend-panel-heading';
-    panelHeading.appendChild(panelToggle);
-    legendContainer.appendChild(panelHeading);
+    // Heading and close button (the legend opens from the Layers button on the map, or the menu)
+    const header = document.createElement('div');
+    header.className = 'legend-header';
+    header.innerHTML = '<h2 id="legend-title">Map layers</h2><button type="button" class="close legend-close" aria-label="Close map layers">×</button>';
+    header.querySelector('.legend-close').addEventListener('click', () => setLegendOpen(false));
+    legendContainer.appendChild(header);
+    legendContainer.addEventListener('keydown', (e) => { if (e.key === 'Escape') setLegendOpen(false); });
 
     // Main legend content wrapper
     const content = document.createElement('div');
     content.classList.add('legend-content');
     content.id = 'legend-body';
     legendContainer.appendChild(content);
-
-    const setLegendOpen = (open) => {
-        legendContainer.classList.toggle('panel-collapsed', !open);
-        content.hidden = !open;
-        panelToggle.setAttribute('aria-expanded', String(open));
-        panelToggle.innerHTML = `Map layers <span class="legend-arrow" aria-hidden="true">${open ? '▼' : '▲'}</span>`;
-    };
-    const narrow = window.matchMedia('(max-width: 870px)');
-    setLegendOpen(!narrow.matches);
-    // Zooming the page in (or rotating a tablet) can make the screen narrow: close the legend then too
-    narrow.addEventListener('change', (e) => setLegendOpen(!e.matches));
-    panelToggle.addEventListener('click', () => setLegendOpen(content.hidden));
 
     const setItem = (item, visible) => {
         item.classList.toggle('disabled', !visible);
