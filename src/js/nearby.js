@@ -130,7 +130,8 @@ async function findNearby(map) {
       </span>
     </li>`;
   });
-  out.innerHTML = `<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
+  // Looking for a blue-light phone: the numbers to call come first
+  out.innerHTML = `${kind === 'bluelights' ? emergencyCallLinks() : ''}<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
   const first = nearbyResults[0];
   const said = `The nearest is ${first.label}${first.feature && isReportedBroken(first.feature) ? ' (reported not working)' : ''}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
   announce(`${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);

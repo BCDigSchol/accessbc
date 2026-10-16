@@ -695,6 +695,7 @@ async function updateRoute(map) {
   const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${broken.text ? ` ${broken.text}` : ''}${routing.autoStart ? '' : ' Press Start to begin.'}`;
   const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
+    ${toIsPlace && isBluelightTrip() ? emergencyCallLinks() : ''}
     ${unmet}
     ${broken.html}
     <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stairs ? '' : ' · <span class="badge">Step-free</span>'}</p>

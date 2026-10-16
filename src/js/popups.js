@@ -25,6 +25,7 @@ function addPopupHandlers(map) {
                 const id = feature.properties[REPORTABLE[source]];
                 popupContent = `<h2>${escapeText(name)}</h2>
                   ${isReportedBroken(feature) ? '<p><strong>Reported not working.</strong></p>' : ''}
+                  ${source === 'bluelights' ? `${emergencyCallLinks()}<button type="button" data-bluelight-directions="${feature.geometry.coordinates.join(',')}" data-label="${escapeText(name.replace('Blue-light emergency phone', 'Blue-light phone'))}">Directions here</button>` : ''}
                   <button type="button" data-report-layer="${source}" data-report-id="${escapeText(String(id))}">Report a problem</button>`;
             }
             switch (layer) {
