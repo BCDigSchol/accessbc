@@ -14,6 +14,13 @@ The layers are GeoJSON files in [src/geojson/](src/geojson/), one feature per li
 4. Preview locally with `python3 scripts/serve.py` and open http://localhost:8000.
 5. Commit and push. GitHub Pages publishes the change.
 
+## City sidewalks
+
+[src/geojson/sidewalks.geojson](src/geojson/sidewalks.geojson) comes from OpenStreetMap. To refresh it with newer
+data, run `node scripts/osm-sidewalks.mjs` (Node 18 or later, no packages needed; it downloads about 10 MB from the
+public Overpass API, and retries if the servers are busy). See [src/geojson/README.md](src/geojson/README.md) for
+the fields and the licence.
+
 ## Basemap and terrain
 
 The basemap (streets, labels, water) and the terrain used by the elevation tool are in

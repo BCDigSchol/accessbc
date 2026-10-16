@@ -21,7 +21,7 @@ export function formatDistance(m) {
 
 // The route as a polyline in metres, with each piece's edge type and distance from the start.
 function routeLine(graph, route) {
-  const pts = [], types = [], at = [0], nodeAt = new Map([[0, 0]]);
+  const pts = [], types = [], info = [], at = [0], nodeAt = new Map([[0, 0]]);
   for (let i = 0; i < route.nodes.length; i++) {
     const p = proj(graph.nodes[route.nodes[i]]);
     if (i > 0) {
@@ -30,11 +30,12 @@ function routeLine(graph, route) {
       nodeAt.set(i, at.at(-1) + (len < 0.01 ? 0 : len));
       if (len < 0.01) continue;
       types.push(edge.type === 'Entrance' ? 'Exterior' : edge.type);
+      info.push(edge.seg >= 0 ? graph.lines[graph.segments[edge.seg].line].city || null : null); // city sidewalk details
       at.push(at.at(-1) + len);
     }
     pts.push(p);
   }
-  return { pts, types, at, nodeAt, length: at.at(-1) };
+  return { pts, types, info, at, nodeAt, length: at.at(-1) };
 }
 
 // Point at distance s along the polyline.
@@ -89,14 +90,18 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
   const line = routeLine(graph, route);
   const kindOf = (type) => ({ Interior: 'indoor', Stairs: 'stairs' }[type] || 'outdoor');
 
-  // Breaks: type changes, and turns of at least TURN_MIN_DEG.
+  // Breaks: type changes, street crossings, and turns of at least TURN_MIN_DEG.
   const breaks = [{ s: 0, kind: 'depart' }];
+  const crossing = (i) => line.types[i] === 'Crossing';
   for (let i = 1; i < line.pts.length - 1; i++) {
     const s = line.at[i];
     if (kindOf(line.types[i - 1]) !== kindOf(line.types[i])) {
       breaks.push({ s, kind: { indoor: 'enter', stairs: 'stairs', outdoor: kindOf(line.types[i - 1]) === 'indoor' ? 'exit' : 'outdoor' }[kindOf(line.types[i])] });
       continue;
     }
+    if (crossing(i) && !crossing(i - 1)) { breaks.push({ s, kind: 'cross', crossing: line.info[i] || {} }); continue; }
+    if (!crossing(i) && crossing(i - 1)) { breaks.push({ s, kind: 'outdoor', afterCrossing: true }); continue; }
+    if (crossing(i)) continue; // a crossing is one step, whatever its shape
     const turn = turnAt(line, s);
     if (Math.abs(turn) >= TURN_MIN_DEG) breaks.push({ s, kind: 'turn', turn });
   }
@@ -114,6 +119,14 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
     merged.push({ ...b });
   }
   let kept = merged.filter((b) => b.kind !== 'turn' || Math.abs(b.turn) >= TURN_MIN_DEG);
+  // A turn just before a crossing is part of crossing; a turn just after one is where you go next
+  kept = kept.filter((b) => b.kind !== 'turn' || !kept.some((c) => c.kind === 'cross' && c.s - b.s >= 0 && c.s - b.s < MERGE_UNDER_M));
+  for (const after of kept.filter((b) => b.afterCrossing)) {
+    const turn = kept.find((b) => b.kind === 'turn' && b.s - after.s >= 0 && b.s - after.s < MERGE_UNDER_M);
+    if (!turn) continue;
+    Object.assign(after, { kind: 'turn', turn: turn.turn });
+    kept = kept.filter((b) => b !== turn);
+  }
 
   // Stops: a step of their own, which also stands in for any turn right at the stop (e.g. back out of a door).
   for (const stop of route.stops || []) {
@@ -132,6 +145,10 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
     const segIndex = Math.max(0, line.at.findIndex((a) => a > b.s) - 1);
     const type = kindOf(line.types[Math.min(segIndex, line.types.length - 1)]);
     const step = { kind: b.kind, turn: b.turn, label: b.label, length: end - b.s, heading, start: unproj(startPt), coordinates, type };
+    if (b.kind === 'cross') step.crossing = b.crossing;
+    // Off campus there are no BC buildings to steer by: the street you're walking along instead
+    const street = line.info[Math.min(segIndex, line.info.length - 1)]?.name;
+    if (street && b.kind !== 'cross') step.street = street;
     if (type === 'indoor' || b.kind === 'exit') {
       const inside = nearestBuildingPoint(graph.buildings, pointAt(line, (b.s + end) / 2));
       const before = nearestBuildingPoint(graph.buildings, pointAt(line, Math.max(0, b.s - 2)));
@@ -158,7 +175,7 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
 // Plain-language instruction for a step.
 export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
   const distance = step.length ? ` for ${formatDistance(step.length)}` : '';
-  const landmark = step.landmark ? `, with ${step.landmark.name} on your ${step.landmark.side}` : '';
+  const landmark = step.landmark ? `, with ${step.landmark.name} on your ${step.landmark.side}` : step.street ? ` along ${step.street}` : '';
   const elevator = step.elevator ? ` ${step.building} has an elevator.` : '';
   switch (step.kind) {
     case 'depart': {
@@ -171,6 +188,15 @@ export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
       return `Go into ${step.building || 'the building'} and follow the indoor accessible route${distance}.${elevator}`;
     case 'exit':
       return `Leave ${step.building || 'the building'} and continue outside${distance}${landmark}.`;
+    case 'cross': {
+      const c = step.crossing || {};
+      const where = c.crossing === 'traffic_signals' ? ' at the traffic lights'
+        : ['marked', 'zebra', 'uncontrolled'].includes(c.crossing) ? ' at the crosswalk'
+        : c.crossing === 'unmarked' ? ', where there’s no marked crosswalk' : '';
+      const curbs = { lowered: ' There are curb ramps on both sides.', flush: ' The curbs are level with the street.', raised: ' Careful: there’s a raised curb, so this crossing isn’t step-free.' }[c.kerb]
+        || ' Curb ramps aren’t confirmed here.';
+      return `Cross ${c.name || 'the street'}${where}.${curbs}`;
+    }
     case 'stairs':
       return `Take the stairs${distance}.`;
     case 'outdoor':

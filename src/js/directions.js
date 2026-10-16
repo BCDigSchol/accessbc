@@ -331,13 +331,55 @@ function currentGraph() {
   return graphs.withStairs;
 }
 
+// City sidewalks from OpenStreetMap (sidewalks.geojson), loaded the first time a route needs them: from off campus,
+// or between campuses. Avoiding stairs leaves out steps, rough surfaces, raised curbs, and ways tagged as not
+// wheelchair accessible.
+async function cityGraph() {
+  const { module, data, graphs } = routing;
+  const stairs = routeOptions().stairs;
+  const key = stairs ? 'cityWithStairs' : 'city';
+  if (graphs[key]) return graphs[key];
+  try {
+    data.sidewalks ||= (await (await fetch(new URL('src/geojson/sidewalks.geojson', document.baseURI))).json()).features;
+  } catch {
+    return null;
+  }
+  const sidewalks = stairs ? data.sidewalks
+    : data.sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
+  graphs[key] = module.buildGraph({ ...data, footpaths: stairs ? data.footpaths : [], sidewalks });
+  return graphs[key];
+}
+
+// How much more a metre of city sidewalk costs than one of BC's checked paths, per segment: a little more on
+// sidewalks, more along streets whose sidewalk isn't drawn, much more on campus (where BC's paths are better).
+// Crossings add a fixed amount, more without a marked crosswalk or confirmed curb ramps.
+function cityCosts(graph) {
+  if (graph.cityCosts) return graph.cityCosts;
+  graph.cityCosts = graph.segments.map((seg) => {
+    const c = graph.lines[seg.line].city;
+    if (!c) return null;
+    const factor = (c.campus ? 3 : 1.15) * (c.Type === 'Street' ? 1.5 : 1);
+    let extra = 0;
+    if (c.Type === 'Crossing') {
+      extra = ['traffic_signals', 'marked', 'zebra', 'uncontrolled'].includes(c.crossing) ? 10 : 30;
+      if (!['lowered', 'flush'].includes(c.kerb)) extra += 20;
+    }
+    return { factor, extra, line: seg.line };
+  });
+  return graph.cityCosts;
+}
+
 // Edge costs for the options: forbid or discount indoor edges, and forbid edges steeper than the limit. Entrances
 // and buildings reported not working (reports.js) cost much more, so they're used only when there's no other way.
 function edgeCost(graph, options) {
   const preferIndoor = 0.5; // an indoor metre counts as half a metre when indoor routes are preferred
   const broken = brokenOnGraph(graph).edges;
+  const city = graph.lines.some((l) => l.city) ? cityCosts(graph) : null;
   return (e) => {
     let cost = e.length;
+    const c = city && e.seg >= 0 && city[e.seg];
+    if (c) cost = cost * c.factor + (c.extra && e.length ? c.extra * (e.length / graph.lines[c.line].length || 0) : 0);
+    else if (e.type === 'Link') cost *= 1.15;
     if (e.type === 'Interior') {
       if (options.indoor === 'avoid') return Infinity;
       if (options.indoor === 'prefer') cost = e.length * preferIndoor;
@@ -551,7 +593,6 @@ async function updateRoute(map) {
   const { module, elevation, terrain } = routing;
   const request = ++routeRequest;
   const options = routeOptions();
-  const graph = currentGraph();
   const fromValue = document.getElementById('route-from').value;
   const toValue = document.getElementById('route-to').value;
   stopGuidance(map);
@@ -570,14 +611,10 @@ async function updateRoute(map) {
   if (!fromValue) return askForStart('<p>Choose where you’re starting from, under From.</p>');
   if (fromValue === toValue) return askForStart('<p>The start and destination are the same. Choose a different start, under From.</p>');
 
-  const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
-  // Graph nodes for a building's entrances, or for a place found by "Find nearby" ({label, building} or {label, lonlat})
-  const nodesFor = (target) => (target.building ? doors(target.building) : [module.nearestNode(graph, target.lonlat).node]);
   // Your location, for a route from it (the default) or to it
-  let start = null;
+  let here = null;
   if (fromValue === MY_LOCATION || toValue === MY_LOCATION) {
     showResult('<p>Finding your location…</p>');
-    let here;
     try {
       here = await getPosition();
     } catch {
@@ -590,75 +627,103 @@ async function updateRoute(map) {
       return askForStart('<p>Your location isn\'t available. Check that location access is allowed, or choose a building instead.</p>');
     }
     if (request !== routeRequest) return;
-    start = module.nearestNode(graph, here);
-    if (start.d > MAX_START_DISTANCE_M) {
-      if (fromValue === MY_LOCATION && !routing.fromChosen) {
-        document.getElementById('route-from').value = '';
-        return askForStart(`<p>Choose where you’re starting from, under From. (You’re ${feet(start.d)} from the nearest mapped campus path, so directions can’t start from where you are.)</p>`);
-      }
-      return askForStart(`<p>You're ${feet(start.d)} from the nearest mapped path. Choose a building instead.</p>`);
-    }
   }
   const toMe = toValue === MY_LOCATION;
   const toIsPlace = toMe || (toValue === PLACE && !!routing.place);
   const toLabel = toMe ? 'your location' : toIsPlace ? routing.place.phrase || routing.place.label : toValue;
-  const targets = toMe ? [start.node] : toIsPlace ? nodesFor(routing.place) : doors(toValue);
-  let sources, fromLabel, startNote = '';
-  if (fromValue === MY_LOCATION) {
-    sources = [start.node];
-    fromLabel = 'your location';
-    if (start.d > 15) startNote = ` The route starts at the nearest mapped accessible path, ${feet(start.d)} from you.`;
-  } else if (fromValue === HERE && routing.fromPlace) {
-    sources = nodesFor(routing.fromPlace);
-    fromLabel = routing.fromPlace.label;
-  } else {
-    sources = doors(fromValue);
-    fromLabel = fromValue;
-  }
-
-  if (Number.isFinite(options.maxGrade) && !graph.grades) {
-    showResult('<p>Measuring slopes…</p>');
-    await ensureGrades(graph);
-    if (request !== routeRequest) return;
-  }
-
-  // Through any stops in order: one leg per stop, joined into one route that records where each stop is.
+  const fromLabel = fromValue === MY_LOCATION ? 'your location' : fromValue === HERE && routing.fromPlace ? routing.fromPlace.label : fromValue;
   const stops = routing.stops.filter((st) => st.building || st.lonlat);
-  let failedStop = null;
-  const findRoute = (cost) => {
-    let route = null, start = sources;
-    const marks = [];
-    for (const stop of [...stops, null]) {
-      const leg = module.shortestRoute(graph, start, stop ? nodesFor(stop) : targets, cost);
-      if (!leg) { failedStop = stop; return null; }
-      route = route ? module.joinRoutes(route, leg) : leg;
-      if (stop) marks.push({ index: route.nodes.length - 1, label: stop.phrase || stop.label });
-      start = [leg.nodes.at(-1)];
+
+  // The route on one graph: {graph, route, unmet, failedStop, sources, targets, start, startNote}, or {far} when
+  // your location is too far from any of its paths.
+  const plan = async (graph) => {
+    const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
+    // Graph nodes for a building's entrances, or for a place found by "Find nearby" ({label, building} or {label, lonlat})
+    const nodesFor = (target) => (target.building ? doors(target.building) : [module.nearestNode(graph, target.lonlat).node]);
+    const start = here && module.nearestNode(graph, here);
+    if (start && start.d > MAX_START_DISTANCE_M) return { graph, start, far: true };
+    const targets = toMe ? [start.node] : toIsPlace ? nodesFor(routing.place) : doors(toValue);
+    let sources, startNote = '';
+    if (fromValue === MY_LOCATION) {
+      sources = [start.node];
+      if (start.d > 15) startNote = ` The route starts at the nearest mapped path, ${feet(start.d)} from you.`;
+    } else if (fromValue === HERE && routing.fromPlace) sources = nodesFor(routing.fromPlace);
+    else sources = doors(fromValue);
+
+    if (Number.isFinite(options.maxGrade) && !graph.grades) {
+      showResult('<p>Measuring slopes…</p>');
+      await ensureGrades(graph);
     }
-    route.stops = marks;
-    return route;
+
+    // Through any stops in order: one leg per stop, joined into one route that records where each stop is.
+    let failedStop = null;
+    const findRoute = (cost) => {
+      let route = null, from = sources;
+      const marks = [];
+      for (const stop of [...stops, null]) {
+        const leg = module.shortestRoute(graph, from, stop ? nodesFor(stop) : targets, cost);
+        if (!leg) { failedStop = stop; return null; }
+        route = route ? module.joinRoutes(route, leg) : leg;
+        if (stop) marks.push({ index: route.nodes.length - 1, label: stop.phrase || stop.label });
+        from = [leg.nodes.at(-1)];
+      }
+      route.stops = marks;
+      return route;
+    };
+
+    // The best route that meets the options. If none does, show the best route without the indoor and
+    // slope options and say which of them it breaks.
+    let route = findRoute(edgeCost(graph, options));
+    let unmet = '';
+    if (!route && (options.indoor === 'avoid' || Number.isFinite(options.maxGrade))) {
+      route = findRoute(edgeCost(graph, { ...options, indoor: 'auto', maxGrade: Infinity }));
+      if (route) {
+        const limits = [
+          options.indoor === 'avoid' && 'avoids indoor routes',
+          Number.isFinite(options.maxGrade) && `stays within ${document.getElementById('opt-slope').selectedOptions[0].dataset.label}`,
+        ].filter(Boolean).join(' and ');
+        unmet = `<p class="route-warning">No mapped route ${limits}. This is the best route without ${limits.includes(' and ') ? 'those settings' : 'that setting'}.</p>`;
+      }
+    }
+    // Avoiding steep slopes can mean a long way round (off campus especially): say so when it's much longer
+    let detour = '';
+    if (route && !unmet && Number.isFinite(options.maxGrade)) {
+      const shortest = findRoute(edgeCost(graph, { ...options, maxGrade: Infinity }));
+      if (shortest && shortest.length < route.length * 0.8 && route.length - shortest.length > 100) {
+        detour = `<p class="route-note">This route avoids steep slopes. A shorter route, ${feet(shortest.length)}, has parts steeper than ${document.getElementById('opt-slope').selectedOptions[0].dataset.label}: turn off Avoid steep slopes to see it.</p>`;
+      }
+    }
+    return { graph, route, unmet, failedStop, sources, targets, start, startNote, detour };
   };
 
-  // The best route that meets the options. If none does, show the best route without the indoor and
-  // slope options and say which of them it breaks.
-  let route = findRoute(edgeCost(graph, options));
-  let unmet = '';
-  if (!route && (options.indoor === 'avoid' || Number.isFinite(options.maxGrade))) {
-    route = findRoute(edgeCost(graph, { ...options, indoor: 'auto', maxGrade: Infinity }));
-    if (route) {
-      const limits = [
-        options.indoor === 'avoid' && 'avoids indoor routes',
-        Number.isFinite(options.maxGrade) && `stays within ${document.getElementById('opt-slope').selectedOptions[0].dataset.label}`,
-      ].filter(Boolean).join(' and ');
-      unmet = `<p class="route-warning">No mapped route ${limits}. This is the best route without ${limits.includes(' and ') ? 'those settings' : 'that setting'}.</p>`;
+  // Campus paths first. From off campus, or between campuses, city sidewalks too.
+  let p = await plan(currentGraph());
+  if (request !== routeRequest) return;
+  if (p.far || !p.route) {
+    showResult('<p>Looking for a route on city sidewalks…</p>');
+    const city = await cityGraph();
+    if (request !== routeRequest) return;
+    if (city) {
+      const q = await plan(city);
+      if (request !== routeRequest) return;
+      if (q.route || p.far) p = q;
     }
   }
+  if (p.far) {
+    const d = p.start.d;
+    if (fromValue === MY_LOCATION && !routing.fromChosen) {
+      document.getElementById('route-from').value = '';
+      return askForStart(`<p>Choose where you’re starting from, under From. (You’re ${feet(d)} from the nearest mapped path, so directions can’t start from where you are.)</p>`);
+    }
+    return askForStart(`<p>You're ${feet(d)} from the nearest mapped path. Choose a building instead.</p>`);
+  }
+  const { graph, route, unmet, failedStop, sources, targets, startNote, detour } = p;
   if (!route) {
     const startNode = graph.nodes[sources[0]];
-    const differentCampus = module.campusOf(startNode) !== module.campusOf(graph.nodes[targets[0]]);
+    const differentCampus = startNode && targets.length && module.campusOf(startNode) !== module.campusOf(graph.nodes[targets[0]]);
     const via = failedStop ? ` that reaches stop ${stops.indexOf(failedStop) + 1} (${escapeHtml(failedStop.phrase || failedStop.label)})` : '';
     return showResult(differentCampus
-      ? `<p><strong>No walking route.</strong> ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)} are on different campuses. The BC shuttle connects the campuses; see the shuttle stops on the map.</p>`
+      ? `<p><strong>No walking route found.</strong> ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)} are on different campuses, and no ${options.stairs ? '' : 'step-free '}route was found on the city sidewalks between them. The BC shuttle connects the campuses; see the shuttle stops on the map.</p>`
       : `<p><strong>No ${options.stairs ? '' : 'accessible '}route is mapped yet</strong> between ${escapeHtml(fromLabel)} and ${escapeHtml(toLabel)}${via}. The path data still has gaps. If you know a route, please tell us through the <a href="${FEEDBACK_FORM}" target="_blank" rel="noopener">feedback form</a>.</p>`);
   }
 
@@ -676,8 +741,8 @@ async function updateRoute(map) {
       return `<li>Go through ${building} (indoor accessible route${step.elevator ? '; this building has an elevator' : ''}): ${feet(step.length)}</li>`;
     }
     const unverified = step.unverifiedLength >= 10 && step.length - step.unverifiedLength >= 10
-      ? ` (${feet(step.unverifiedLength)} of it on footpaths not checked for accessibility)`
-      : step.unverifiedLength >= 10 ? ' (a footpath not checked for accessibility)' : '';
+      ? ` (${feet(step.unverifiedLength)} of it on paths or sidewalks not checked for accessibility)`
+      : step.unverifiedLength >= 10 ? ` (${step.cityLength >= 10 ? 'city sidewalks' : 'a footpath'} not checked for accessibility)` : '';
     const text = i === 0 ? 'Follow the outdoor path' : 'Continue on the outdoor path';
     return `<li>${text}${unverified}: ${feet(step.length)}${stepSlope(step)}</li>`;
   });
@@ -690,19 +755,32 @@ async function updateRoute(map) {
   // A gentle walking pace (about 1.2 m/s); wheelchair and cane users vary, so it's only a guide
   const minutes = Math.max(1, Math.round(description.length / 1.2 / 60));
   const broken = brokenRouteNotes(graph, route, [fromIsBuilding && fromValue, !toIsPlace && toValue].filter(Boolean));
+  // City sidewalks: how much of the route, and its street crossings, with curb ramps confirmed or not
+  const cityLength = description.steps.reduce((sum, st) => sum + (st.cityLength || 0), 0);
+  const crossings = routeCrossings(graph, route);
+  const rampsConfirmed = crossings.filter((c) => ['lowered', 'flush'].includes(c.kerb)).length;
+  const crossingsSaid = crossings.length
+    ? ` It crosses ${crossings.length} ${crossings.length === 1 ? 'street' : 'streets'}; curb ramps are confirmed at ${rampsConfirmed === crossings.length ? (crossings.length === 1 ? 'it' : 'all of them') : `${rampsConfirmed || 'none'}${rampsConfirmed ? ` of ${crossings.length}` : ''}`}.`
+    : '';
+  const cityNote = cityLength >= 20
+    ? `<p class="route-warning">About ${feet(cityLength)} of this route is on city sidewalks from OpenStreetMap, which haven’t been checked for accessibility.${crossingsSaid}</p>`
+    : '';
+  const stepFree = !stairs && rampsConfirmed === crossings.length;
   const slopeLimit = Number.isFinite(options.maxGrade) ? document.getElementById('opt-slope').selectedOptions[0].dataset.label : '';
   const slopeSaid = slopeLimit && !unmet ? `, nothing steeper than ${slopeLimit}` : '';
-  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${broken.text ? ` ${broken.text}` : ''}${routing.autoStart ? '' : ' Press Start to begin.'}`;
+  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${cityNote ? ` ${feet(cityLength)} of it is on city sidewalks not checked for accessibility.${crossingsSaid}` : ''}${broken.text ? ` ${broken.text}` : ''}${routing.autoStart ? '' : ' Press Start to begin.'}`;
   const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
     ${toIsPlace && isBluelightTrip() ? emergencyCallLinks() : ''}
     ${unmet}
     ${broken.html}
-    <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stairs ? '' : ' · <span class="badge">Step-free</span>'}</p>
+    ${cityNote}
+    <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stepFree ? ' · <span class="badge">Step-free</span>' : ''}</p>
     <div class="quick-option">
       <button type="button" id="slope-toggle" class="option-toggle" aria-pressed="${!!slopeLimit}" aria-describedby="slope-toggle-note">Avoid steep slopes</button>
       <span id="slope-toggle-note" class="route-note">${slopeLimit ? `On: nothing steeper than ${slopeLimit}` : 'Off: the route may have steep parts'}</span>
     </div>
+    ${detour}
     ${startNote ? `<p class="route-note">${startNote.trim()}</p>` : ''}
     ${stopNote(stops)}
     ${stairsNote}
@@ -728,6 +806,20 @@ async function updateRoute(map) {
     await startGuidance(map, { follow, step: step || 0, intro, keepFocus });
     if (restored && (settings.readAloud || settings.soundCues)) guidanceStatus('Your trip is back where you left it. Choose Repeat to hear the current step.');
   }
+}
+
+// The street crossings a route takes (city sidewalk data): [{name, crossing, kerb}], in order, each once
+function routeCrossings(graph, route) {
+  const seen = new Set(), out = [];
+  for (let i = 1; i < route.nodes.length; i++) {
+    const edge = graph.adjacency[route.nodes[i - 1]].find((e) => e.to === route.nodes[i]);
+    if (edge?.type !== 'Crossing' || edge.seg < 0) continue;
+    const line = graph.segments[edge.seg].line;
+    if (seen.has(line)) continue;
+    seen.add(line);
+    out.push(graph.lines[line].city || {});
+  }
+  return out;
 }
 
 // Slope figures for every segment of a graph, measured the first time a slope limit is used.

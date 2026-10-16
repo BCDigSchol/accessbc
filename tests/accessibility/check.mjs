@@ -190,6 +190,14 @@ async function main() {
     await page.click('#guidance-exit');
     await page.context().close();
 
+    console.log('Between campuses');
+    page = await openApp(browser);
+    await findRoute(page, 'Gasson Hall', 'Kenny Cottle Library');
+    expect(await page.evaluate(() => /city sidewalks/.test(document.getElementById('route-result').textContent)),
+      'between campuses', 'a route to the Newton campus uses city sidewalks, and says they aren’t checked');
+    await axe(page, 'between campuses: route');
+    await page.context().close();
+
     console.log('Dark mode, bigger symbols, large step view');
     page = await openApp(browser, { settings: { darkMode: true, largeSymbols: true, bigSteps: true } });
     await findRoute(page);
