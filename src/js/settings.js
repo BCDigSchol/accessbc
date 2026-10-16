@@ -3,7 +3,7 @@
 
 const SETTINGS_KEY = 'accessbc.settings';
 const SETTINGS_DEFAULTS = {
-  readAloud: false,      // speak directions (off: screen reader users already hear them)
+  readAloud: true,       // speak walking directions; the Mute button while walking turns this off, and it stays off
   screenReader: false,   // the student uses a screen reader: never speak as well, so nothing is heard twice
   autoReroute: true,     // find a new route when you leave it while your location is followed
   soundCues: true,       // short tones for a new step, a turn coming up, leaving the route, arriving
@@ -20,11 +20,17 @@ const SETTINGS_DEFAULTS = {
   reduceMotion: 'auto',
 };
 
+// Saved settings carry a version, so a changed default can be applied once to settings saved before it.
+// Version 2: reading aloud became on by default (with Mute while walking), after being off by default.
+const SETTINGS_VERSION = 2;
+
 const settings = (() => {
   try {
-    return { ...SETTINGS_DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if ((saved.version || 1) < 2) delete saved.readAloud;
+    return { ...SETTINGS_DEFAULTS, ...saved, version: SETTINGS_VERSION };
   } catch {
-    return { ...SETTINGS_DEFAULTS };
+    return { ...SETTINGS_DEFAULTS, version: SETTINGS_VERSION };
   }
 })();
 
@@ -89,9 +95,12 @@ for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)',
 
 // ---- Settings dialog --------------------------------------------------------------------------------
 
+// Opens the settings dialog (from the menu, or More in walk mode). Closing it returns focus to whatever opened it.
+let openSettings = () => {};
+
 document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
-  const opener = document.getElementById('settings-toggle');
+  let returnFocus = null;
   const checkboxes = ['screenReader', 'readAloud', 'autoReroute', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
   const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
@@ -126,14 +135,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const close = () => {
     dialog.hidden = true;
-    opener.focus();
+    const back = returnFocus && document.contains(returnFocus) && returnFocus.offsetParent !== null ? returnFocus : document.getElementById('menu-toggle');
+    back.focus();
   };
-  opener.addEventListener('click', () => {
+  openSettings = () => {
+    returnFocus = document.activeElement;
     fill();
     dialog.hidden = false;
-    document.querySelector('.topnav').classList.remove('responsive');
     document.getElementById('settings-close').focus();
-  });
+  };
   document.getElementById('settings-close').addEventListener('click', close);
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();

@@ -45,7 +45,7 @@ time; what they said; where they got stuck.
 3. **Review the route.** "Without starting the walk, go through the directions. What do you think of them?"
 4. **Settings.** "Set the app up the way you'd want it." (Watch whether they find Accessibility, and which
    settings they choose: I use a screen reader, Read aloud, clock positions, sounds, dark mode, larger text.)
-5. **Add a stop.** "On the way, you'd like to stop at a single-use restroom. Add one to your trip."
+5. **Add a stop.** "On the way, you'd like to stop at a single-stall restroom. Add one to your trip."
 6. **Help.** "Find out what the sounds during guidance mean." (Help page; do they use Listen?)
 
 Low-vision participants also:

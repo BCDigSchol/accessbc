@@ -18,6 +18,10 @@ function handleAboutClick() {
   intro.innerHTML = 'Welcome to the AccessBC webmap! If you want to provide feedback or report an issue, please use our <a href="https://forms.gle/EqSt5qz31ub9eB5x7" style="color: #fff; font-weight: bold;">Google Form</a>.';
   popup.appendChild(intro);
 
+  const caution = document.createElement('p');
+  caution.innerHTML = '<strong>Please note:</strong> live, step-by-step directions are still in development and aren’t yet meant to be relied on as an assistive device. Use them alongside your usual mobility skills, and proceed with caution.';
+  popup.appendChild(caution);
+
   const hr1 = document.createElement('hr');
   popup.appendChild(hr1);
 
@@ -148,17 +152,36 @@ function handleBrooklineClick() {
   });
 }
 
-// Attach event listeners
-document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('about').addEventListener('click', handleAboutClick);
-  document.getElementById('newton').addEventListener('click', handleNewtonClick);
-  document.getElementById('brighton').addEventListener('click', handleBrightonClick);
-  document.getElementById('chestnut-hill').addEventListener('click', handleChestnutClick);
-  document.getElementById('brookline').addEventListener('click', handleBrooklineClick);
-});
-
-function toggleMenu() {
-  // Collapse/Expand menu for different screen sizes
-  const open = document.querySelector('.topnav').classList.toggle('responsive');
-  document.getElementById('menu-toggle').setAttribute('aria-expanded', String(open));
+// The menu drawer (☰): Accessibility settings, Map layers, Help, About, and the campuses. Focus moves into it
+// when it opens, Escape closes it, and focus goes back to the menu button.
+function setMenuOpen(open) {
+  const menu = document.getElementById('app-menu');
+  const toggle = document.getElementById('menu-toggle');
+  menu.hidden = !open;
+  toggle.setAttribute('aria-expanded', String(open));
+  if (open) menu.querySelector('button, a').focus();
+  else toggle.focus();
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  const menu = document.getElementById('app-menu');
+  document.getElementById('menu-toggle').addEventListener('click', () => setMenuOpen(menu.hidden));
+  document.getElementById('menu-close').addEventListener('click', () => setMenuOpen(false));
+  menu.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') setMenuOpen(false);
+  });
+  // Clicking outside the open menu closes it
+  document.addEventListener('click', (e) => {
+    if (!menu.hidden && !menu.contains(e.target) && !e.target.closest('#menu-toggle')) setMenuOpen(false);
+  });
+
+  // Each item closes the menu first, so the dialog it opens hands focus back to the menu button afterwards
+  const item = (id, action) => document.getElementById(id).addEventListener('click', () => { setMenuOpen(false); action(); });
+  item('settings-toggle', () => openSettings());
+  item('about', handleAboutClick);
+  item('menu-layers', () => setLegendOpen(true));
+  item('chestnut-hill', handleChestnutClick);
+  item('brighton', handleBrightonClick);
+  item('newton', handleNewtonClick);
+  item('brookline', handleBrooklineClick);
+});

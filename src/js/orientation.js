@@ -25,7 +25,13 @@ const lonlatMetres = (a, b) => routing.module.dist(routing.module.proj(a), routi
 // ---- Compass --------------------------------------------------------------------------------------
 
 // Start listening to the compass. iPhones ask for permission first, so call this from a button press.
-async function startCompass() {
+function startCompass() {
+  // One request at a time: a permission prompt may still be open from an earlier button
+  orientation.starting ||= requestCompass().finally(() => { orientation.starting = null; });
+  return orientation.starting;
+}
+
+async function requestCompass() {
   if (orientation.started) return true;
   if (!('DeviceOrientationEvent' in window)) return false;
   // iPhones (and some other browsers) need permission; only a clear "denied" stops us. Without readings,
@@ -252,12 +258,16 @@ function buildingSurroundingsHtml(name) {
 
 // ---- Where am I? ----------------------------------------------------------------------------------
 
+// Where you are: the latest reading when your location is already being followed, otherwise a new one
+// (given up on after 16 s, in case the browser never answers).
 function currentFix() {
-  return new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
+  if (guide.lastFix && Date.now() - guide.lastFix.at < 10000) return Promise.resolve(guide.lastFix);
+  const fix = new Promise((resolve, reject) => navigator.geolocation.getCurrentPosition(
     (p) => resolve({ lonlat: [p.coords.longitude, p.coords.latitude], accuracy: p.coords.accuracy }),
     reject,
     { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
   ));
+  return Promise.race([fix, new Promise((resolve, reject) => setTimeout(() => reject(new Error('timeout')), 16000))]);
 }
 
 // Nearest point on any building outline, with the building's name (lon/lat).
@@ -286,7 +296,8 @@ async function describeWhereIAm() {
   } catch {
     return { said: ['Your location isn’t available. Check that location access is allowed for this site and turned on for your browser.'], around: [] };
   }
-  if (settings.clockFace) await startCompass();
+  // The compass is only needed for clock positions: don't keep the answer waiting on a permission prompt
+  if (settings.clockFace) await Promise.race([startCompass(), new Promise((resolve) => setTimeout(resolve, 1500))]);
   const said = [];
   const p = module.proj(fix.lonlat);
   const inside = module.nearestBuilding(currentGraph().buildings, p);
@@ -361,7 +372,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', async (e) => {
     if (!e.target.closest('.where-am-i') || !routing) return;
     const inGuide = guide.active;
-    const out = inGuide ? document.getElementById('guidance-status') : document.getElementById('where-result');
+    if (!inGuide) setView('home');
+    // In walk mode the answer has a place of its own, so location updates to the status line don't replace it
+    const out = inGuide ? document.getElementById('walk-where') : document.getElementById('where-result');
     out.innerHTML = '<p>Finding your location…</p>';
     const { said, around } = await describeWhereIAm();
     const list = around.map((item) => `<li>${escapeHtml(aroundItemText(item))}</li>`).join('');

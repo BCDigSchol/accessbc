@@ -21,40 +21,15 @@
 <script src="src/js/guidance.js"></script>
 <script src="src/js/nearby.js"></script>
 <script src="src/js/orientation.js"></script>
+<script src="src/js/emergency.js"></script>
 </head>
 <body>
 
-<a href="#directions-title" class="skip-link" id="skip-to-directions">Skip to accessible directions</a>
+<a href="#where-to" class="skip-link" id="skip-to-search">Skip to Where to?</a>
 <!-- Short spoken updates for screen readers (route found, results found, errors) -->
 <div id="announcer" class="visually-hidden" role="status" aria-live="polite"></div>
 
-<header class="topnav" id="myTopnav">
-  <!-- Title Section -->
-  <div class="title-container">
-    <h1 class="main-title">Access BC</h1>
-  </div>
 
-  <!-- Hamburger Menu -->
-  <button type="button" class="icon" id="menu-toggle" aria-label="Menu" aria-expanded="false" onclick="toggleMenu()">☰</button>
-
-  <!-- Navigation Buttons -->
-  <button type="button" id="about" class="menu-button" aria-haspopup="dialog">About</button>
-  <button type="button" id="chestnut-hill" class="menu-button" aria-label="Show Chestnut Hill campus on the map">Chestnut Hill</button>
-  <button type="button" id="brighton" class="menu-button" aria-label="Show Brighton campus on the map">Brighton</button>
-  <button type="button" id="newton" class="menu-button" aria-label="Show Newton campus on the map">Newton</button>
-  <button type="button" id="brookline" class="menu-button" aria-label="Show Brookline campus on the map">Brookline</button>
-  <button type="button" id="directions-toggle" aria-expanded="false" aria-controls="directions-panel" disabled>Directions</button>
-  <button type="button" id="settings-toggle" class="menu-button" aria-haspopup="dialog">Accessibility</button>
-  <a href="help.html" class="menu-button nav-link">Help</a>
-
-  <!-- Search Bars -->
-  <div class="search-bar-container">
-    <label for="generic-search" class="visually-hidden">Search buildings and campus resources</label>
-    <input type="text" class="search-bar" id="generic-search" placeholder="Search buildings and resources..."
-           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="generic-dropdown" autocomplete="off">
-    <div class="search-dropdown" id="generic-dropdown" role="listbox" aria-label="Search results"></div>
-  </div>
-</header>
 
 <main>
 <div id="map"></div>
@@ -62,7 +37,7 @@
   <div id="building-info">Click on a building to see details here.</div>
 </div>
 
-<div id="legend" role="region" aria-label="Map layers"></div>
+<div id="legend" role="region" aria-labelledby="legend-title" hidden></div>
 
 <div id="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
   <button type="button" class="close" id="settings-close" aria-label="Close accessibility settings">×</button>
@@ -72,7 +47,7 @@
     <legend>Directions</legend>
     <div class="setting"><input type="checkbox" id="set-screenReader" aria-describedby="set-screenReader-help"><label for="set-screenReader">I use a screen reader</label></div>
     <p id="set-screenReader-help" class="route-note">Your screen reader reads each step and update, so Access BC won't also speak them.</p>
-    <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read directions aloud</label></div>
+    <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read walking directions aloud (the same as Mute while walking)</label></div>
     <div class="setting">
       <label for="set-speechRate">Speaking speed</label>
       <select id="set-speechRate"><option value="0.8">Slower</option><option value="1">Normal</option><option value="1.25">Faster</option><option value="1.5">Fastest</option></select>
@@ -106,106 +81,204 @@
   <p class="route-note"><a href="help.html">Help: how to use Access BC, including with a screen reader</a></p>
 </div>
 
-<section id="directions-panel" aria-labelledby="directions-title" hidden>
-  <button type="button" id="directions-close" class="directions-close" aria-label="Close directions">×</button>
-  <h2 id="directions-title">Accessible directions</h2>
-  <div class="where-row">
-    <button type="button" class="where-am-i">Where am I?</button>
-    <a href="help.html" class="help-link">How to use directions</a>
+<!-- The app's controls: a column on the left on computers; on phones, a search bar at the top and a sheet at the bottom.
+     One view at a time: home (Where to?), results (nearest things), route (a route preview), walk (directions as you go). -->
+<aside id="panel" class="panel" data-view="home" aria-label="Directions">
+  <div class="panel-top">
+    <div class="panel-header">
+      <button type="button" id="menu-toggle" class="icon-button" aria-label="Menu" aria-expanded="false" aria-controls="app-menu">☰</button>
+      <h1 class="main-title">Access BC</h1>
+      <button type="button" class="emergency-button" aria-label="Blue light: walking directions to the nearest emergency phone"><span class="emergency-dot" aria-hidden="true"></span>Blue light</button>
+    </div>
+    <div class="where-to" role="search">
+      <label for="where-to" class="visually-hidden">Where to? Search for a building, or something like a restroom</label>
+      <input type="text" id="where-to" class="where-to-input" placeholder="Where to?" role="combobox" aria-autocomplete="list"
+             aria-expanded="false" aria-controls="where-to-list" autocomplete="off" disabled>
+      <button type="button" id="where-to-clear" class="where-to-clear" aria-label="Clear search" hidden>×</button>
+      <div id="where-to-list" class="search-dropdown" role="listbox" aria-label="Places"></div>
+    </div>
+    <div class="chips" role="group" aria-label="Quick searches">
+      <button type="button" class="chip where-am-i">Where am I?</button>
+      <button type="button" class="chip" data-find="restroom">Single-stall restrooms</button>
+      <button type="button" class="chip" data-find="lactation">Lactation rooms</button>
+      <button type="button" class="chip" data-find="food">Food</button>
+      <button type="button" class="chip" data-find="elevators">Elevators</button>
+      <button type="button" class="chip" id="chip-more" aria-expanded="false" aria-controls="more-kinds">More…</button>
+    </div>
+    <div id="more-kinds" class="more-kinds" role="group" aria-label="Everything you can find" hidden></div>
   </div>
-  <div id="where-result" class="where-result"></div>
-  <details class="route-options nearby">
-    <summary>Find something nearby</summary>
-    <div class="route-field">
-      <label for="nearby-kind">Find</label>
-      <select id="nearby-kind"></select>
-    </div>
-    <div class="route-field">
-      <label for="nearby-from">Near</label>
-      <select id="nearby-from">
-        <option value="me">My location</option>
-        <option value="start">My starting building (From)</option>
-        <option value="route">Along my route</option>
-      </select>
-    </div>
-    <button type="button" id="nearby-search" class="nearby-search">Find nearest</button>
-    <div id="nearby-results"></div>
-    <p class="route-note">Distances are walking distances on mapped paths, using your route options.</p>
-  </details>
-  <div class="route-field">
-    <label for="route-from">From</label>
-    <select id="route-from"></select>
+
+  <div class="panel-body">
+    <section id="view-home" class="view" aria-label="Getting started">
+      <div id="where-result" class="where-result"></div>
+      <div class="home-hint">
+        <p>Search for a building, or something like a restroom or an elevator. Directions start from where you are, on step-free paths.</p>
+        <p class="route-note">Accessibility settings, map layers, and help are in the menu (☰). <a href="help.html">How to use Access BC</a></p>
+      </div>
+    </section>
+
+    <section id="view-results" class="view" aria-labelledby="results-title" hidden>
+      <div class="view-header">
+        <button type="button" class="back-button" id="results-back" aria-label="Back">←</button>
+        <h2 id="results-title" tabindex="-1">Nearest</h2>
+      </div>
+      <div class="results-controls">
+        <div class="route-field">
+          <label for="nearby-kind">Find</label>
+          <select id="nearby-kind"></select>
+        </div>
+        <div class="route-field">
+          <label for="nearby-from">Near</label>
+          <select id="nearby-from">
+            <option value="me">My location</option>
+          </select>
+        </div>
+      </div>
+      <div id="nearby-results"></div>
+      <p class="route-note">Walking distances on mapped paths, using your route options.</p>
+    </section>
+
+    <section id="view-route" class="view" aria-labelledby="route-title" hidden>
+      <div class="view-header">
+        <button type="button" class="back-button" id="route-back" aria-label="Back to search">←</button>
+        <h2 id="route-title" tabindex="-1">Directions</h2>
+      </div>
+      <div id="route-result"></div>
+      <details id="edit-trip" class="route-options">
+        <summary>Edit trip: start, stops, and route options</summary>
+        <div class="route-field">
+          <label for="route-from">From</label>
+          <select id="route-from"></select>
+        </div>
+        <ol id="route-stops" class="stops-list" aria-label="Stops"></ol>
+        <div class="route-actions">
+          <button type="button" id="route-add-stop"><span aria-hidden="true">+ </span>Add a stop</button>
+          <button type="button" id="route-swap" aria-label="Swap From and To">Swap <span aria-hidden="true">⇅</span></button>
+          <button type="button" id="route-clear">Clear</button>
+        </div>
+        <div class="route-field">
+          <label for="route-to">To</label>
+          <select id="route-to"></select>
+        </div>
+        <h3>Route options</h3>
+        <div class="route-check">
+          <input type="checkbox" id="opt-stairs" checked aria-describedby="opt-stairs-help">
+          <label for="opt-stairs">Avoid stairs</label>
+          <p id="opt-stairs-help" class="route-note">Turning this off also allows footpaths that haven't been checked for accessibility.</p>
+        </div>
+        <div class="route-field">
+          <label for="opt-indoor">Routes through buildings</label>
+          <select id="opt-indoor">
+            <option value="auto">Use when shorter</option>
+            <option value="prefer">Prefer (indoors, where the elevators are)</option>
+            <option value="avoid">Avoid (for example, after hours)</option>
+          </select>
+        </div>
+        <div class="route-field">
+          <label for="opt-slope">Steepest slope allowed</label>
+          <select id="opt-slope">
+            <option value="">No limit</option>
+            <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
+            <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
+          </select>
+        </div>
+        <div class="route-check"><input type="checkbox" id="route-focus" checked><label for="route-focus">Only show map features along the route</label></div>
+        <h3>Route line colours</h3>
+        <ul class="route-legend" aria-label="Route line colours">
+          <li><span class="route-swatch"></span>Outdoors</li>
+          <li><span class="route-swatch indoor"></span>Indoors</li>
+          <li><span class="route-swatch steep"></span>Steeper than 1:20</li>
+          <li><span class="route-swatch very-steep"></span>Steeper than 1:12</li>
+          <li><span class="route-swatch unreliable"></span>Slope unknown</li>
+          <li><span class="route-swatch stairs"></span>Stairs</li>
+        </ul>
+        <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
+        <p id="route-coverage" class="route-note"></p>
+      </details>
+    </section>
+
+    <section id="view-walk" class="view" aria-labelledby="walk-title" hidden>
+      <div id="guidance">
+        <div class="walk-banner">
+          <h2 id="walk-title" class="visually-hidden">Walking directions</h2>
+          <div aria-live="polite" aria-atomic="true">
+            <p id="guidance-progress" class="guidance-progress"></p>
+            <p id="guidance-instruction" class="guidance-instruction"></p>
+            <ul id="guidance-cues" class="guidance-cues"></ul>
+          </div>
+          <p id="guidance-detail" class="guidance-detail"></p>
+          <p id="guidance-status" class="guidance-status" aria-live="polite"></p>
+          <div class="guidance-nav">
+            <button type="button" id="guidance-prev"><span aria-hidden="true">◀ </span>Back</button>
+            <button type="button" id="guidance-next">Next<span aria-hidden="true"> ▶</span></button>
+          </div>
+        </div>
+        <div class="walk-bar">
+          <div class="walk-buttons">
+            <button type="button" id="guidance-audio" aria-pressed="false">Mute</button>
+            <button type="button" id="guidance-repeat">Repeat</button>
+            <button type="button" id="walk-more" aria-expanded="false" aria-controls="walk-more-menu">More</button>
+            <button type="button" id="guidance-exit" class="walk-end">End</button>
+          </div>
+          <button type="button" class="emergency-button walk-emergency-button" aria-label="Blue light: walking directions to the nearest emergency phone"><span class="emergency-dot" aria-hidden="true"></span>Blue light</button>
+          <p id="walk-emergency" class="emergency-call" hidden><a href="tel:+16175524444">Call BC Police: 617-552-4444</a> <a href="tel:911">Call 911</a></p>
+          <div id="walk-more-menu" class="walk-more" hidden>
+            <button type="button" class="where-am-i">Where am I?</button>
+            <button type="button" id="guidance-orient">Face the right way</button>
+            <button type="button" id="guidance-add-stop">Add a stop</button>
+            <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
+            <button type="button" id="guidance-big" aria-pressed="false">Large view</button>
+            <button type="button" id="walk-settings">Accessibility settings</button>
+            <p class="route-note">With your location followed, steps move on as you walk. You can also use the arrow keys or swipe.</p>
+          </div>
+          <div id="walk-where" class="where-result" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
   </div>
-  <ol id="route-stops" class="stops-list" aria-label="Stops"></ol>
-  <div class="route-actions">
-    <button type="button" id="route-add-stop"><span aria-hidden="true">+ </span>Add a stop</button>
-    <button type="button" id="route-swap" aria-label="Swap From and To">Swap <span aria-hidden="true">⇅</span></button>
-    <button type="button" id="route-clear">Clear</button>
+</aside>
+
+<div id="emergency-message" class="emergency-message" role="alert" tabindex="-1" hidden>
+  <button type="button" class="close" id="emergency-message-close" aria-label="Close message">×</button>
+  <div id="emergency-message-text"></div>
+</div>
+
+<div id="live-notice" class="live-notice" role="alertdialog" aria-modal="true" aria-labelledby="live-notice-title" aria-describedby="live-notice-text" hidden>
+  <h2 id="live-notice-title">Live directions are still being developed</h2>
+  <div id="live-notice-text">
+    <p>Access BC's live, step-by-step directions are being tested. They aren't yet reliable enough to depend on as an assistive device.</p>
+    <ul>
+      <li>Your location can be off by 15 to 30 feet or more, especially near buildings and indoors.</li>
+      <li>The map may be out of date: construction, closures, snow, and broken elevators or doors may not be shown.</li>
+      <li>Keep using your usual mobility skills, cane, or guide dog. Watch for hazards, and ask for help if you need it.</li>
+    </ul>
+    <p>Please proceed with caution, and tell us about problems through the feedback form.</p>
   </div>
-  <div class="route-field">
-    <label for="route-to">To</label>
-    <select id="route-to"></select>
+  <div class="live-notice-buttons">
+    <button type="button" id="live-notice-ok" class="route-start">I understand, start</button>
+    <button type="button" id="live-notice-cancel">Not now</button>
   </div>
-  <details class="route-options">
-    <summary>Route options</summary>
-    <div class="route-check">
-      <input type="checkbox" id="opt-stairs" checked aria-describedby="opt-stairs-help">
-      <label for="opt-stairs">Avoid stairs</label>
-      <p id="opt-stairs-help" class="route-note">Turning this off also allows footpaths that haven't been checked for accessibility.</p>
-    </div>
-    <div class="route-field">
-      <label for="opt-indoor">Routes through buildings</label>
-      <select id="opt-indoor">
-        <option value="auto">Use when shorter</option>
-        <option value="prefer">Prefer (indoors, where the elevators are)</option>
-        <option value="avoid">Avoid (for example, after hours)</option>
-      </select>
-    </div>
-    <div class="route-field">
-      <label for="opt-slope">Steepest slope allowed</label>
-      <select id="opt-slope">
-        <option value="">No limit</option>
-        <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
-        <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
-      </select>
-    </div>
-  </details>
-  <div id="route-result"></div>
-  <div id="guidance" hidden>
-    <div aria-live="polite" aria-atomic="true">
-      <p id="guidance-progress" class="guidance-progress"></p>
-      <p id="guidance-instruction" class="guidance-instruction"></p>
-      <ul id="guidance-cues" class="guidance-cues"></ul>
-    </div>
-    <p id="guidance-detail" class="guidance-detail"></p>
-    <div class="guidance-nav">
-      <button type="button" id="guidance-prev"><span aria-hidden="true">◀ </span>Back</button>
-      <button type="button" id="guidance-next">Next<span aria-hidden="true"> ▶</span></button>
-    </div>
-    <div class="guidance-tools">
-      <button type="button" id="guidance-audio" aria-pressed="false">Speak directions</button>
-      <button type="button" id="guidance-big" aria-pressed="false">Large view</button>
-      <button type="button" id="guidance-repeat">Repeat</button>
-      <button type="button" id="guidance-orient">Face the right way</button>
-      <button type="button" class="where-am-i">Where am I?</button>
-      <button type="button" id="guidance-add-stop">Add a stop</button>
-      <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
-      <button type="button" id="guidance-exit">Exit step-by-step</button>
-    </div>
-    <p id="guidance-status" class="guidance-status" aria-live="polite"></p>
-    <p class="route-note">Use the arrow keys or swipe to move between steps.</p>
+</div>
+
+<nav id="app-menu" class="app-menu" aria-labelledby="app-menu-title" hidden>
+  <div class="app-menu-header">
+    <h2 id="app-menu-title">Access BC</h2>
+    <button type="button" id="menu-close" class="close" aria-label="Close menu">×</button>
   </div>
-  <ul class="route-legend" aria-label="Route line colours">
-    <li><span class="route-swatch"></span>Outdoors</li>
-    <li><span class="route-swatch indoor"></span>Indoors</li>
-    <li><span class="route-swatch steep"></span>Steeper than 1:20</li>
-    <li><span class="route-swatch very-steep"></span>Steeper than 1:12</li>
-    <li><span class="route-swatch unreliable"></span>Slope unknown</li>
-    <li><span class="route-swatch stairs"></span>Stairs</li>
+  <ul class="app-menu-list">
+    <li><button type="button" id="settings-toggle" aria-haspopup="dialog">Accessibility settings</button></li>
+    <li><button type="button" id="menu-layers">Map layers</button></li>
+    <li><a href="help.html">Help: how to use Access BC</a></li>
+    <li><button type="button" id="about" aria-haspopup="dialog">About</button></li>
   </ul>
-  <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
-  <p id="route-coverage" class="route-note"></p>
-</section>
+  <h3>Show a campus on the map</h3>
+  <ul class="app-menu-list">
+    <li><button type="button" id="chestnut-hill" class="menu-button">Chestnut Hill</button></li>
+    <li><button type="button" id="brighton" class="menu-button">Brighton</button></li>
+    <li><button type="button" id="newton" class="menu-button">Newton</button></li>
+    <li><button type="button" id="brookline" class="menu-button">Brookline</button></li>
+  </ul>
+</nav>
 </main>
 
 </body>

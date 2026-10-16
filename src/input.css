@@ -26,9 +26,6 @@ hr {
   right: 0; 
 }
 
-.maplibregl-ctrl-top-right {
-  top: 4.5rem;
-}
 /* MapLibre Popup Styles */
 .maplibregl-popup-close-button {
   display: none;;
@@ -94,7 +91,7 @@ hr {
 #building-popup.visible {
   display: block;
 }
-#building-popup p{
+#building-popup p {
   margin-top: 1rem;
 }
 
@@ -124,36 +121,6 @@ hr {
   right: 0.75rem;
   font-size: 1.5rem;
   cursor: pointer;
-}
-
-/* Legend */
-#legend {
-  position: absolute;
-  top: 50%;
-  left: 2rem;
-  transform: translateY(-45%);
-  background-color: white;
-  color: black;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.2);
-  z-index: 10;
-  max-width: calc(100% - 24vw); 
-  box-sizing: border-box;
-  transition: all 0.3s ease;
-}
-
-.legend {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow: hidden;
-  max-height: 500px;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-}
-
-.legend.collapsed {
-  display: none;
 }
 
 .legend-item {
@@ -186,7 +153,7 @@ hr {
   margin-right: 10px;
 }
 
-.legend-subheader{
+.legend-subheader {
   margin-top: 10px;
   margin-bottom: 10px;
   font-size: large;
@@ -203,95 +170,6 @@ hr {
 
 .legend-category-content.collapsed {
   display: none;
-}
-
-.legend-toggle-button {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  cursor: pointer;
-  padding: 5px;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-  margin-bottom: 5px;
-  z-index: 11; 
-}
-
-/* Top Navigation Bar */
-.topnav {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: rgba(0, 0, 0, 0.85) ;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  padding: 0.5rem 1rem;
-  box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.1);
-  z-index: 100;
-  overflow: visible;
-}
-
-/* Title Section */
-.topnav .title-container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 0.3rem;
-  margin-right: 2rem;
-}
-
-.topnav .main-title {
-  font-family: "utopia-std", serif;
-  font-weight: 400;
-  font-style: normal;
-  font-size: 5vh;
-  color: #FFFFFF;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
-/* Navigation Links (Buttons) */
-.topnav button {
-  display: block;
-  padding: 0.7rem;
-  margin: 0.2rem;
-  background: #A8100B;
-  color: white;
-  text-decoration: none;
-  text-align: center;
-  border-radius: 0.5rem;
-  border: none;
-}
-
-.topnav button:hover {
-  background: #8a0d09;
-}
-
-.topnav button.menu-button {
-  flex-shrink: 1;
-}
-
-/* Search Bar Styles */
-.search-bar-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  margin-left: 1rem;
-  flex-grow: 1;
-  overflow: visible;
-}
-
-.search-bar {
-  padding: 0.5rem;
-  border: 0.1rem solid #ccc;
-  border-radius: 0.5rem;
-  width: 100%;
-  max-width: 12rem;
 }
 
 .search-dropdown {
@@ -317,63 +195,6 @@ hr {
 
 .search-dropdown div:hover {
   background: #f0f0f0;
-}
-
-.search-bar:focus + .search-dropdown {
-  display: block;
-}
-
-.topnav .icon {
-  display: none;
-  font-size: 2rem;
-  cursor: pointer;
-  color: #FFFFFF;
-  margin-left: auto;
-  position: fixed;
-  right: 1rem;
-}
-
-
-
-/* Directions */
-.topnav #directions-toggle:disabled {
-  opacity: 0.6;
-  cursor: progress;
-}
-
-#directions-panel {
-  position: absolute;
-  top: 5rem;
-  right: 3.5rem;
-  width: 22rem;
-  max-height: calc(100vh - 6rem);
-  overflow-y: auto;
-  background: #fff;
-  color: #000;
-  padding: 1rem 1.25rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.25);
-  z-index: 20;
-}
-
-#directions-panel[hidden] {
-  display: none;
-}
-
-#directions-panel h2 {
-  font-size: 1.2rem;
-  margin: 0 2rem 0.75rem 0;
-}
-
-.directions-close {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.75rem;
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .route-field label {
@@ -414,10 +235,9 @@ hr {
   background: #8a0d09;
 }
 
-#directions-panel button:focus-visible,
-#directions-panel select:focus-visible,
-.popup-directions button:focus-visible,
-.topnav button:focus-visible {
+#panel button:focus-visible,
+#panel select:focus-visible,
+.popup-directions button:focus-visible {
   outline: 3px solid #0050d0;
   outline-offset: 2px;
 }
@@ -531,137 +351,6 @@ hr {
   margin-top: 1rem;
 }
 
-/* Media Queries for further adjustments */
-/* Responsive Styles */
-@media screen and (max-width: 870px) {
-  /* Hide menu buttons initially */
-  .topnav button:not(:first-child),
-  .search-bar-container {
-    display: none;
-  }
-
-  .topnav .icon,
-  .topnav button.icon {
-    display: block;
-  }
-
-  .topnav.responsive button.icon {
-    width: auto;
-  }
-
-  .topnav #directions-toggle {
-    display: block;
-    margin-left: auto;
-    margin-right: 3rem;
-  }
-
-  #directions-panel {
-    position: fixed;
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: 55vh;
-    border-radius: 0.75rem 0.75rem 0 0;
-    box-shadow: 0 -0.2rem 1rem rgba(0, 0, 0, 0.25);
-    z-index: 150;
-  }
-
-  .topnav.responsive {
-    flex-direction: column;
-  }
-
-  .topnav.responsive button {
-    display: block;
-    text-align: left;
-    width: 100%;
-    border-radius: 0;
-  }
-
-  .topnav.responsive .search-bar-container {
-    display: flex;
-    justify-content: space-between;
-    width: 100%;
-    margin: 0.5rem 0;
-  }
-
-  .topnav.responsive .title-container {
-    width: 100%;
-    align-items: flex-start;
-  }
-
-  #legend {
-    position: fixed !important;
-    left: 0 !important;
-    right: 0 !important;
-    bottom: 0 !important;
-    top: auto !important;
-    width: 100vw !important;
-    max-width: 100vw !important;
-    border-radius: 0 !important;
-    font-size: 0.9rem !important;
-    padding: 0.2rem 0.5rem !important;
-    box-shadow: 0 -0.2rem 1rem rgba(0, 0, 0, 0.2) !important;
-    z-index: 100 !important;
-    transform: none !important;
-  }
-  .legend {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 5px;
-    max-height: 8vh;
-    overflow-x: auto;
-    overflow-y: hidden;
-  }
-
-  .legend-item {
-    flex-direction: row;
-    font-size: 0.9rem;
-    margin-bottom: 1px;
-    margin-right: 8px;
-  }
-
-  .legend-icon,
-  .legend-color-box {
-    width: 10px;
-    height: 10px;
-  }
-
-  #sidebar {
-    width: 100%;
-    height: 50%;
-    top: auto;
-    bottom: 0;
-    transform: translateY(100%);
-  }
-
-  #sidebar.visible {
-    transform: translateY(0);
-  }
-}
-
-@media screen and (min-width: 1500px) {
-  #legend {
-    font-size: 1.15rem;
-    padding: 1.5rem;
-    max-width: 28vw;
-  }
-  .legend {
-    max-height: 600px;
-    gap: 10px;
-  }
-  .legend-item {
-    font-size: 1.05rem;
-    padding: 8px;
-  }
-  .legend-icon,
-  .legend-color-box {
-    width: 26px;
-    height: 26px;
-    margin-right: 12px;
-  }
-}
 /* 3D buildings toggle (in the map controls) */
 .maplibregl-ctrl-group button.three-d-toggle {
   font-weight: bold;
@@ -717,19 +406,10 @@ button.legend-item {
 .legend-item:focus-visible,
 .legend-category-toggle:focus-visible,
 .legend-collapse-all-btn:focus-visible,
-.search-bar:focus-visible,
 #searchbar-clear-btn:focus-visible,
 .close:focus-visible {
   outline: 3px solid #0050d0;
   outline-offset: 2px;
-}
-
-/* Hamburger menu is a button; not styled like the red menu buttons */
-.topnav button.icon {
-  background: none;
-  padding: 0 0.25rem;
-  font-size: 2rem;
-  line-height: 1;
 }
 
 .close {
@@ -769,10 +449,6 @@ button.legend-item {
   background: #003fa6;
 }
 
-#directions-panel.guiding > :not(#guidance):not(h2):not(.directions-close) {
-  display: none;
-}
-
 .guidance-progress {
   font-weight: bold;
   color: #444;
@@ -797,7 +473,7 @@ button.legend-item {
 }
 
 .guidance-nav button,
-.guidance-tools button,
+.walk-bar button,
 #guidance-reroute {
   min-height: 44px; /* comfortable touch target */
   font-size: 1rem;
@@ -817,14 +493,7 @@ button.legend-item {
   cursor: default;
 }
 
-.guidance-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
-}
-
-.guidance-tools button,
+.walk-bar button,
 #guidance-reroute {
   background: #fff;
   color: #0050d0;
@@ -922,7 +591,7 @@ html.larger-text {
 }
 
 /* High contrast */
-html.high-contrast #directions-panel,
+html.high-contrast #panel,
 html.high-contrast #legend,
 html.high-contrast #settings-dialog {
   border: 2px solid #000;
@@ -936,10 +605,6 @@ html.high-contrast .legend-collapse-all-btn {
   color: #000;
 }
 
-html.high-contrast .topnav {
-  background: #000;
-}
-
 html.high-contrast .legend-item.disabled {
   color: #555;
   text-decoration: line-through;
@@ -947,31 +612,6 @@ html.high-contrast .legend-item.disabled {
 
 html.high-contrast a {
   text-decoration: underline;
-}
-
-/* On phones, step-by-step mode gives the legend's space to the map */
-@media screen and (max-width: 870px) {
-  body.guiding #legend {
-    display: none !important;
-  }
-}
-
-#route-result .route-check {
-  margin: 0.25rem 0 0.75rem;
-}
-
-/* Find nearby */
-.nearby-search {
-  margin-top: 0.6rem;
-  min-height: 40px;
-  padding: 0 1rem;
-  font-size: 1rem;
-  font-weight: bold;
-  background: #0050d0;
-  color: #fff;
-  border: none;
-  border-radius: 0.4rem;
-  cursor: pointer;
 }
 
 #nearby-results {
@@ -1015,7 +655,6 @@ html.high-contrast a {
 }
 
 .nearby-actions button:focus-visible,
-.nearby-search:focus-visible,
 #route-remove-stop:focus-visible {
   outline: 3px solid #0050d0;
   outline-offset: 2px;
@@ -1105,62 +744,6 @@ html.high-contrast .nearby-distance {
   opacity: 0.5;
 }
 
-/* Adding a stop mid-trip shows "Find nearby" above the current step */
-#directions-panel.guiding.adding-stop > details.nearby:not(#guidance) {
-  display: block;
-  margin-bottom: 0.75rem;
-}
-
-/* "Map layers" button that opens and closes the legend */
-.legend-panel-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  padding: 0 0.25rem;
-  background: none;
-  border: none;
-  font: inherit;
-  font-weight: bold;
-  font-size: 1rem;
-  color: inherit;
-  cursor: pointer;
-}
-
-.legend-panel-heading {
-  margin: 0;
-  font-size: inherit;
-}
-
-#legend:not(.panel-collapsed) .legend-panel-toggle {
-  margin-bottom: 0.25rem;
-}
-
-#legend.panel-collapsed {
-  padding: 0 0.75rem;
-}
-
-/* Closed: only the button shows (this also covers the elevation key, which is added after the layers) */
-#legend.panel-collapsed > :not(.legend-panel-heading) {
-  display: none !important;
-}
-
-@media screen and (max-width: 870px) {
-  /* Closed on a phone: just a small button in the corner */
-  #legend.panel-collapsed {
-    left: 0.5rem !important;
-    right: auto !important;
-    bottom: 0.5rem !important;
-    width: auto !important;
-    border-radius: 0.5rem !important;
-  }
-
-  /* Open on a phone: a scrolling sheet that leaves most of the map visible */
-  #legend:not(.panel-collapsed) .legend-content {
-    max-height: 40vh;
-  }
-}
-
 /* Skip link: hidden until it gets keyboard focus */
 .skip-link {
   position: fixed;
@@ -1186,50 +769,6 @@ html.high-contrast .nearby-distance {
   color: #fff;
 }
 
-/* Help link in the top bar, styled like its buttons */
-.topnav a.nav-link {
-  display: block;
-  padding: 0.7rem;
-  margin: 0.2rem;
-  background: #A8100B;
-  color: white;
-  text-decoration: none;
-  text-align: center;
-  border-radius: 0.5rem;
-  font-size: 13.33px;
-}
-
-.topnav a.nav-link:hover {
-  background: #8a0d09;
-}
-
-.topnav a.nav-link:focus-visible {
-  outline: 3px solid #0050d0;
-  outline-offset: 2px;
-}
-
-@media screen and (max-width: 870px) {
-  .topnav a.nav-link {
-    display: none;
-  }
-
-  .topnav.responsive a.nav-link {
-    display: block;
-    text-align: left;
-    width: 100%;
-    border-radius: 0;
-  }
-}
-
-/* "Where am I?" and what's around */
-.where-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin: 0.5rem 0;
-}
-
 .where-am-i {
   min-height: 40px;
   padding: 0 0.9rem;
@@ -1240,11 +779,6 @@ html.high-contrast .nearby-distance {
   border: 2px solid #0050d0;
   border-radius: 0.4rem;
   cursor: pointer;
-}
-
-.help-link {
-  color: #0050d0;
-  font-size: 0.9rem;
 }
 
 .where-result:empty {
@@ -1289,23 +823,12 @@ html.high-contrast .nearby-distance {
   overflow-y: auto;
 }
 
-.guidance-tools .where-am-i {
+.walk-bar .where-am-i {
   font-weight: normal;
   min-height: 44px;
 }
 
 /* ---- Large step-by-step view: the step card fills the screen, with big text and buttons ---- */
-html.big-steps body.guiding #directions-panel {
-  position: fixed;
-  inset: 0;
-  width: auto;
-  max-width: none;
-  max-height: none;
-  border-radius: 0;
-  z-index: 1500;
-  padding: 1.25rem 1.25rem 2rem;
-  font-size: 1.2rem;
-}
 
 html.big-steps .guidance-progress {
   font-size: 1.25rem;
@@ -1327,7 +850,7 @@ html.big-steps .guidance-nav button {
   font-size: 1.6rem;
 }
 
-html.big-steps .guidance-tools button {
+html.big-steps .walk-bar button {
   min-height: 56px;
   font-size: 1.15rem;
 }
@@ -1343,7 +866,7 @@ html.dark body {
   color-scheme: dark;
 }
 
-html.dark #directions-panel,
+html.dark #panel,
 html.dark #settings-dialog,
 html.dark #legend,
 html.dark .search-dropdown {
@@ -1362,8 +885,7 @@ html.dark .legend-collapse-all-btn {
 
 html.dark .route-field select,
 html.dark .stop-row select,
-html.dark #settings-dialog select,
-html.dark .search-bar {
+html.dark #settings-dialog select {
   background: #2a2a2a;
   color: #f0f0f0;
   border-color: #8a8a8a;
@@ -1390,7 +912,7 @@ html.dark .search-dropdown [aria-selected="true"] {
 }
 
 /* Outlined buttons (white with blue text) become dark with light blue text */
-html.dark .guidance-tools button,
+html.dark .walk-bar button,
 html.dark #guidance-reroute,
 html.dark .where-am-i,
 html.dark #route-remove-stop,
@@ -1401,7 +923,7 @@ html.dark .stop-buttons button {
   border-color: #6ea8ff;
 }
 
-html.dark .guidance-tools button[aria-pressed="true"] {
+html.dark .walk-bar button[aria-pressed="true"] {
   background: #0050d0;
   color: #fff;
 }
@@ -1411,8 +933,7 @@ html.dark .guidance-nav button:disabled {
   color: #9aa6bb;
 }
 
-html.dark a,
-html.dark .help-link {
+html.dark a {
   color: #9cc3ff;
 }
 
@@ -1449,10 +970,992 @@ html.dark .maplibregl-ctrl-attrib a {
   color: #c8c8c8;
 }
 
-/* Short screens (a phone on its side, or a page zoomed to 200-400%): the directions panel takes all the
-   height below the top bar, since 55% of a short screen is too little to use. Close it to see the map. */
+/* ==== Layout ====================================================================================
+   The panel holds Where to? and one view at a time (home, results, route, walk). On computers it's a column
+   down the left, like web map apps; on phones the search sits at the top, the views in a sheet at the bottom,
+   and walk mode puts the instruction at the top and its controls at the bottom. */
+:root {
+  --accent: #0050d0;
+  --bc-red: #8a0d09;
+  --panel-width: 24rem;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--panel-width);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  color: #000;
+  box-shadow: 0.2rem 0 1rem rgba(0, 0, 0, 0.2);
+  z-index: 20;
+}
+
+.panel-top {
+  padding: 0.75rem 1rem 0.5rem;
+  border-bottom: 1px solid #e3e3e3;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.main-title {
+  font-family: "utopia-std", serif;
+  font-weight: 400;
+  font-size: 1.6rem;
+  color: var(--bc-red);
+  margin: 0;
+}
+
+.icon-button,
+.back-button {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  font-size: 1.35rem;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: inherit;
+  cursor: pointer;
+}
+
+.icon-button:hover,
+.back-button:hover {
+  background: #f0f0f0;
+}
+
+/* Where to? */
+.where-to {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.where-to[hidden],
+.chips[hidden],
+.view[hidden] {
+  display: none;
+}
+
+.where-to-input {
+  width: 100%;
+  min-height: 48px;
+  padding: 0 2.75rem 0 1rem;
+  font: inherit;
+  font-size: 1.05rem;
+  color: #000;
+  background: #fff;
+  border: 2px solid #767676;
+  border-radius: 24px;
+}
+
+.where-to-input:focus {
+  outline: 3px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.where-to-clear {
+  position: absolute;
+  right: 0.4rem;
+  width: 36px;
+  height: 36px;
+  font-size: 1.4rem;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: inherit;
+  cursor: pointer;
+}
+
+.where-to .search-dropdown {
+  top: calc(100% + 4px);
+  max-width: none;
+  max-height: min(24rem, 60vh);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.3rem 1rem rgba(0, 0, 0, 0.2);
+}
+
+.where-to .search-dropdown [role="option"] {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+}
+
+/* Quick searches */
+.chips {
+  display: flex;
+  gap: 0.4rem;
+  overflow-x: auto;
+  padding: 0.6rem 0 0.25rem;
+  scrollbar-width: none;
+}
+
+.chip,
+.chip.where-am-i {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 0 0.9rem;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: normal;
+  white-space: nowrap;
+  color: #1b1b1b;
+  background: #fff;
+  border: 1px solid #b5b5b5;
+  border-radius: 18px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: #eef3ff;
+}
+
+.chip.where-am-i {
+  color: var(--accent);
+  border-color: var(--accent);
+  font-weight: bold;
+}
+
+/* The views */
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.75rem 1rem 1.25rem;
+}
+
+.view-header {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0 0 0.5rem -0.5rem;
+}
+
+.view-header h2,
+.panel h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.view-header h2:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.results-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+/* Route preview */
+.route-summary {
+  font-size: 1.1rem;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0 0.45rem;
+  font-size: 0.9em;
+  font-weight: bold;
+  color: #0b5d26;
+  background: #e3f3e8;
+  border-radius: 0.6rem;
+}
+
+.route-start {
+  font-size: 1.25rem;
+  padding: 0.85rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.route-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.route-secondary button {
+  min-height: 40px;
+  padding: 0 0.9rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+#edit-trip h3 {
+  font-size: 1rem;
+  margin: 1rem 0 0.4rem;
+}
+
+/* Walk mode */
+.walk-banner {
+  padding: 1rem;
+  color: #fff;
+  background: var(--accent);
+  border-radius: 0.6rem;
+}
+
+.walk-banner .guidance-progress,
+.walk-banner .guidance-detail,
+.walk-banner .guidance-status {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.walk-banner .guidance-nav button {
+  color: var(--accent);
+  background: #fff;
+}
+
+.walk-banner .guidance-nav button:disabled {
+  color: #6b7fa8;
+  background: #c9d6f2;
+}
+
+.walk-banner #guidance-reroute {
+  color: var(--accent);
+  background: #fff;
+  border-color: #fff;
+}
+
+.walk-bar {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.walk-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.4rem;
+}
+
+.walk-buttons button {
+  min-height: 52px;
+  font: inherit;
+  font-weight: bold;
+}
+
+.walk-buttons button[hidden] {
+  display: none;
+}
+
+.walk-bar button[aria-pressed="true"] {
+  color: #fff;
+  background: var(--accent);
+}
+
+.walk-buttons .walk-end {
+  color: #fff;
+  background: var(--bc-red);
+  border-color: var(--bc-red);
+}
+
+.walk-more {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.walk-more[hidden] {
+  display: none;
+}
+
+.walk-more .route-note {
+  grid-column: 1 / -1;
+}
+
+/* The menu (☰) */
+.app-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(20rem, 85vw);
+  padding: 1rem;
+  overflow-y: auto;
+  color: #000;
+  background: #fff;
+  box-shadow: 0.3rem 0 1.5rem rgba(0, 0, 0, 0.35);
+  z-index: 2000;
+}
+
+.app-menu[hidden] {
+  display: none;
+}
+
+.app-menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.app-menu-header h2 {
+  font-family: "utopia-std", serif;
+  font-weight: 400;
+  font-size: 1.5rem;
+  color: var(--bc-red);
+}
+
+.app-menu .close,
+.legend-header .close {
+  position: static;
+}
+
+.app-menu h3 {
+  margin: 1rem 0 0.3rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+.app-menu-list {
+  list-style: none;
+}
+
+.app-menu-list button,
+.app-menu-list a {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 0.6rem 0.5rem;
+  font: inherit;
+  font-size: 1rem;
+  text-align: left;
+  text-decoration: none;
+  color: inherit;
+  background: none;
+  border: none;
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.app-menu-list :is(button, a):hover {
+  background: #f0f0f0;
+}
+
+.app-menu :is(button, a):focus-visible,
+.panel :is(button, input, select, summary, a):focus-visible,
+#legend :is(button):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The map key, opened from the Layers button on the map */
+#legend {
+  position: absolute;
+  top: 0.75rem;
+  right: 3.75rem;
+  width: 17rem;
+  max-height: calc(100vh - 1.5rem);
+  overflow-y: auto;
+  padding: 0.75rem 1rem 1rem;
+  color: #000;
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.25);
+  z-index: 40;
+}
+
+#legend[hidden] {
+  display: none;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.legend-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.maplibregl-ctrl-group button.layers-toggle {
+  width: auto;
+  padding: 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: bold;
+}
+
+.maplibregl-ctrl-group button.layers-toggle[aria-expanded="true"] {
+  color: #fff;
+  background: var(--accent);
+}
+
+/* Large step-by-step view on computers: the walk view fills the screen */
+html.big-steps body.guiding .panel {
+  width: 100%;
+  z-index: 1500;
+}
+
+/* Phones */
+@media screen and (max-width: 870px) {
+  .panel {
+    position: static;
+    display: block;
+    width: auto;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  /* Menu button and Where to? float over the top of the map, with the quick searches below */
+  .panel-top {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem 0;
+    border: none;
+    pointer-events: none;
+  }
+
+  .panel-top > * {
+    pointer-events: auto;
+  }
+
+  .panel-header {
+    margin: 0;
+  }
+
+  .panel-header .main-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .icon-button {
+    background: #fff;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .where-to-input {
+    border-color: transparent;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .chips {
+    grid-column: 1 / -1;
+    padding-top: 0.2rem;
+  }
+
+  .chip,
+  .chip.where-am-i {
+    border-color: transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .maplibregl-ctrl-top-right {
+    top: 6.5rem;
+  }
+
+  /* The views: a sheet at the bottom, out of the way when there's nothing to show */
+  .panel-body {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 55vh;
+    padding-top: 1rem;
+    background: #fff;
+    border-radius: 0.9rem 0.9rem 0 0;
+    box-shadow: 0 -0.2rem 1rem rgba(0, 0, 0, 0.25);
+    z-index: 25;
+  }
+
+  .panel[data-view="home"] .panel-body:has(.where-result:empty) {
+    display: none;
+  }
+
+  /* Walk mode: the instruction at the top, the controls at the bottom, the map in between */
+  .panel[data-view="walk"] .panel-top {
+    display: none;
+  }
+
+  .panel[data-view="walk"] .panel-body {
+    position: static;
+    max-height: none;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+
+  .walk-banner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    max-height: 45vh;
+    overflow-y: auto;
+    border-radius: 0 0 0.9rem 0.9rem;
+    z-index: 30;
+  }
+
+  .walk-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 50vh;
+    overflow-y: auto;
+    margin: 0;
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom));
+    background: #fff;
+    box-shadow: 0 -0.2rem 1rem rgba(0, 0, 0, 0.25);
+    z-index: 30;
+  }
+
+  /* Large view on phones: the whole walk view fills the screen */
+  html.big-steps .panel[data-view="walk"] .panel-body {
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    background: #fff;
+    z-index: 1500;
+  }
+
+  html.big-steps .walk-banner,
+  html.big-steps .walk-bar {
+    position: static;
+    max-height: none;
+    box-shadow: none;
+  }
+
+  html.big-steps .walk-banner {
+    border-radius: 0;
+  }
+
+  #legend {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-height: 80vh;
+    z-index: 1600;
+  }
+}
+
+/* Short screens (a phone on its side, or a page zoomed to 200-400%): the sheet can use most of the height */
 @media screen and (max-width: 870px) and (max-height: 500px) {
-  #directions-panel {
-    max-height: calc(100vh - 4rem);
+  .panel-body {
+    max-height: calc(100vh - 4.5rem);
+  }
+}
+
+/* Dark mode for the new layout */
+html.dark .panel,
+html.dark .app-menu,
+html.dark .walk-bar {
+  color: #f0f0f0;
+  background: #1c1c1c;
+}
+
+html.dark .panel-top {
+  border-color: #333;
+}
+
+html.dark .where-to-input,
+html.dark .chip,
+html.dark .route-secondary button,
+html.dark .walk-buttons button:not(.walk-end):not([aria-pressed="true"]),
+html.dark .walk-more button:not([aria-pressed="true"]) {
+  color: #f0f0f0;
+  background: #2a2a2a;
+}
+
+html.dark .chip.where-am-i,
+html.dark .route-secondary button,
+html.dark .walk-buttons button:not(.walk-end):not([aria-pressed="true"]),
+html.dark .walk-more button:not([aria-pressed="true"]) {
+  color: #9cc3ff;
+  border-color: #6ea8ff;
+}
+
+html.dark .icon-button:hover,
+html.dark .back-button:hover,
+html.dark .app-menu-list :is(button, a):hover {
+  background: #333;
+}
+
+html.dark .app-menu h3 {
+  color: #c8c8c8;
+}
+
+html.dark .badge {
+  color: #b9f0c9;
+  background: #1d3b27;
+}
+
+@media screen and (max-width: 870px) {
+  html.dark .panel {
+    background: transparent;
+  }
+
+  html.dark .panel-body,
+  html.dark .icon-button {
+    color: #f0f0f0;
+    background: #1c1c1c;
+  }
+
+  html.dark .panel[data-view="walk"] .panel-body {
+    background: none;
+  }
+
+  html.dark.big-steps .panel[data-view="walk"] .panel-body {
+    background: #1c1c1c;
+  }
+}
+
+/* Home: a short hint under Where to?, not needed once there's a result */
+.home-hint {
+  color: #333;
+}
+
+.home-hint p + p {
+  margin-top: 0.5rem;
+}
+
+html.dark .home-hint {
+  color: #d0d0d0;
+}
+
+/* The quick searches wrap onto more lines rather than running off the edge */
+.chips {
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+@media screen and (max-width: 870px) {
+  .chips {
+    gap: 0.3rem;
+  }
+
+  .chip,
+  .chip.where-am-i {
+    min-height: 32px;
+    padding: 0 0.7rem;
+    font-size: 0.9rem;
+  }
+
+  .maplibregl-ctrl-top-right {
+    top: 8.5rem;
+  }
+}
+
+@media screen and (max-width: 870px) {
+  /* The hint isn't shown on phones: the map needs the room, and the search box says what to do */
+  .home-hint {
+    display: none;
+  }
+
+  /* Walking: the instruction banner covers the top of the map, so its buttons go (pinch to zoom still works) */
+  body.guiding .maplibregl-ctrl-top-right {
+    display: none;
+  }
+}
+
+/* "More…": every kind of thing that can be found */
+.more-kinds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  margin-top: 0.4rem;
+  background: #f4f6fa;
+  border-radius: 0.6rem;
+}
+
+.more-kinds[hidden] {
+  display: none;
+}
+
+html.dark .more-kinds {
+  background: #262a31;
+}
+
+#walk-where:not(:empty) {
+  margin-top: 0.75rem;
+}
+
+@media screen and (max-width: 870px) {
+  .more-kinds {
+    grid-column: 1 / -1;
+    max-height: 40vh;
+    overflow-y: auto;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    background: #fff;
+  }
+}
+
+/* Dark mode: a lighter red for the title, and the walk banner's text stays white on blue */
+html.dark .main-title,
+html.dark .app-menu-header h2 {
+  color: #ff8a80;
+}
+
+html.dark .walk-banner .guidance-progress,
+html.dark .walk-banner .guidance-detail,
+html.dark .walk-banner .guidance-status {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* "Still in development" note under Start, and the notice before the first live trip */
+.live-warning {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: #5a3a00;
+  background: #fff4e5;
+  border-left: 4px solid #e07000;
+  border-radius: 0.3rem;
+}
+
+.live-notice {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  color: #000;
+  background: #fff;
+  border-top: 6px solid #e07000;
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5); /* dims everything behind it */
+  z-index: 2100;
+}
+
+.live-notice[hidden] {
+  display: none;
+}
+
+.live-notice h2 {
+  margin-bottom: 0.75rem;
+  font-size: 1.3rem;
+}
+
+.live-notice p,
+.live-notice ul {
+  margin-bottom: 0.75rem;
+}
+
+.live-notice ul {
+  padding-left: 1.25rem;
+}
+
+.live-notice-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.live-notice-buttons .route-start {
+  width: auto;
+  flex: 1;
+  margin: 0;
+}
+
+#live-notice-cancel {
+  min-height: 48px;
+  padding: 0 1rem;
+  font: inherit;
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.live-notice :is(button):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+html.dark .live-warning {
+  color: #ffd9a8;
+  background: #3a2a10;
+}
+
+html.dark .live-notice {
+  color: #f0f0f0;
+  background: #1c1c1c;
+}
+
+html.dark #live-notice-cancel {
+  color: #9cc3ff;
+  background: #1c1c1c;
+  border-color: #6ea8ff;
+}
+
+/* "Blue light": directions to the nearest blue-light emergency phone, always on screen */
+.emergency-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 0.9rem;
+  font: inherit;
+  font-weight: bold;
+  color: #fff;
+  background: #0033a0;
+  border: 2px solid #0033a0;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.walk-bar .emergency-button {
+  color: #fff;
+  background: #0033a0;
+  border-color: #0033a0;
+}
+
+.emergency-button:hover,
+.walk-bar .emergency-button:hover {
+  background: #00267a;
+}
+
+.emergency-button:focus-visible {
+  outline: 3px solid #000;
+  outline-offset: 2px;
+}
+
+.emergency-dot {
+  width: 0.7rem;
+  height: 0.7rem;
+  background: #7fb2ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+}
+
+/* In walk mode on computers the header's button is in view, so the walk bar doesn't need its own */
+.walk-emergency-button {
+  display: none;
+}
+
+.emergency-call {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.emergency-call[hidden] {
+  display: none;
+}
+
+.emergency-call a {
+  display: inline-flex;
+  flex: 1 1 auto;
+  justify-content: center;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.6rem;
+  font-weight: bold;
+  color: #fff;
+  background: var(--bc-red);
+  border-radius: 0.4rem;
+  text-decoration: none;
+}
+
+.emergency-message {
+  position: fixed;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(28rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1rem 2.75rem 1rem 1rem;
+  color: #000;
+  background: #fff;
+  border-top: 6px solid #0033a0;
+  border-radius: 0.75rem;
+  box-shadow: 0 0.2rem 1.5rem rgba(0, 0, 0, 0.4);
+  z-index: 2050;
+}
+
+.emergency-message[hidden] {
+  display: none;
+}
+
+.emergency-message:focus {
+  outline: 3px solid #0033a0;
+}
+
+.emergency-message .close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+}
+
+html.dark .emergency-message {
+  color: #f0f0f0;
+  background: #1c1c1c;
+}
+
+html.dark .emergency-button:focus-visible {
+  outline-color: #fff;
+}
+
+@media screen and (max-width: 870px) {
+  /* Phones: the button sits at the end of the top bar, after Where to? */
+  .panel-header {
+    display: contents;
+  }
+
+  .panel-top {
+    grid-template-columns: auto 1fr auto;
+  }
+
+  .panel-top .emergency-button {
+    order: 1;
+    margin: 0;
+    padding: 0 0.7rem;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+  }
+
+  .panel-top .chips,
+  .panel-top .more-kinds {
+    order: 2;
+  }
+
+  /* Walking: the top bar is hidden under the instructions, so the walk bar has the button */
+  .walk-emergency-button {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 0.4rem;
   }
 }

@@ -46,13 +46,30 @@ async function setupDirections(map) {
     });
   }
 
-  const panel = document.getElementById('directions-panel');
-  const toggle = document.getElementById('directions-toggle');
   const from = document.getElementById('route-from');
   const to = document.getElementById('route-to');
-  toggle.disabled = false;
-  toggle.addEventListener('click', () => setPanelOpen(panel.hidden));
-  document.getElementById('directions-close').addEventListener('click', () => setPanelOpen(false));
+  document.getElementById('where-to').disabled = false;
+  // Back from a route preview: forget the destination and stops, back to Where to?
+  document.getElementById('route-back').addEventListener('click', () => {
+    to.value = '';
+    routing.place = null;
+    routing.stops = [];
+    renderStops();
+    clearWhereTo();
+    // The next trip starts from your location again, as in other map apps
+    from.value = '';
+    routing.fromChosen = false;
+    routing.fromPlace = null;
+    startFromMyLocation();
+    updateRoute(map);
+    document.getElementById('where-to').focus();
+  });
+  // "About <building>" in a route preview
+  document.addEventListener('click', (e) => {
+    const name = e.target.closest('[data-building-info]')?.dataset.buildingInfo;
+    const feature = name && routing.data.buildings.find((b) => (b.properties.NAME || '').trim() === name);
+    if (feature) openBuildingInfo(feature.properties);
+  });
   document.getElementById('route-swap').addEventListener('click', () => {
     if ([HERE, PLACE].includes(from.value) || to.value === PLACE) return;
     [from.value, to.value] = [to.value, from.value];
@@ -118,12 +135,9 @@ async function setupDirections(map) {
     }
     if (button.dataset.routeTo) to.value = button.dataset.routeTo;
     closeBuildingInfo();
-    setPanelOpen(true);
     updateRoute(map);
+    if (button.dataset.routeFrom) document.getElementById('edit-trip').open = true;
   });
-
-  // Open by default on wider screens. On phones the panel would cover half the map, so it's one tap away.
-  if (window.matchMedia('(min-width: 871px)').matches) setPanelOpen(true, false);
 
   // A trip in the page address (after a reload, or from a shared link) comes back; otherwise start from your location
   if (!(await restoreTripFromUrl(map))) await startFromMyLocation();
@@ -193,7 +207,6 @@ async function restoreTripFromUrl(map) {
   const step = Number(params.get('step'));
   if (step >= 1) routing.autoStart = { follow: params.get('follow') === '1', step: step - 1, restored: true, keepFocus: true };
   await routing.pointsLoaded; // step cues need the point layers
-  setPanelOpen(true, false);
   updateRoute(map);
   return true;
 }
@@ -266,13 +279,30 @@ function isRoutable(building) {
   return !!routing && currentGraph().entrances.some((e) => e.building === building);
 }
 
-function setPanelOpen(open, moveFocus = true) {
-  const panel = document.getElementById('directions-panel');
-  panel.hidden = !open;
-  document.getElementById('directions-toggle').setAttribute('aria-expanded', String(open));
-  document.querySelector('.topnav').classList.remove('responsive');
-  document.getElementById('menu-toggle').setAttribute('aria-expanded', 'false');
-  if (open && moveFocus) document.getElementById('route-from').focus();
+// The panel shows one view at a time: home (Where to?), results (nearest things), route (a route preview), or
+// walk (directions as you go). Views not shown are hidden from screen readers too.
+const VIEWS = ['home', 'results', 'route', 'walk'];
+function setView(view) {
+  const panel = document.getElementById('panel');
+  panel.dataset.view = view;
+  for (const v of VIEWS) document.getElementById(`view-${v}`).hidden = v !== view;
+  panel.querySelector('.chips').hidden = view !== 'home';
+  if (view !== 'home') {
+    document.getElementById('more-kinds').hidden = true;
+    document.getElementById('chip-more').setAttribute('aria-expanded', 'false');
+    document.getElementById('chip-more').textContent = 'More…';
+  }
+  panel.querySelector('.where-to').hidden = view === 'walk';
+}
+
+function currentView() {
+  return document.getElementById('panel').dataset.view;
+}
+
+// When a start is needed (no location): open Edit trip, where From is, and say so.
+function askForStart(html) {
+  document.getElementById('edit-trip').open = true;
+  return showResult(html);
 }
 
 // Like other map apps, directions start from your location unless you choose somewhere else. Not when location
@@ -456,8 +486,16 @@ async function updateRoute(map) {
   routing.routeCoordinates = null;
   clearRoute(map);
   saveTripToUrl();
-  if (!fromValue || !toValue) return showResult('');
-  if (fromValue === toValue) return showResult('<p>Choose two different buildings.</p>');
+  // The route view, unless a re-route mid-walk is about to go straight back into walking directions
+  if (!toValue) {
+    if (currentView() === 'route') setView('home');
+    return showResult('');
+  }
+  if (!routing.autoStart) setView('route');
+  const title = toValue === PLACE && routing.place ? routing.place.label : toValue === MY_LOCATION ? 'your location' : toValue;
+  document.getElementById('route-title').textContent = `To ${title}`;
+  if (!fromValue) return askForStart('<p>Choose where you’re starting from, under From.</p>');
+  if (fromValue === toValue) return askForStart('<p>The start and destination are the same. Choose a different start, under From.</p>');
 
   const doors = (name) => graph.entrances.filter((e) => e.building === name).map((e) => e.node);
   // Graph nodes for a building's entrances, or for a place found by "Find nearby" ({label, building} or {label, lonlat})
@@ -474,18 +512,18 @@ async function updateRoute(map) {
       // From was only "My location" by default: ask for a starting point instead
       if (fromValue === MY_LOCATION && !routing.fromChosen) {
         document.getElementById('route-from').value = '';
-        return showResult('<p>Choose where you’re starting from under From. (Your location isn’t available; to use it, allow location access for this site.)</p>');
+        return askForStart('<p>Choose where you’re starting from, under From. (Your location isn’t available; to use it, allow location access for this site.)</p>');
       }
-      return showResult('<p>Your location isn\'t available. Check that location access is allowed, or choose a building instead.</p>');
+      return askForStart('<p>Your location isn\'t available. Check that location access is allowed, or choose a building instead.</p>');
     }
     if (request !== routeRequest) return;
     start = module.nearestNode(graph, here);
     if (start.d > MAX_START_DISTANCE_M) {
       if (fromValue === MY_LOCATION && !routing.fromChosen) {
         document.getElementById('route-from').value = '';
-        return showResult(`<p>Choose where you’re starting from under From. (You’re ${feet(start.d)} from the nearest mapped campus path, so directions can’t start from where you are.)</p>`);
+        return askForStart(`<p>Choose where you’re starting from, under From. (You’re ${feet(start.d)} from the nearest mapped campus path, so directions can’t start from where you are.)</p>`);
       }
-      return showResult(`<p>You're ${feet(start.d)} from the nearest mapped path. Choose a building instead.</p>`);
+      return askForStart(`<p>You're ${feet(start.d)} from the nearest mapped path. Choose a building instead.</p>`);
     }
   }
   const toMe = toValue === MY_LOCATION;
@@ -576,21 +614,31 @@ async function updateRoute(map) {
   const stairs = description.steps.filter((st) => st.type === 'stairs').reduce((sum, st) => sum + st.length, 0);
   const stairsNote = stairs ? `<p class="route-warning">This route uses stairs (${feet(stairs)}).</p>` : '';
   const stopsSaid = stops.length ? `, with ${stops.length === 1 ? 'a stop' : `${stops.length} stops`}` : '';
-  const message = `Route found: ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}. Start step-by-step directions or audio guidance below.`;
+  // A gentle walking pace (about 1.2 m/s); wheelchair and cane users vary, so it's only a guide
+  const minutes = Math.max(1, Math.round(description.length / 1.2 / 60));
+  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}.${routing.autoStart ? '' : ' Press Start to begin.'}`;
+  const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
     ${unmet}
-    <p class="route-summary"><strong>${feet(description.length)}</strong> (${Math.round(description.length)} m)${indoor}.${startNote}</p>
+    <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stairs ? '' : ' · <span class="badge">Step-free</span>'}</p>
+    ${startNote ? `<p class="route-note">${startNote.trim()}</p>` : ''}
     ${stopNote(stops)}
-    <button type="button" id="guidance-start" class="route-start">Start step-by-step directions</button>
-    ${'speechSynthesis' in window ? `<button type="button" id="guidance-start-audio" class="route-start" aria-describedby="audio-guidance-help"><span aria-hidden="true">🔊 </span>Start audio guidance</button>
-    <p id="audio-guidance-help" class="route-note">Speaks each step aloud and moves to the next step as you walk.</p>` : ''}
-    <div class="route-check"><input type="checkbox" id="route-focus" ${focusOnRoute ? 'checked' : ''}><label for="route-focus">Only show map features along this route</label></div>
     ${stairsNote}
-    ${slopeSummary(description)}
-    <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>`, message);
+    <button type="button" id="guidance-start-audio" class="route-start" aria-describedby="start-help">Start</button>
+    <p id="start-help" class="route-note">Follows your location${speaks ? ', reads each step aloud,' : ''} and finds a new route if you go off it.</p>
+    <p class="live-warning" role="note"><strong>Still in development:</strong> don’t rely on live directions as an assistive device yet. Use your usual mobility skills, and take care.</p>
+    <div class="route-secondary">
+      <button type="button" id="guidance-start">Preview the steps one by one</button>
+      ${!toIsPlace ? `<button type="button" data-building-info="${escapeHtml(toValue)}">About ${escapeHtml(toValue)}</button>` : ''}
+    </div>
+    <details class="route-options route-steps-details">
+      <summary>Route details</summary>
+      ${slopeSummary(description)}
+      <ol class="route-steps">${leave}${steps.join('')}<li>${toIsPlace ? `Arrive at ${escapeHtml(toLabel)}` : `Arrive at the accessible entrance of ${escapeHtml(toLabel)}`}</li></ol>
+    </details>`, message);
 
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
-  speak(message);
+  // Screen readers hear the summary (showResult announces it); nothing is read aloud until you Start
   if (routing.autoStart) {
     const { follow, step, intro, keepFocus, restored } = routing.autoStart;
     routing.autoStart = null;
@@ -756,7 +804,7 @@ function drawRoute(map, description) {
 function unobstructedPadding(map) {
   const view = map.getContainer().getBoundingClientRect();
   const padding = { top: 40, bottom: 40, left: 40, right: 40 };
-  const overlays = ['.topnav', '#legend', '#directions-panel'].map((sel) => document.querySelector(sel));
+  const overlays = ['#panel', '.panel-top', '.panel-body', '.walk-banner', '.walk-bar', '#legend'].map((sel) => document.querySelector(sel));
   for (const el of overlays) {
     if (!el || el.hidden || !el.offsetWidth) continue;
     const r = el.getBoundingClientRect();
@@ -778,10 +826,10 @@ function unobstructedPadding(map) {
   return padding;
 }
 
-// The skip link at the top of the page opens the directions panel and moves focus into it
+// The skip link at the top of the page goes straight to Where to?
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('skip-to-directions').addEventListener('click', (e) => {
+  document.getElementById('skip-to-search').addEventListener('click', (e) => {
     e.preventDefault();
-    setPanelOpen(true);
+    document.getElementById('where-to').focus();
   });
 });

@@ -74,11 +74,18 @@ function speak(text) {
   window.speechSynthesis.speak(utterance);
 }
 
-// The "Speak directions" button in step-by-step mode shows whether reading aloud is on.
+// The Mute button in walk mode: pressed when directions aren't read aloud. Hidden without speech, and for
+// screen reader users (their screen reader does the reading).
 function syncAudioButton() {
   const button = document.getElementById('guidance-audio');
   button.hidden = !('speechSynthesis' in window) || !!settings.screenReader;
-  button.setAttribute('aria-pressed', String(!!settings.readAloud));
+  button.setAttribute('aria-pressed', String(!settings.readAloud));
+}
+
+// The More menu in walk mode
+function setWalkMore(open) {
+  document.getElementById('walk-more-menu').hidden = !open;
+  document.getElementById('walk-more').setAttribute('aria-expanded', String(open));
 }
 
 // The "Large view" button shows whether the large step-by-step view is on.
@@ -107,18 +114,20 @@ async function startGuidance(map, { follow = false, step = 0, intro = '', keepFo
   guide.offRouteFixes = 0;
   guide.backToRoute = null;
 
-  const panel = document.getElementById('directions-panel');
-  panel.classList.add('guiding');
   document.body.classList.add('guiding');
-  document.getElementById('directions-title').textContent = 'Step-by-step directions';
-  document.getElementById('guidance').hidden = false;
+  setView('walk');
+  setWalkMore(false);
+  document.getElementById('walk-where').innerHTML = '';
   guidanceStatus('');
+  // On the way to a blue-light phone: the numbers to call stay in view
+  document.getElementById('walk-emergency').hidden = !(current.toIsPlace && routing.place?.emergency);
   syncAudioButton();
   syncBigButton();
   setRouteDimmed(map, true);
   if (follow) startFollowing(map);
   await showStep(map, step, intro);
-  if (!keepFocus) document.getElementById('guidance-next').focus();
+  // Following: steps move on by themselves, so focus Repeat; previewing: focus Next
+  if (!keepFocus) document.getElementById(follow ? 'guidance-repeat' : 'guidance-next').focus();
 }
 
 function stopGuidance(map) {
@@ -128,11 +137,9 @@ function stopGuidance(map) {
   stopFollowing();
   stopPointing();
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-  const panel = document.getElementById('directions-panel');
-  panel.classList.remove('guiding', 'adding-stop');
   document.body.classList.remove('guiding');
-  document.getElementById('directions-title').textContent = 'Accessible directions';
-  document.getElementById('guidance').hidden = true;
+  // Back to the route preview, unless a new route is about to go straight back into walking directions
+  if (!routing.autoStart) setView(routing.current ? 'route' : 'home');
   map.getSource('route-step').setData({ type: 'FeatureCollection', features: [] });
   setRouteDimmed(map, false);
   moveMap(map, 'easeTo', { pitch: 0, bearing: 0 });
@@ -261,6 +268,7 @@ function locateOnRoute(p) {
 function onPosition(map, position) {
   const { latitude, longitude, accuracy } = position.coords;
   const here = [longitude, latitude];
+  guide.lastFix = { lonlat: here, accuracy, at: Date.now() }; // for Where am I? while walking
   if (!guide.marker) {
     const dot = document.createElement('div');
     dot.className = 'you-are-here';
@@ -352,6 +360,39 @@ function prepareRerouteFromHere(newStop) {
   routing.autoStart = { follow: following };
 }
 
+// ---- Live directions notice ----------------------------------------------------------------------
+// Shown before the first live trip on a device: live directions are being developed, and aren't yet reliable
+// enough to depend on. "I understand" is remembered on this device; it's in the Help page and About as well.
+const LIVE_NOTICE_KEY = 'accessbc.liveDirectionsNotice';
+
+function confirmLiveDirections(start) {
+  let seen = false;
+  try { seen = localStorage.getItem(LIVE_NOTICE_KEY) === 'understood'; } catch { /* storage unavailable */ }
+  if (seen) return start();
+  const dialog = document.getElementById('live-notice');
+  const opener = document.activeElement;
+  const ok = document.getElementById('live-notice-ok'), cancel = document.getElementById('live-notice-cancel');
+  const close = (go) => {
+    dialog.hidden = true;
+    ok.onclick = cancel.onclick = dialog.onkeydown = null;
+    if (go) {
+      try { localStorage.setItem(LIVE_NOTICE_KEY, 'understood'); } catch { /* storage unavailable */ }
+      start();
+    } else if (opener && document.contains(opener)) opener.focus();
+  };
+  ok.onclick = () => close(true);
+  cancel.onclick = () => close(false);
+  dialog.onkeydown = (e) => {
+    if (e.key === 'Escape') close(false);
+    if (e.key === 'Tab') { // two buttons: keep focus on them
+      e.preventDefault();
+      (document.activeElement === ok ? cancel : ok).focus();
+    }
+  };
+  dialog.hidden = false;
+  ok.focus();
+}
+
 // ---- Controls ----------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -361,11 +402,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     if (e.target.id === 'guidance-start') startGuidance(window.map);
     // Audio guidance: steps read aloud, advancing on their own as you walk
+    // Start: walking directions, following your location (read aloud unless muted). The first time on this
+    // device, a notice that live directions are still being developed comes first.
     if (e.target.closest('#guidance-start-audio')) {
       if (settings.clockFace) startCompass(); // asks for compass access on iPhones, which needs this button press
-      if (!settings.screenReader) settings.readAloud = true;
-      saveSettings();
-      startGuidance(window.map, { follow: true });
+      unlockAudio();
+      confirmLiveDirections(() => startGuidance(window.map, { follow: true }));
     }
     if (e.target.id === 'guidance-reroute') rerouteFromHere(window.map);
   });
@@ -401,18 +443,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   // Add a stop mid-trip: show "Find nearby", searching along the route
+  // Add a stop mid-trip: find something along the route (the directions carry on meanwhile)
   document.getElementById('guidance-add-stop').addEventListener('click', () => {
-    const panel = document.getElementById('directions-panel');
-    const adding = panel.classList.toggle('adding-stop');
-    if (!adding) return;
-    const nearby = document.querySelector('.nearby');
-    nearby.open = true;
-    document.getElementById('nearby-from').value = 'route';
-    document.getElementById('nearby-kind').focus();
+    setWalkMore(false);
+    openNearby(null, { near: 'route' });
+  });
+  document.getElementById('walk-more').addEventListener('click', () => {
+    setWalkMore(document.getElementById('walk-more-menu').hidden);
+  });
+  document.getElementById('walk-settings').addEventListener('click', () => {
+    setWalkMore(false);
+    openSettings();
   });
   document.getElementById('guidance-exit').addEventListener('click', () => {
     stopGuidance(window.map);
-    document.getElementById('guidance-start')?.focus();
+    document.getElementById('guidance-start-audio')?.focus();
   });
 
   // Arrow keys and swipes move between steps.
