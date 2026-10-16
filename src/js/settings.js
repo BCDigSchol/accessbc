@@ -3,7 +3,7 @@
 
 const SETTINGS_KEY = 'accessbc.settings';
 const SETTINGS_DEFAULTS = {
-  readAloud: false,      // speak directions (off: screen reader users already hear them)
+  readAloud: true,       // speak walking directions; the Mute button while walking turns this off, and it stays off
   screenReader: false,   // the student uses a screen reader: never speak as well, so nothing is heard twice
   autoReroute: true,     // find a new route when you leave it while your location is followed
   soundCues: true,       // short tones for a new step, a turn coming up, leaving the route, arriving
@@ -20,11 +20,17 @@ const SETTINGS_DEFAULTS = {
   reduceMotion: 'auto',
 };
 
+// Saved settings carry a version, so a changed default can be applied once to settings saved before it.
+// Version 2: reading aloud became on by default (with Mute while walking), after being off by default.
+const SETTINGS_VERSION = 2;
+
 const settings = (() => {
   try {
-    return { ...SETTINGS_DEFAULTS, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}') };
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    if ((saved.version || 1) < 2) delete saved.readAloud;
+    return { ...SETTINGS_DEFAULTS, ...saved, version: SETTINGS_VERSION };
   } catch {
-    return { ...SETTINGS_DEFAULTS };
+    return { ...SETTINGS_DEFAULTS, version: SETTINGS_VERSION };
   }
 })();
 

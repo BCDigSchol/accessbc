@@ -44,9 +44,12 @@ function expect(ok, state, message) {
 
 const appReady = (page) => page.waitForFunction(() => typeof routing !== 'undefined' && routing && typeof routePoints !== 'undefined' && routePoints, null, { timeout: 60000 });
 
-async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {} } = {}) {
+async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {}, noticeSeen = true } = {}) {
   const context = await browser.newContext({ viewport, geolocation: ON_CAMPUS, permissions: ['geolocation'] });
-  await context.addInitScript((s) => localStorage.setItem('accessbc.settings', JSON.stringify(s)), { ...LIGHT_MAP, ...settings });
+  await context.addInitScript(({ s, seen }) => {
+    localStorage.setItem('accessbc.settings', JSON.stringify(s));
+    if (seen) localStorage.setItem('accessbc.liveDirectionsNotice', 'understood');
+  }, { s: { ...LIGHT_MAP, ...settings }, seen: noticeSeen });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
   page.on('pageerror', (err) => problems.push(`[page error] ${err.message}`));
@@ -71,7 +74,7 @@ async function main() {
   const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   try {
     console.log('Desktop');
-    let page = await openApp(browser);
+    let page = await openApp(browser, { noticeSeen: false });
     await axe(page, 'start');
 
     // Keyboard: the skip link comes first and goes to Where to?
@@ -96,8 +99,13 @@ async function main() {
     expect(await page.evaluate(() => /^Step 2 of/.test(document.getElementById('guidance-progress').textContent)), 'preview', 'right arrow moves to step 2');
     await page.click('#guidance-exit');
 
-    // Start: walk mode, following your location; More holds the other tools
+    // Start, the first time: the notice that live directions are still in development
     await page.click('#guidance-start-audio');
+    expect(await page.evaluate(() => !document.getElementById('live-notice').hidden && document.activeElement.id === 'live-notice-ok'),
+      'live notice', 'the first Start shows the in-development notice, focus on I understand');
+    await axe(page, 'live directions notice');
+    await page.click('#live-notice-ok');
+    // Start: walk mode, following your location; More holds the other tools
     expect(await page.evaluate(() => currentView() === 'walk' && document.activeElement.id === 'guidance-repeat'), 'walk', 'Start opens walk mode with focus on Repeat');
     await axe(page, 'walk');
     await page.click('#walk-more');

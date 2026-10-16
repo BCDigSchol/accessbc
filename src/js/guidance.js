@@ -358,6 +358,39 @@ function prepareRerouteFromHere(newStop) {
   routing.autoStart = { follow: following };
 }
 
+// ---- Live directions notice ----------------------------------------------------------------------
+// Shown before the first live trip on a device: live directions are being developed, and aren't yet reliable
+// enough to depend on. "I understand" is remembered on this device; it's in the Help page and About as well.
+const LIVE_NOTICE_KEY = 'accessbc.liveDirectionsNotice';
+
+function confirmLiveDirections(start) {
+  let seen = false;
+  try { seen = localStorage.getItem(LIVE_NOTICE_KEY) === 'understood'; } catch { /* storage unavailable */ }
+  if (seen) return start();
+  const dialog = document.getElementById('live-notice');
+  const opener = document.activeElement;
+  const ok = document.getElementById('live-notice-ok'), cancel = document.getElementById('live-notice-cancel');
+  const close = (go) => {
+    dialog.hidden = true;
+    ok.onclick = cancel.onclick = dialog.onkeydown = null;
+    if (go) {
+      try { localStorage.setItem(LIVE_NOTICE_KEY, 'understood'); } catch { /* storage unavailable */ }
+      start();
+    } else if (opener && document.contains(opener)) opener.focus();
+  };
+  ok.onclick = () => close(true);
+  cancel.onclick = () => close(false);
+  dialog.onkeydown = (e) => {
+    if (e.key === 'Escape') close(false);
+    if (e.key === 'Tab') { // two buttons: keep focus on them
+      e.preventDefault();
+      (document.activeElement === ok ? cancel : ok).focus();
+    }
+  };
+  dialog.hidden = false;
+  ok.focus();
+}
+
 // ---- Controls ----------------------------------------------------------------------------------------
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -367,11 +400,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.addEventListener('click', (e) => {
     if (e.target.id === 'guidance-start') startGuidance(window.map);
     // Audio guidance: steps read aloud, advancing on their own as you walk
+    // Start: walking directions, following your location (read aloud unless muted). The first time on this
+    // device, a notice that live directions are still being developed comes first.
     if (e.target.closest('#guidance-start-audio')) {
       if (settings.clockFace) startCompass(); // asks for compass access on iPhones, which needs this button press
-      if (!settings.screenReader) settings.readAloud = true;
-      saveSettings();
-      startGuidance(window.map, { follow: true });
+      unlockAudio();
+      confirmLiveDirections(() => startGuidance(window.map, { follow: true }));
     }
     if (e.target.id === 'guidance-reroute') rerouteFromHere(window.map);
   });

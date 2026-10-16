@@ -626,6 +626,7 @@ async function updateRoute(map) {
     ${stairsNote}
     <button type="button" id="guidance-start-audio" class="route-start" aria-describedby="start-help">Start</button>
     <p id="start-help" class="route-note">Follows your location${speaks ? ', reads each step aloud,' : ''} and finds a new route if you go off it.</p>
+    <p class="live-warning" role="note"><strong>Still in development:</strong> don’t rely on live directions as an assistive device yet. Use your usual mobility skills, and take care.</p>
     <div class="route-secondary">
       <button type="button" id="guidance-start">Preview the steps one by one</button>
       ${!toIsPlace ? `<button type="button" data-building-info="${escapeHtml(toValue)}">About ${escapeHtml(toValue)}</button>` : ''}
@@ -637,7 +638,7 @@ async function updateRoute(map) {
     </details>`, message);
 
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
-  speak(message);
+  // Screen readers hear the summary (showResult announces it); nothing is read aloud until you Start
   if (routing.autoStart) {
     const { follow, step, intro, keepFocus, restored } = routing.autoStart;
     routing.autoStart = null;

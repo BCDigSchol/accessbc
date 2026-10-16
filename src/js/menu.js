@@ -18,6 +18,10 @@ function handleAboutClick() {
   intro.innerHTML = 'Welcome to the AccessBC webmap! If you want to provide feedback or report an issue, please use our <a href="https://forms.gle/EqSt5qz31ub9eB5x7" style="color: #fff; font-weight: bold;">Google Form</a>.';
   popup.appendChild(intro);
 
+  const caution = document.createElement('p');
+  caution.innerHTML = '<strong>Please note:</strong> live, step-by-step directions are still in development and aren’t yet meant to be relied on as an assistive device. Use them alongside your usual mobility skills, and proceed with caution.';
+  popup.appendChild(caution);
+
   const hr1 = document.createElement('hr');
   popup.appendChild(hr1);
 

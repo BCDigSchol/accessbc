@@ -46,7 +46,7 @@
     <legend>Directions</legend>
     <div class="setting"><input type="checkbox" id="set-screenReader" aria-describedby="set-screenReader-help"><label for="set-screenReader">I use a screen reader</label></div>
     <p id="set-screenReader-help" class="route-note">Your screen reader reads each step and update, so Access BC won't also speak them.</p>
-    <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read directions aloud</label></div>
+    <div class="setting"><input type="checkbox" id="set-readAloud"><label for="set-readAloud">Read walking directions aloud (the same as Mute while walking)</label></div>
     <div class="setting">
       <label for="set-speechRate">Speaking speed</label>
       <select id="set-speechRate"><option value="0.8">Slower</option><option value="1">Normal</option><option value="1.25">Faster</option><option value="1.5">Fastest</option></select>
@@ -233,6 +233,23 @@
     </section>
   </div>
 </aside>
+
+<div id="live-notice" class="live-notice" role="alertdialog" aria-modal="true" aria-labelledby="live-notice-title" aria-describedby="live-notice-text" hidden>
+  <h2 id="live-notice-title">Live directions are still being developed</h2>
+  <div id="live-notice-text">
+    <p>Access BC's live, step-by-step directions are being tested. They aren't yet reliable enough to depend on as an assistive device.</p>
+    <ul>
+      <li>Your location can be off by 15 to 30 feet or more, especially near buildings and indoors.</li>
+      <li>The map may be out of date: construction, closures, snow, and broken elevators or doors may not be shown.</li>
+      <li>Keep using your usual mobility skills, cane, or guide dog. Watch for hazards, and ask for help if you need it.</li>
+    </ul>
+    <p>Please proceed with caution, and tell us about problems through the feedback form.</p>
+  </div>
+  <div class="live-notice-buttons">
+    <button type="button" id="live-notice-ok" class="route-start">I understand, start</button>
+    <button type="button" id="live-notice-cancel">Not now</button>
+  </div>
+</div>
 
 <nav id="app-menu" class="app-menu" aria-labelledby="app-menu-title" hidden>
   <div class="app-menu-header">

@@ -133,7 +133,7 @@ async function findNearby(map) {
   const first = nearbyResults[0];
   const said = `The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
   announce(`${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);
-  speak(said);
+  if (guide.active) speak(said); // read aloud only while walking (adding a stop mid-trip)
 }
 
 // The results view: the nearest things of a kind, along your route when there is one, else near you. With no kind

@@ -1725,3 +1725,94 @@ html.dark .walk-banner .guidance-detail,
 html.dark .walk-banner .guidance-status {
   color: rgba(255, 255, 255, 0.92);
 }
+
+/* "Still in development" note under Start, and the notice before the first live trip */
+.live-warning {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: #5a3a00;
+  background: #fff4e5;
+  border-left: 4px solid #e07000;
+  border-radius: 0.3rem;
+}
+
+.live-notice {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(32rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  color: #000;
+  background: #fff;
+  border-top: 6px solid #e07000;
+  border-radius: 0.75rem;
+  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.5); /* dims everything behind it */
+  z-index: 2100;
+}
+
+.live-notice[hidden] {
+  display: none;
+}
+
+.live-notice h2 {
+  margin-bottom: 0.75rem;
+  font-size: 1.3rem;
+}
+
+.live-notice p,
+.live-notice ul {
+  margin-bottom: 0.75rem;
+}
+
+.live-notice ul {
+  padding-left: 1.25rem;
+}
+
+.live-notice-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.live-notice-buttons .route-start {
+  width: auto;
+  flex: 1;
+  margin: 0;
+}
+
+#live-notice-cancel {
+  min-height: 48px;
+  padding: 0 1rem;
+  font: inherit;
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+.live-notice :is(button):focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+html.dark .live-warning {
+  color: #ffd9a8;
+  background: #3a2a10;
+}
+
+html.dark .live-notice {
+  color: #f0f0f0;
+  background: #1c1c1c;
+}
+
+html.dark #live-notice-cancel {
+  color: #9cc3ff;
+  background: #1c1c1c;
+  border-color: #6ea8ff;
+}
