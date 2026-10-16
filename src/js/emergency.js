@@ -45,7 +45,10 @@ async function goToNearestBluelight() {
   }
   const graph = currentGraph();
   const start = module.nearestNode(graph, fix.lonlat);
-  const candidates = nearbyCandidates(graph, 'bluelights');
+  // Phones reported not working are left out, unless every phone is
+  const all = nearbyCandidates(graph, 'bluelights');
+  const working = all.filter((c) => !isReportedBroken(c.feature));
+  const candidates = working.length ? working : all;
 
   // Nearest by walking distance, honouring the route options; failing that, ignoring them
   let nearest = null;
