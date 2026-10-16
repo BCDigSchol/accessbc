@@ -57,6 +57,15 @@ unpaved ways, ways inside a BC campus boundary, and bridges and tunnels. None of
 accessibility, and the app says so on every route that uses it. Many curb ramps aren't tagged in OpenStreetMap
 yet; adding them there (`kerb=lowered` on the crossing's end nodes) improves the routes after the next refresh.
 
+## BC shuttles (`shuttles.json`)
+
+BC's regular shuttle routes, built by [scripts/shuttles.mjs](../../scripts/shuttles.mjs) from a snapshot of BC's
+public live shuttle tracker (bostoncollege.transloc.com): each route's stops in order, the ride time between them,
+and the route line. The days, hours and frequencies aren't in the tracker data; they're typed into the script from
+[BC's shuttle page](https://www.bc.edu/bc-web/offices/aux-services/sites/transportation-parking/shuttles.html).
+Re-run the script and check the schedules each semester. Event routes (football, holidays) aren't included.
+Whether the shuttles have wheelchair lifts or ramps isn't published, so the app says it isn't confirmed.
+
 ## Known quirks
 
 - Field names were cut to 10 characters by the shapefile export (`Descriptio`, `Food_dinin`,

@@ -21,6 +21,13 @@ data, run `node scripts/osm-sidewalks.mjs` (Node 18 or later, no packages needed
 public Overpass API, and retries if the servers are busy). See [src/geojson/README.md](src/geojson/README.md) for
 the fields and the licence.
 
+## BC shuttles
+
+[src/geojson/shuttles.json](src/geojson/shuttles.json) is a snapshot of BC's shuttle routes. Each semester, or when
+routes change, check the schedules in [scripts/shuttles.mjs](scripts/shuttles.mjs) (`SERVICE`) against
+[BC's shuttle page](https://www.bc.edu/bc-web/offices/aux-services/sites/transportation-parking/shuttles.html), then
+run `node scripts/shuttles.mjs`.
+
 ## Basemap and terrain
 
 The basemap (streets, labels, water) and the terrain used by the elevation tool are in

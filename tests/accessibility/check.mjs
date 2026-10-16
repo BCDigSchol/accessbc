@@ -44,7 +44,7 @@ function expect(ok, state, message) {
 
 const appReady = (page) => page.waitForFunction(() => typeof routing !== 'undefined' && routing && typeof routePoints !== 'undefined' && routePoints, null, { timeout: 60000 });
 
-async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {}, noticeSeen = true } = {}) {
+async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {}, noticeSeen = true, time = null } = {}) {
   const context = await browser.newContext({ viewport, geolocation: ON_CAMPUS, permissions: ['geolocation'] });
   await context.addInitScript(({ s, seen }) => {
     localStorage.setItem('accessbc.settings', JSON.stringify(s));
@@ -52,6 +52,7 @@ async function openApp(browser, { viewport = { width: 1280, height: 850 }, setti
   }, { s: { ...LIGHT_MAP, ...settings }, seen: noticeSeen });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
+  if (time) { await page.clock.install({ time }); await page.clock.resume(); } // shuttles run by the clock
   page.on('pageerror', (err) => problems.push(`[page error] ${err.message}`));
   page.on('crash', () => problems.push('[page crashed]'));
   await page.goto(BASE);
@@ -191,11 +192,22 @@ async function main() {
     await page.context().close();
 
     console.log('Between campuses');
-    page = await openApp(browser);
+    // Sunday 4 a.m. in Boston: no shuttles, so the route walks on city sidewalks, and says when the next shuttle is
+    page = await openApp(browser, { time: new Date('2026-10-18T08:00:00Z') });
     await findRoute(page, 'Gasson Hall', 'Kenny Cottle Library');
-    expect(await page.evaluate(() => /city sidewalks/.test(document.getElementById('route-result').textContent)),
-      'between campuses', 'a route to the Newton campus uses city sidewalks, and says they aren’t checked');
-    await axe(page, 'between campuses: route');
+    expect(await page.evaluate(() => /city sidewalks/.test(document.getElementById('route-result').textContent) && /none is running now/.test(document.getElementById('route-result').textContent)),
+      'between campuses', 'with no shuttle running, the route walks on city sidewalks, says they aren’t checked, and gives the next shuttle');
+    await axe(page, 'between campuses: walking route');
+    await page.context().close();
+    // Wednesday 10 a.m.: the Newton shuttle is running, and quicker
+    page = await openApp(browser, { time: new Date('2026-10-14T14:00:00Z') });
+    await findRoute(page, 'Gasson Hall', 'Kenny Cottle Library');
+    expect(await page.evaluate(() => /Newton Eagle Direct/.test(document.getElementById('route-result').textContent) && /lift or ramp isn’t confirmed/.test(document.getElementById('route-result').textContent)),
+      'between campuses', 'with the Newton shuttle running, the route uses it, and says its accessibility isn’t confirmed');
+    await axe(page, 'between campuses: shuttle route');
+    await page.click('#guidance-start-audio');
+    await page.waitForFunction(() => currentView() === 'walk');
+    expect(await page.evaluate(() => guide.steps.some((st) => st.kind === 'board' && /take the Newton Eagle Direct shuttle/.test(st.text))), 'between campuses', 'walking directions include a step to take the shuttle');
     await page.context().close();
 
     console.log('Dark mode, bigger symbols, large step view');

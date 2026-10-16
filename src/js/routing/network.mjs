@@ -346,16 +346,23 @@ export function describeRoute(graph, route) {
     const edge = graph.adjacency[a].find((e) => e.to === b);
     // Footpaths often run alongside accessible paths and the route can hop between them, so they're one
     // outdoor step that records how much of it is on footpaths not checked for accessibility.
-    const type = { Interior: 'indoor', Stairs: 'stairs' }[edge.type] || 'outdoor';
+    const type = { Interior: 'indoor', Stairs: 'stairs', Board: 'shuttle', Ride: 'shuttle', Alight: 'shuttle' }[edge.type] || 'outdoor';
     let step = steps.at(-1);
     if (!step || step.type !== type) {
       step = { type, length: 0, unverifiedLength: 0, cityLength: 0, coordinates: [graph.nodes[a]], nodes: [a] };
       steps.push(step);
     }
+    // A shuttle ride: which route, from and to which stop, how many stops, the ride time and the average wait
+    if (type === 'shuttle') {
+      const ride = (step.shuttle ||= { route: edge.shuttle.route, every: edge.shuttle.every, stops: 0, seconds: 0, wait: 0 });
+      if (edge.type === 'Board') { ride.from = edge.shuttle.stop; ride.wait = edge.wait; }
+      if (edge.type === 'Ride') { ride.stops++; ride.seconds += edge.seconds; ride.to = edge.shuttle.to; }
+    }
     step.length += edge.length;
     if (edge.type === 'Footpath' || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
     if (CITY_TYPES.has(edge.type)) step.cityLength = (step.cityLength || 0) + edge.length;
-    step.coordinates.push(graph.nodes[b]);
+    if (edge.coords) step.coordinates.push(...edge.coords.slice(1)); // a shuttle ride follows the route line
+    else step.coordinates.push(graph.nodes[b]);
     step.nodes.push(b);
   }
   for (const step of steps) {
@@ -368,8 +375,11 @@ export function describeRoute(graph, route) {
     step.building = Object.entries(votes).sort((x, y) => y[1] - x[1])[0]?.[0];
     step.elevator = !!step.building && graph.elevatorBuildings.has(step.building);
   }
+  const shuttleSteps = steps.filter((s) => s.type === 'shuttle');
   return {
     length: route.length,
+    walkLength: steps.filter((s) => s.type !== 'shuttle').reduce((sum, s) => sum + s.length, 0),
+    shuttleSeconds: shuttleSteps.reduce((sum, s) => sum + s.shuttle.seconds + s.shuttle.wait, 0),
     indoorLength: steps.filter((s) => s.type === 'indoor').reduce((sum, s) => sum + s.length, 0),
     steps: steps.map(({ nodes, ...s }) => s),
   };

@@ -192,6 +192,11 @@
             <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
           </select>
         </div>
+        <div class="route-check">
+          <input type="checkbox" id="opt-shuttle" checked aria-describedby="opt-shuttle-help">
+          <label for="opt-shuttle">Use BC shuttles when quicker</label>
+          <p id="opt-shuttle-help" class="route-note">Only shuttles running at the time. Whether they have a wheelchair lift or ramp isn't confirmed yet.</p>
+        </div>
         <div class="route-check"><input type="checkbox" id="route-focus" checked><label for="route-focus">Only show map features along the route</label></div>
         <h3>Route line colours</h3>
         <ul class="route-legend" aria-label="Route line colours">
@@ -201,6 +206,7 @@
           <li><span class="route-swatch very-steep"></span>Steeper than 1:12</li>
           <li><span class="route-swatch unreliable"></span>Slope unknown</li>
           <li><span class="route-swatch stairs"></span>Stairs</li>
+          <li><span class="route-swatch shuttle"></span>Shuttle ride</li>
         </ul>
         <p class="route-note">Slopes are estimated from elevation data and can miss short ramps and curbs.</p>
         <p id="route-coverage" class="route-note"></p>
