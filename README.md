@@ -70,12 +70,12 @@ students and an orientation and mobility instructor is planned in
 | `src/geojson/` | Campus data layers ([README](src/geojson/README.md)) |
 | `src/basemap/` | Self-hosted basemap, terrain, fonts, and icons |
 | `src/vendor/` | MapLibre GL JS and PMTiles ([README](src/vendor/README.md)) |
-| `src/js/routing/` | Routing graph, route finder, slopes, and step-by-step instructions, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
+| `src/js/routing/` | Routing graph, route finder, slopes, shuttle rides, and step-by-step instructions, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
 | `scripts/` | Local preview server and data/basemap tooling. Not deployed. |
 | `tests/accessibility/` | Automated accessibility checks (axe-core and Playwright, used by CI only). Not deployed. |
 | `docs/` | Data collection sheets and the usability testing plan |
 
-See [updatingdata.md](updatingdata.md) for editing map data.
+See [updatingdata.md](updatingdata.md) for editing map data. See [ROADMAP.md](ROADMAP.md) for what's planned next.
 
 ## Deployment
 

@@ -26,11 +26,20 @@ function routeLine(graph, route) {
     const p = proj(graph.nodes[route.nodes[i]]);
     if (i > 0) {
       const edge = graph.adjacency[route.nodes[i - 1]].find((e) => e.to === route.nodes[i]);
+      // A shuttle ride follows the route line between stops
+      for (const c of edge.coords?.slice(1, -1) || []) {
+        const q = proj(c), len = dist(pts.at(-1), q);
+        if (len < 0.01) continue;
+        types.push('Ride');
+        info.push(edge.shuttle);
+        at.push(at.at(-1) + len);
+        pts.push(q);
+      }
       const len = dist(pts.at(-1), p);
       nodeAt.set(i, at.at(-1) + (len < 0.01 ? 0 : len));
       if (len < 0.01) continue;
       types.push(edge.type === 'Entrance' ? 'Exterior' : edge.type);
-      info.push(edge.seg >= 0 ? graph.lines[graph.segments[edge.seg].line].city || null : null); // city sidewalk details
+      info.push(edge.shuttle || (edge.seg >= 0 ? graph.lines[graph.segments[edge.seg].line].city || null : null)); // city sidewalk or shuttle details
       at.push(at.at(-1) + len);
     }
     pts.push(p);
@@ -88,7 +97,7 @@ function turnWord(deg) {
 // ([{index, label}], index into route.nodes), each of which becomes a 'stop' step.
 export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPlace = false }) {
   const line = routeLine(graph, route);
-  const kindOf = (type) => ({ Interior: 'indoor', Stairs: 'stairs' }[type] || 'outdoor');
+  const kindOf = (type) => ({ Interior: 'indoor', Stairs: 'stairs', Ride: 'shuttle', Board: 'shuttle', Alight: 'shuttle' }[type] || 'outdoor');
 
   // Breaks: type changes, street crossings, and turns of at least TURN_MIN_DEG.
   const breaks = [{ s: 0, kind: 'depart' }];
@@ -96,9 +105,11 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
   for (let i = 1; i < line.pts.length - 1; i++) {
     const s = line.at[i];
     if (kindOf(line.types[i - 1]) !== kindOf(line.types[i])) {
-      breaks.push({ s, kind: { indoor: 'enter', stairs: 'stairs', outdoor: kindOf(line.types[i - 1]) === 'indoor' ? 'exit' : 'outdoor' }[kindOf(line.types[i])] });
+      const before = kindOf(line.types[i - 1]);
+      breaks.push({ s, kind: { indoor: 'enter', stairs: 'stairs', shuttle: 'board', outdoor: before === 'indoor' ? 'exit' : before === 'shuttle' ? 'alight' : 'outdoor' }[kindOf(line.types[i])] });
       continue;
     }
+    if (kindOf(line.types[i]) === 'shuttle') continue; // no turns while riding
     if (crossing(i) && !crossing(i - 1)) { breaks.push({ s, kind: 'cross', crossing: line.info[i] || {} }); continue; }
     if (!crossing(i) && crossing(i - 1)) { breaks.push({ s, kind: 'outdoor', afterCrossing: true }); continue; }
     if (crossing(i)) continue; // a crossing is one step, whatever its shape
@@ -146,6 +157,14 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
     const type = kindOf(line.types[Math.min(segIndex, line.types.length - 1)]);
     const step = { kind: b.kind, turn: b.turn, label: b.label, length: end - b.s, heading, start: unproj(startPt), coordinates, type };
     if (b.kind === 'cross') step.crossing = b.crossing;
+    // Boarding a shuttle: the route, the stop to get off at, how many stops, and the ride time
+    if (b.kind === 'board') {
+      const rides = [];
+      for (let i = segIndex; i < line.types.length && kindOf(line.types[i]) === 'shuttle'; i++) if (line.info[i] && !rides.includes(line.info[i])) rides.push(line.info[i]);
+      const first = rides[0] || {};
+      step.shuttle = { route: first.route, every: first.every, from: first.from, to: rides.at(-1)?.to, stops: rides.length };
+    }
+    if (b.kind === 'alight') step.stop = line.info[Math.max(0, segIndex - 1)]?.to;
     // Off campus there are no BC buildings to steer by: the street you're walking along instead
     const street = line.info[Math.min(segIndex, line.info.length - 1)]?.name;
     if (street && b.kind !== 'cross') step.street = street;
@@ -155,7 +174,7 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
       step.building = type === 'indoor' ? inside.name : before.name;
       step.elevator = !!step.building && graph.elevatorBuildings.has(step.building);
     }
-    if (b.kind !== 'enter' && b.kind !== 'exit') {
+    if (b.kind !== 'enter' && b.kind !== 'exit' && b.kind !== 'board') {
       const near = nearestBuildingPoint(graph.buildings, pointAt(line, b.s + Math.min(15, (end - b.s) / 2)));
       if (near.d <= LANDMARK_MAX_M && type !== 'indoor') step.landmark = { name: near.name, side: sideOf(startPt, heading, near.point) };
     }
@@ -199,6 +218,13 @@ export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
     }
     case 'stairs':
       return `Take the stairs${distance}.`;
+    case 'board': {
+      const ride = step.shuttle || {};
+      const stops = ride.stops ? ` (${ride.stops} ${ride.stops === 1 ? 'stop' : 'stops'})` : '';
+      return `At the ${ride.from || 'shuttle'} stop, take the ${ride.route || 'BC'} shuttle to ${ride.to || 'your stop'}${stops}. Shuttles come about every ${ride.every || 15} minutes.`;
+    }
+    case 'alight':
+      return `Get off at ${step.stop || 'your stop'} and continue${distance}${landmark}.`;
     case 'outdoor':
       return `Continue outside${distance}${landmark}.`;
     case 'stop':

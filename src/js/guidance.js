@@ -288,7 +288,8 @@ function onPosition(map, position) {
 
   // Off the route for several fixes in a row: find a new route from here (like other map apps), or if that's
   // off or not possible, say which way the route is and offer to re-route.
-  if (off > Math.max(25, accuracy * 1.5)) {
+  // Riding a shuttle, the road can be well away from any walking path: never "off route" then
+  if (step.type !== 'shuttle' && off > Math.max(25, accuracy * 1.5)) {
     if (++guide.offRouteFixes >= REROUTE_AFTER_FIXES && settings.autoReroute && Date.now() - guide.lastReroute > REROUTE_GAP_MS
       && routing.module.nearestNode(routing.current.graph, here).d <= MAX_START_DISTANCE_M) {
       guide.lastReroute = Date.now();
