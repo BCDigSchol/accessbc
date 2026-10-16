@@ -118,7 +118,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 5,
-          'circle-color': '#0000ff',
+          'circle-color': reportedOr('#0000ff', '#8a8a8a'),
         }
       });
 
@@ -129,7 +129,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 4,
-          'circle-color': '#94346E',
+          'circle-color': reportedOr('#94346E', '#8a8a8a'),
         }
       });
 
@@ -140,7 +140,7 @@ function addMapData(map) {
         layout: {},
         paint: {
           'circle-radius': 4,
-          'circle-color': '#f97b72',
+          'circle-color': reportedOr('#f97b72', '#8a8a8a'),
         }
       });
 

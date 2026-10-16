@@ -48,7 +48,7 @@ function nearbyCandidates(graph, kind) {
       const label = `${config.name} ${where}`;
       // How it reads mid-sentence ("Arrive at the outdoor seating near Gasson Hall")
       const phrase = `the ${label[0].toLowerCase()}${label.slice(1)}`;
-      candidates.push({ label, phrase, lonlat, nodes: [near.node], offset: near.d });
+      candidates.push({ label, phrase, lonlat, nodes: [near.node], offset: near.d, feature: f });
     }
   }
   return (graph.nearby[kind] = candidates);
@@ -120,8 +120,9 @@ async function findNearby(map) {
   const items = nearbyResults.map((r, i) => {
     const end = r.building && ends[r.building];
     const how = end || (along ? (r.distance < 15 ? 'on your route' : `${feet(r.distance)} off your route`) : `${feet(r.distance)} walk`);
+    const broken = r.feature && isReportedBroken(r.feature) ? ' <span class="nearby-broken">(reported not working)</span>' : '';
     return `<li>
-      <span class="nearby-name">${escapeHtml(r.label)}</span> <span class="nearby-distance">${how}</span>
+      <span class="nearby-name">${escapeHtml(r.label)}</span>${broken} <span class="nearby-distance">${how}</span>
       <span class="nearby-actions">
         ${along && !end ? `<button type="button" data-nearby-stop="${i}" aria-label="Add ${escapeHtml(r.label)} as a stop">Add as a stop</button>` : ''}
         ${end ? '' : `<button type="button" data-nearby-go="${i}" aria-label="Directions to ${escapeHtml(r.label)}">Directions</button>`}
@@ -129,9 +130,10 @@ async function findNearby(map) {
       </span>
     </li>`;
   });
-  out.innerHTML = `<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
+  // Looking for a blue-light phone: the numbers to call come first
+  out.innerHTML = `${kind === 'bluelights' ? emergencyCallLinks() : ''}<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
   const first = nearbyResults[0];
-  const said = `The nearest is ${first.label}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
+  const said = `The nearest is ${first.label}${first.feature && isReportedBroken(first.feature) ? ' (reported not working)' : ''}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
   announce(`${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);
   if (guide.active) speak(said); // read aloud only while walking (adding a stop mid-trip)
 }

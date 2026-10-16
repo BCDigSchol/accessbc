@@ -22,6 +22,7 @@
 <script src="src/js/nearby.js"></script>
 <script src="src/js/orientation.js"></script>
 <script src="src/js/emergency.js"></script>
+<script src="src/js/reports.js"></script>
 </head>
 <body>
 
@@ -43,6 +44,15 @@
   <button type="button" class="close" id="settings-close" aria-label="Close accessibility settings">×</button>
   <h2 id="settings-title">Accessibility settings</h2>
   <p class="route-note">Saved on this device.</p>
+  <fieldset>
+    <legend>Getting around</legend>
+    <div class="setting"><input type="checkbox" id="set-avoidStairs"><label for="set-avoidStairs">Avoid stairs (and footpaths not checked for accessibility)</label></div>
+    <div class="setting">
+      <label for="set-slope">Steepest slope allowed</label>
+      <select id="set-slope"></select>
+    </div>
+    <p class="route-note">The same as the route options in Edit trip. Every route also has an Avoid steep slopes button.</p>
+  </fieldset>
   <fieldset>
     <legend>Directions</legend>
     <div class="setting"><input type="checkbox" id="set-screenReader" aria-describedby="set-screenReader-help"><label for="set-screenReader">I use a screen reader</label></div>
@@ -178,7 +188,7 @@
           <label for="opt-slope">Steepest slope allowed</label>
           <select id="opt-slope">
             <option value="">No limit</option>
-            <option value="0.08333" data-label="1:12 (8.3%)">1:12 (8.3%), the steepest an accessible ramp may be</option>
+            <option value="0.08333" data-label="1:12 (8.3%)" selected>1:12 (8.3%), the steepest an accessible ramp may be</option>
             <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
           </select>
         </div>
@@ -228,6 +238,8 @@
             <button type="button" id="guidance-add-stop">Add a stop</button>
             <button type="button" id="guidance-follow" aria-pressed="false">Follow my location</button>
             <button type="button" id="guidance-big" aria-pressed="false">Large view</button>
+            <button type="button" class="share-trip">Share this trip</button>
+            <button type="button" data-report-here>Report a problem here</button>
             <button type="button" id="walk-settings">Accessibility settings</button>
             <p class="route-note">With your location followed, steps move on as you walk. You can also use the arrow keys or swipe.</p>
           </div>
@@ -237,6 +249,33 @@
     </section>
   </div>
 </aside>
+
+<div id="report-dialog" class="report-dialog" role="dialog" aria-modal="true" aria-labelledby="report-title" hidden>
+  <button type="button" class="close" id="report-close" aria-label="Close report">×</button>
+  <h2 id="report-title">Report a problem</h2>
+  <p class="report-about-line">About: <strong id="report-about"></strong></p>
+  <p id="report-where" class="route-note"></p>
+  <fieldset>
+    <legend>What’s wrong?</legend>
+    <div id="report-problems"></div>
+  </fieldset>
+  <label for="report-details" class="report-label">Details (optional)</label>
+  <textarea id="report-details" rows="3"></textarea>
+  <div id="report-avoid-row" class="report-avoid" hidden>
+    <div class="setting"><input type="checkbox" id="report-avoid" aria-describedby="report-avoid-note"><label for="report-avoid">Avoid it in my routes on this device, for 3 days</label></div>
+    <p id="report-avoid-note" class="route-note"></p>
+  </div>
+  <h3>Send the report</h3>
+  <div class="report-send">
+    <button type="button" id="report-send-facilities" aria-describedby="report-send-help">To BC Facilities (to get it fixed)</button>
+    <button type="button" id="report-send-feedback" aria-describedby="report-send-help">To Access BC (a problem with the map)</button>
+    <button type="button" id="report-send-form" hidden>Send report</button>
+  </div>
+  <p id="report-send-help" class="route-note">Each copies your report and opens the form in a new tab, for you to paste it in. BC Facilities may ask you to sign in.</p>
+  <textarea id="report-text" aria-label="Your report, to copy" readonly rows="6" hidden></textarea>
+  <p id="report-status" class="report-status" role="status"></p>
+  <button type="button" id="report-done" class="report-done">Done</button>
+</div>
 
 <div id="emergency-message" class="emergency-message" role="alert" tabindex="-1" hidden>
   <button type="button" class="close" id="emergency-message-close" aria-label="Close message">×</button>
@@ -268,6 +307,7 @@
   <ul class="app-menu-list">
     <li><button type="button" id="settings-toggle" aria-haspopup="dialog">Accessibility settings</button></li>
     <li><button type="button" id="menu-layers">Map layers</button></li>
+    <li><button type="button" data-report-here aria-haspopup="dialog">Report a problem</button></li>
     <li><a href="help.html">Help: how to use Access BC</a></li>
     <li><button type="button" id="about" aria-haspopup="dialog">About</button></li>
   </ul>

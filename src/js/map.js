@@ -1,3 +1,9 @@
+// Elevators, entrances and blue-light phones reported not working (in the map data, or by you: reports.js) are
+// grey, with an outline, so they don't rely on colour alone to stand out
+const REPORTED_EXPRESSION = ['any', ['==', ['get', 'reported'], true], ['all', ['has', 'Status'], ['!=', ['get', 'Status'], 'Working']]];
+const REPORTED_LAYERS = ['bluelight', 'elevators', 'entrances'];
+const reportedOr = (value, reportedValue) => ['case', REPORTED_EXPRESSION, reportedValue, value];
+
 // Area covered by the self-hosted basemap (see scripts/build-basemap.sh)
 const BASEMAP_BOUNDS = [[-71.215, 42.305], [-71.135, 42.360]];
 
@@ -90,10 +96,13 @@ function applyMapSettings(map) {
     // Point features: bigger, and outlined on the dark map so they stand out
     for (const [layer, radius] of [['bluelight', 5], ['elevators', 4], ['entrances', 4], ['curbcuts', 4], ['reststop', 5]]) {
         set(layer, 'circle-radius', radius * k);
-        set(layer, 'circle-stroke-width', dark || strong ? 1.5 : 0);
+        const stroke = dark || strong ? 1.5 : 0;
+        set(layer, 'circle-stroke-width', REPORTED_LAYERS.includes(layer) ? reportedOr(stroke, 2) : stroke);
         set(layer, 'circle-stroke-color', dark ? '#ffffff' : '#000000');
     }
-    set('bluelight', 'circle-color', dark ? '#5c8dff' : '#0000ff');
+    set('bluelight', 'circle-color', reportedOr(dark ? '#5c8dff' : '#0000ff', '#8a8a8a'));
+    set('elevators', 'circle-color', reportedOr('#94346E', '#8a8a8a'));
+    set('entrances', 'circle-color', reportedOr('#f97b72', '#8a8a8a'));
     setLayout('bikerack', 'icon-size', 0.2 * k);
     setLayout('shuttlestop', 'icon-size', 0.04 * k);
     set('building-labels', 'text-color', dark ? '#f2f2f2' : strong ? '#000000' : '#1b1b1b');

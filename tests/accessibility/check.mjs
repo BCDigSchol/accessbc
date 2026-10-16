@@ -89,6 +89,15 @@ async function main() {
     await page.waitForFunction(() => document.getElementById('announcer').textContent.startsWith('Route found'));
     expect(true, 'route', 'a found route is announced');
     await axe(page, 'route');
+    // Avoid steep slopes: on to start with; one tap turns the limit off, finds the route again, and keeps focus
+    expect(await page.evaluate(() => document.getElementById('slope-toggle').getAttribute('aria-pressed') === 'true'), 'route', 'Avoid steep slopes is on to start with');
+    await page.click('#slope-toggle');
+    await page.waitForFunction(() => document.getElementById('slope-toggle')?.getAttribute('aria-pressed') === 'false');
+    expect(await page.evaluate(() => document.activeElement.id === 'slope-toggle' && document.getElementById('set-slope').value === '' && document.getElementById('opt-slope').value === ''),
+      'route', 'Avoid steep slopes turns off the limit, in Edit trip and settings too, with focus kept on it');
+    await page.click('#slope-toggle');
+    await page.waitForFunction(() => document.getElementById('slope-toggle')?.getAttribute('aria-pressed') === 'true');
+    expect(await page.evaluate(() => !!document.querySelector('#route-result .share-trip')), 'route', 'the route has Share this trip');
     await page.click('#edit-trip summary');
     await axe(page, 'route, Edit trip open');
 
@@ -145,6 +154,17 @@ async function main() {
     await axe(page, 'menu');
     await page.keyboard.press('Escape');
     expect(await page.evaluate(() => document.getElementById('app-menu').hidden && document.activeElement.id === 'menu-toggle'), 'menu', 'Escape closes it and focus returns to the menu button');
+
+    // Report a problem, from the menu: focus moves in, Escape closes it and returns focus to the menu button
+    await page.click('#menu-toggle');
+    await page.click('#app-menu [data-report-here]');
+    await page.waitForFunction(() => !/Finding/.test(document.getElementById('report-where').textContent));
+    expect(await page.evaluate(() => document.getElementById('report-dialog').contains(document.activeElement)), 'report', 'focus moves into the report dialog');
+    await page.check('#report-problem-blocked');
+    await axe(page, 'report dialog');
+    await page.keyboard.press('Escape');
+    expect(await page.evaluate(() => document.getElementById('report-dialog').hidden && document.activeElement.id === 'menu-toggle'),
+      'report', 'Escape closes it and focus returns to the menu button');
 
     // Settings dialog, from the menu
     await page.click('#menu-toggle');

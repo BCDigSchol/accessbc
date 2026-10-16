@@ -35,16 +35,22 @@ async function setupDirections(map) {
   routing = { module, elevation, guidance, terrain, data, graphs: { accessible }, current: null, stops: [] };
 
   addRouteLayers(map);
-  routing.pointsLoaded = loadRoutePoints(); // full copies of the point layers, for showing only those near a route
+  routing.pointsLoaded = loadRoutePoints().then(markReported); // full copies of the point layers, for showing only those near a route
   restoreOptions();
   populateBuildingSelects();
+  // The route options, in Edit trip, also in Accessibility settings (to set once), and Avoid steep slopes on the route
+  document.getElementById('set-slope').innerHTML = document.getElementById('opt-slope').innerHTML;
+  syncOptionMirrors();
   for (const id of ['opt-stairs', 'opt-indoor', 'opt-slope']) {
-    document.getElementById(id).addEventListener('change', () => {
-      saveOptions();
-      if (id === 'opt-stairs') populateBuildingSelects();
-      updateRoute(map);
-    });
+    document.getElementById(id).addEventListener('change', (e) => setRouteOption(id, e.target.type === 'checkbox' ? e.target.checked : e.target.value));
   }
+  document.getElementById('set-avoidStairs').addEventListener('change', (e) => setRouteOption('opt-stairs', e.target.checked));
+  document.getElementById('set-slope').addEventListener('change', (e) => setRouteOption('opt-slope', e.target.value));
+  document.addEventListener('click', async (e) => {
+    if (e.target.id !== 'slope-toggle') return;
+    await setRouteOption('opt-slope', document.getElementById('opt-slope').value ? '' : SLOPE_LIMIT_DEFAULT);
+    document.getElementById('slope-toggle')?.focus(); // the route card is redrawn
+  });
 
   const from = document.getElementById('route-from');
   const to = document.getElementById('route-to');
@@ -181,6 +187,45 @@ function saveTripToUrl() {
   if (url !== location.search) history.replaceState(null, '', url);
 }
 
+// "Share this trip": a link to the destination and stops, and the start if it's a building. Never your location:
+// a link without a start begins from the location of whoever opens it.
+function shareTripUrl() {
+  const from = document.getElementById('route-from').value, to = document.getElementById('route-to').value;
+  const params = new URLSearchParams();
+  if (from && ![MY_LOCATION, HERE].includes(from)) params.set('from', from);
+  for (const stop of routing.stops) if (stop.building || stop.lonlat) params.append('stop', stop.building || placeParam(stop));
+  if (to === PLACE && routing.place) params.set('to', placeParam(routing.place));
+  else if (to && to !== MY_LOCATION) params.set('to', to);
+  return `${location.origin}${location.pathname}?${params}`;
+}
+
+async function shareTrip(button) {
+  if (!routing?.current) return;
+  const url = shareTripUrl();
+  const title = `Accessible route to ${routing.current.to}`;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text: `${title}, on Access BC`, url });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // closed the share sheet
+    }
+  }
+  const label = button.textContent;
+  try {
+    await navigator.clipboard.writeText(url);
+    button.textContent = 'Link copied';
+    announce('Link to this trip copied. Paste it into a message or email.');
+    setTimeout(() => { button.textContent = label; }, 4000);
+  } catch {
+    window.prompt('Copy this link to the trip:', url);
+  }
+}
+document.addEventListener('click', (e) => {
+  const button = e.target.closest('.share-trip');
+  if (button) shareTrip(button);
+});
+
 // Restores a trip from the address. Returns whether there was one. Unknown buildings are ignored.
 async function restoreTripFromUrl(map) {
   const params = new URLSearchParams(location.search);
@@ -236,11 +281,13 @@ function routeOptions() {
   };
 }
 
-// Options are remembered per browser; nothing breaks if storage is unavailable.
+// Options are remembered per browser; nothing breaks if storage is unavailable. Version 2: a 1:12 slope limit
+// became the default (accessibility first), after no limit.
+const OPTIONS_VERSION = 2;
 function saveOptions() {
   try {
     const { stairs, indoor } = routeOptions();
-    localStorage.setItem(OPTIONS_KEY, JSON.stringify({ stairs, indoor, slope: document.getElementById('opt-slope').value }));
+    localStorage.setItem(OPTIONS_KEY, JSON.stringify({ version: OPTIONS_VERSION, stairs, indoor, slope: document.getElementById('opt-slope').value }));
   } catch { /* storage unavailable */ }
 }
 function restoreOptions() {
@@ -249,8 +296,31 @@ function restoreOptions() {
     if (!saved) return;
     document.getElementById('opt-stairs').checked = !saved.stairs;
     document.getElementById('opt-indoor').value = saved.indoor || 'auto';
-    document.getElementById('opt-slope').value = saved.slope || '';
+    // Options saved before version 2 had no slope limit by default: those get the new default (1:12) once
+    if ((saved.version || 1) >= 2) document.getElementById('opt-slope').value = saved.slope || '';
   } catch { /* storage unavailable */ }
+}
+
+// Change a route option from any of its controls: remember it, keep the other controls in step, and find the
+// route again (partway through a walk, from where you are, carrying on with walking directions).
+const SLOPE_LIMIT_DEFAULT = '0.08333'; // Avoid steep slopes: 1:12, the steepest an accessible ramp may be
+async function setRouteOption(id, value) {
+  const control = document.getElementById(id);
+  if (control.type === 'checkbox') control.checked = value;
+  else control.value = value;
+  saveOptions();
+  syncOptionMirrors();
+  if (id === 'opt-stairs') populateBuildingSelects();
+  if (guide.active && routing.current) {
+    prepareRerouteFromHere();
+    Object.assign(routing.autoStart, { intro: 'New route, with your new route options.', keepFocus: true });
+  }
+  await updateRoute(window.map);
+}
+
+function syncOptionMirrors() {
+  document.getElementById('set-avoidStairs').checked = document.getElementById('opt-stairs').checked;
+  document.getElementById('set-slope').value = document.getElementById('opt-slope').value;
 }
 
 // The graph for the current options: accessible paths only, or with footpaths and stairs (built when first needed).
@@ -261,16 +331,19 @@ function currentGraph() {
   return graphs.withStairs;
 }
 
-// Edge costs for the options: forbid or discount indoor edges, and forbid edges steeper than the limit.
+// Edge costs for the options: forbid or discount indoor edges, and forbid edges steeper than the limit. Entrances
+// and buildings reported not working (reports.js) cost much more, so they're used only when there's no other way.
 function edgeCost(graph, options) {
   const preferIndoor = 0.5; // an indoor metre counts as half a metre when indoor routes are preferred
+  const broken = brokenOnGraph(graph).edges;
   return (e) => {
+    let cost = e.length;
     if (e.type === 'Interior') {
       if (options.indoor === 'avoid') return Infinity;
-      if (options.indoor === 'prefer') return e.length * preferIndoor;
+      if (options.indoor === 'prefer') cost = e.length * preferIndoor;
     }
     if (Number.isFinite(options.maxGrade) && e.seg >= 0 && graph.grades[e.seg] > options.maxGrade) return Infinity;
-    return e.length;
+    return broken.has(e) ? cost + BROKEN_PENALTY_M : cost;
   };
 }
 
@@ -571,7 +644,7 @@ async function updateRoute(map) {
   let route = findRoute(edgeCost(graph, options));
   let unmet = '';
   if (!route && (options.indoor === 'avoid' || Number.isFinite(options.maxGrade))) {
-    route = findRoute();
+    route = findRoute(edgeCost(graph, { ...options, indoor: 'auto', maxGrade: Infinity }));
     if (route) {
       const limits = [
         options.indoor === 'avoid' && 'avoids indoor routes',
@@ -616,11 +689,20 @@ async function updateRoute(map) {
   const stopsSaid = stops.length ? `, with ${stops.length === 1 ? 'a stop' : `${stops.length} stops`}` : '';
   // A gentle walking pace (about 1.2 m/s); wheelchair and cane users vary, so it's only a guide
   const minutes = Math.max(1, Math.round(description.length / 1.2 / 60));
-  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}.${routing.autoStart ? '' : ' Press Start to begin.'}`;
+  const broken = brokenRouteNotes(graph, route, [fromIsBuilding && fromValue, !toIsPlace && toValue].filter(Boolean));
+  const slopeLimit = Number.isFinite(options.maxGrade) ? document.getElementById('opt-slope').selectedOptions[0].dataset.label : '';
+  const slopeSaid = slopeLimit && !unmet ? `, nothing steeper than ${slopeLimit}` : '';
+  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${broken.text ? ` ${broken.text}` : ''}${routing.autoStart ? '' : ' Press Start to begin.'}`;
   const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
+    ${toIsPlace && isBluelightTrip() ? emergencyCallLinks() : ''}
     ${unmet}
+    ${broken.html}
     <p class="route-summary"><strong>About ${minutes} min</strong> · ${feet(description.length)}${indoor}${stairs ? '' : ' · <span class="badge">Step-free</span>'}</p>
+    <div class="quick-option">
+      <button type="button" id="slope-toggle" class="option-toggle" aria-pressed="${!!slopeLimit}" aria-describedby="slope-toggle-note">Avoid steep slopes</button>
+      <span id="slope-toggle-note" class="route-note">${slopeLimit ? `On: nothing steeper than ${slopeLimit}` : 'Off: the route may have steep parts'}</span>
+    </div>
     ${startNote ? `<p class="route-note">${startNote.trim()}</p>` : ''}
     ${stopNote(stops)}
     ${stairsNote}
@@ -629,6 +711,7 @@ async function updateRoute(map) {
     <p class="live-warning" role="note"><strong>Still in development:</strong> don’t rely on live directions as an assistive device yet. Use your usual mobility skills, and take care.</p>
     <div class="route-secondary">
       <button type="button" id="guidance-start">Preview the steps one by one</button>
+      ${toMe ? '' : '<button type="button" class="share-trip">Share this trip</button>'}
       ${!toIsPlace ? `<button type="button" data-building-info="${escapeHtml(toValue)}">About ${escapeHtml(toValue)}</button>` : ''}
     </div>
     <details class="route-options route-steps-details">

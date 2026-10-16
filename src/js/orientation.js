@@ -189,7 +189,7 @@ function buildingOf(feature) {
   return near.d <= 5 ? (near.name || '').trim() : '';
 }
 
-const working = (feature) => !feature.properties.Status || feature.properties.Status === 'Working';
+const working = (feature) => !isReportedBroken(feature);
 
 function shuttleDetails(p) {
   const routes = [['Express', 'Express'], ['All_Stop', 'All Stop'], ['Commonwealth', 'Commonwealth'], ['Newton', 'Newton']]
@@ -219,7 +219,7 @@ function thingsAround(lonlat, { skipBuilding = null } = {}) {
   const elevator = near(points.elevators?.features).find((x) => buildingOf(x.f) !== skipBuilding);
   if (elevator) add(elevator, `Elevator${buildingOf(elevator.f) ? ` in ${buildingOf(elevator.f)}` : ''}${working(elevator.f) ? '' : ' (reported not working)'}`);
   const phone = near(points.bluelights?.features)[0];
-  if (phone) add(phone, 'Blue-light emergency phone');
+  if (phone) add(phone, `Blue-light emergency phone${working(phone.f) ? '' : ' (reported not working)'}`);
   const shuttle = near(points.shuttlestops?.features)[0];
   if (shuttle) {
     const details = shuttleDetails(shuttle.f.properties);

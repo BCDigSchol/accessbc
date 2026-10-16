@@ -17,16 +17,18 @@ function addPopupHandlers(map) {
             let popupContent = '';
 
             // Customize popup content based on the layer
+            // Elevators, entrances and blue-light phones: what it is, whether it's reported not working, and
+            // Report a problem (reports.js)
+            const source = { bluelight: 'bluelights', elevators: 'elevators', entrances: 'entrances' }[layer];
+            if (source) {
+                const name = featureName(source, feature);
+                const id = feature.properties[REPORTABLE[source]];
+                popupContent = `<h2>${escapeText(name)}</h2>
+                  ${isReportedBroken(feature) ? '<p><strong>Reported not working.</strong></p>' : ''}
+                  ${source === 'bluelights' ? `${emergencyCallLinks()}<button type="button" data-bluelight-directions="${feature.geometry.coordinates.join(',')}" data-label="${escapeText(name.replace('Blue-light emergency phone', 'Blue-light phone'))}">Directions here</button>` : ''}
+                  <button type="button" data-report-layer="${source}" data-report-id="${escapeText(String(id))}">Report a problem</button>`;
+            }
             switch (layer) {
-                case 'bluelight':
-                    popupContent = `<h2>Bluelight</h2><button onclick="window.location.href='https://app.onupkeep.com/#/login/setup-sso?companyId=BostonCollege'">Report issue</button>`;
-                    break;
-                case 'elevators':
-                    popupContent = `<h2>Elevator: ${feature.properties.Building}</h2><button onclick="window.location.href='https://app.onupkeep.com/#/login/setup-sso?companyId=BostonCollege'">Report issue</button>`;
-                    break;
-                case 'entrances':
-                    popupContent = `<h2>Entrance: ${feature.properties.Building}</h2><button onclick="window.location.href='https://app.onupkeep.com/#/login/setup-sso?companyId=BostonCollege'">Report issue</button>`;
-                    break;
                 case 'shuttlestop':
                     let listItems = '';
                     if (feature.properties.Express === 'Yes') {
@@ -41,7 +43,7 @@ function addPopupHandlers(map) {
                     popupContent = `<h2>Shuttle Routes:</h2><p>${listItems}</p><button onclick="window.location.href='https://bostoncollege.transloc.com/routes'">Live Shuttle Tracker</button>`;
                     break;
                 default:
-                    popupContent = `<p>${JSON.stringify(feature.properties)}</p>`;
+                    if (!popupContent) popupContent = `<p>${escapeText(JSON.stringify(feature.properties))}</p>`;
             }
             // Set popup on the selected feature
             const popup = new maplibregl.Popup({ offset: [0, -15] })
@@ -88,6 +90,7 @@ function openBuildingInfo(properties) {
     ${descriptionHtml}
     ${typeof buildingSurroundingsHtml === 'function' ? buildingSurroundingsHtml(buildingName) : ''}
     ${directionsHtml}
+    <p><button type="button" class="report-link" data-report-building="${escapeText(buildingName)}">Report a problem with this building</button></p>
   `;
   const popup = document.getElementById('building-popup');
   if (!popup.classList.contains('visible')) buildingInfoReturnFocus = document.activeElement;
