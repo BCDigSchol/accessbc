@@ -119,6 +119,8 @@ async function startGuidance(map, { follow = false, step = 0, intro = '', keepFo
   setWalkMore(false);
   document.getElementById('walk-where').innerHTML = '';
   guidanceStatus('');
+  // On the way to a blue-light phone: the numbers to call stay in view
+  document.getElementById('walk-emergency').hidden = !(current.toIsPlace && routing.place?.emergency);
   syncAudioButton();
   syncBigButton();
   setRouteDimmed(map, true);

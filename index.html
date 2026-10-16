@@ -21,6 +21,7 @@
 <script src="src/js/guidance.js"></script>
 <script src="src/js/nearby.js"></script>
 <script src="src/js/orientation.js"></script>
+<script src="src/js/emergency.js"></script>
 </head>
 <body>
 
@@ -87,6 +88,7 @@
     <div class="panel-header">
       <button type="button" id="menu-toggle" class="icon-button" aria-label="Menu" aria-expanded="false" aria-controls="app-menu">☰</button>
       <h1 class="main-title">Access BC</h1>
+      <button type="button" class="emergency-button" aria-label="Blue light: walking directions to the nearest emergency phone"><span class="emergency-dot" aria-hidden="true"></span>Blue light</button>
     </div>
     <div class="where-to" role="search">
       <label for="where-to" class="visually-hidden">Where to? Search for a building, or something like a restroom</label>
@@ -218,6 +220,8 @@
             <button type="button" id="walk-more" aria-expanded="false" aria-controls="walk-more-menu">More</button>
             <button type="button" id="guidance-exit" class="walk-end">End</button>
           </div>
+          <button type="button" class="emergency-button walk-emergency-button" aria-label="Blue light: walking directions to the nearest emergency phone"><span class="emergency-dot" aria-hidden="true"></span>Blue light</button>
+          <p id="walk-emergency" class="emergency-call" hidden><a href="tel:+16175524444">Call BC Police: 617-552-4444</a> <a href="tel:911">Call 911</a></p>
           <div id="walk-more-menu" class="walk-more" hidden>
             <button type="button" class="where-am-i">Where am I?</button>
             <button type="button" id="guidance-orient">Face the right way</button>
@@ -233,6 +237,11 @@
     </section>
   </div>
 </aside>
+
+<div id="emergency-message" class="emergency-message" role="alert" tabindex="-1" hidden>
+  <button type="button" class="close" id="emergency-message-close" aria-label="Close message">×</button>
+  <div id="emergency-message-text"></div>
+</div>
 
 <div id="live-notice" class="live-notice" role="alertdialog" aria-modal="true" aria-labelledby="live-notice-title" aria-describedby="live-notice-text" hidden>
   <h2 id="live-notice-title">Live directions are still being developed</h2>

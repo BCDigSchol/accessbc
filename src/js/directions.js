@@ -616,7 +616,7 @@ async function updateRoute(map) {
   const stopsSaid = stops.length ? `, with ${stops.length === 1 ? 'a stop' : `${stops.length} stops`}` : '';
   // A gentle walking pace (about 1.2 m/s); wheelchair and cane users vary, so it's only a guide
   const minutes = Math.max(1, Math.round(description.length / 1.2 / 60));
-  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}. Press Start to begin.`;
+  const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${feet(description.length)}${stairs ? ', using stairs' : ''}${stopsSaid}.${routing.autoStart ? '' : ' Press Start to begin.'}`;
   const speaks = 'speechSynthesis' in window && !settings.screenReader;
   showResult(`
     ${unmet}

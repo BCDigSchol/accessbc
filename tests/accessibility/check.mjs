@@ -160,6 +160,14 @@ async function main() {
     expect(await page.evaluate(() => !document.getElementById('legend').hidden && document.activeElement.classList.contains('legend-close')), 'map layers', 'Layers opens the key, focus on its Close button');
     await axe(page, 'map layers');
     await page.keyboard.press('Escape');
+
+    // Blue light: straight into walking directions to the nearest emergency phone, with the numbers to call
+    await page.click('.panel-top .emergency-button');
+    await page.waitForFunction(() => currentView() === 'walk' && routing.place?.emergency);
+    expect(await page.evaluate(() => document.activeElement.id === 'guidance-repeat' && !document.getElementById('walk-emergency').hidden),
+      'blue light', 'Blue light starts directions to the nearest phone, with BC Police and 911 in view');
+    await axe(page, 'blue light');
+    await page.click('#guidance-exit');
     await page.context().close();
 
     console.log('Dark mode, bigger symbols, large step view');
@@ -177,6 +185,14 @@ async function main() {
     await axe(page, 'phone: route');
     await page.click('#guidance-start-audio');
     await axe(page, 'phone: walk');
+    // Away from campus, Blue light can't find a phone: it says so, and gives the numbers to call
+    await page.context().setGeolocation({ longitude: -71.06, latitude: 42.36 });
+    await page.evaluate(() => { guide.lastFix = null; });
+    await page.click('.walk-emergency-button');
+    await page.waitForFunction(() => /away from campus/.test(document.getElementById('emergency-message-text').textContent));
+    expect(await page.evaluate(() => document.activeElement.id === 'emergency-message' && !!document.querySelector('#emergency-message a[href^="tel:"]')),
+      'phone: blue light', 'away from campus, Blue light explains and offers the numbers to call');
+    await axe(page, 'phone: blue light message');
     await page.context().close();
 
     console.log('Zoomed to 400% (320 x 256)');
