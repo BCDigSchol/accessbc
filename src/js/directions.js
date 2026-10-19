@@ -116,6 +116,7 @@ async function setupDirections(map) {
   document.getElementById('route-clear').addEventListener('click', () => {
     from.value = '';
     to.value = '';
+    setTripTime(null); // back to Leave now, as with Back
     routing.fromChosen = false;
     startFromMyLocation(); // back to the default start
     routing.stops = [];
@@ -176,6 +177,7 @@ async function setupDirections(map) {
 
   // A trip in the page address (after a reload, or from a shared link) comes back; otherwise start from your location
   if (!(await restoreTripFromUrl(map))) await startFromMyLocation();
+  prepareCitySidewalksSoon();
 }
 
 // ---- The trip in the page address -------------------------------------------------------------------
@@ -460,15 +462,34 @@ async function cityGraph() {
   const stairs = routeOptions().stairs;
   const key = stairs ? 'cityWithStairs' : 'city';
   if (graphs[key]) return graphs[key];
-  try {
-    data.sidewalks ||= (await (await fetch(new URL('src/geojson/sidewalks.geojson', document.baseURI))).json()).features;
-  } catch {
-    return null;
-  }
-  const sidewalks = stairs ? data.sidewalks
-    : data.sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
-  graphs[key] = module.buildGraph({ ...data, footpaths: stairs ? data.footpaths : [], sidewalks });
-  return graphs[key];
+  // Once at a time: a route asked for while the background preparation is under way waits for it
+  graphs.pending ||= {};
+  graphs.pending[key] ||= (async () => {
+    try {
+      data.sidewalks ||= (await (await fetch(new URL('src/geojson/sidewalks.geojson', document.baseURI))).json()).features;
+    } catch {
+      return null;
+    }
+    const sidewalks = stairs ? data.sidewalks
+      : data.sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
+    graphs[key] = module.buildGraph({ ...data, footpaths: stairs ? data.footpaths : [], sidewalks });
+    return graphs[key];
+  })();
+  const graph = await graphs.pending[key];
+  if (!graph) delete graphs.pending[key]; // try again next time
+  return graph;
+}
+
+// The first trip off campus would otherwise wait a few seconds on a phone while the city sidewalks are prepared
+// (most of it measuring their slopes): do it in the background once the page has settled, when the browser is idle.
+// Not with Data Saver on (it downloads the sidewalks); the same work is done when a route first needs it instead.
+function prepareCitySidewalksSoon() {
+  if (navigator.connection?.saveData) return;
+  const idle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1000));
+  setTimeout(() => idle(async () => {
+    const city = await cityGraph();
+    if (city && Number.isFinite(routeOptions().maxGrade)) await ensureGrades(city);
+  }, { timeout: 10000 }), 4000);
 }
 
 // When the trip starts: now, a time chosen under When in Edit trip, or, to arrive by a time, that time less the trip
@@ -539,6 +560,14 @@ async function shuttleGraph(base, { anytime = false } = {}) {
 
 // Avoiding unconfirmed curb ramps: a crossing without them is used only if the way round is this much longer
 const UNCONFIRMED_CURB_PENALTY_M = 1500;
+
+// Whether the stations a train ride uses are wheelchair accessible, from the MBTA's station data, for the route card
+function trainAccess(ride) {
+  const access = [ride.from, ride.to].map((name) => stationFeatures().find((f) => f.properties.Name === name)?.properties.Wheelchair);
+  if (access.every((a) => a === 'yes')) return ' Both stations are wheelchair accessible (MBTA).';
+  const not = [ride.from, ride.to].filter((_, i) => access[i] === 'no');
+  return not.length ? ` <strong>${not.map(escapeHtml).join(' and ')} ${not.length === 1 ? 'isn’t' : 'aren’t'} wheelchair accessible</strong> (MBTA).` : ' Whether both stations are wheelchair accessible isn’t known.';
+}
 
 // How much more a metre of city sidewalk costs than one of BC's checked paths, per segment: a little more on
 // sidewalks, more along streets whose sidewalk isn't drawn, much more on campus (where BC's paths are better).
@@ -934,30 +963,30 @@ async function updateRoute(map) {
     }
     return askForStart(`<p>You're ${feet(d)} from the nearest mapped path. Choose a building instead.</p>`);
   }
-  // Arriving by a time: leave that long before it, walking (refined below once the route, perhaps by shuttle, is known)
-  if (routing.timeMode === 'arrive' && p.route) routing.departAt = new Date(routing.chosenTime.getTime() - (p.route.length / walkSpeed()) * 1000);
-  // A BC shuttle ride: when one is running now and the trip is clearly quicker with it. When the shuttle that would
-  // help isn't running, say when it does.
-  let walkOnly = null, shuttleNote = '';
-  if (options.shuttle && (!p.route || p.route.length > SHUTTLE_MIN_WALK_M)) {
-    // A shuttle route counts only if it meets the slope and indoor settings at least as well as the walking route
-    const usesShuttle = (q) => q?.route && (!q.unmet || p.unmet || !p.route) && q.route.nodes.some((n) => n >= q.graph.base.nodes.length);
-    const walkCost = p.route ? p.route.cost : Infinity;
-    const running = await shuttleGraph(p.graph);
-    if (request !== routeRequest) return;
+  // A BC shuttle or train ride: when one is running and the trip is clearly quicker with it. When the shuttle that
+  // would help isn't running, say when it does. Returns {p, walkOnly, shuttleNote}, or null if superseded.
+  const walking = p;
+  const withRides = async () => {
+    let q = walking, walkOnly = null, shuttleNote = '';
+    if (!options.shuttle || (walking.route && walking.route.length <= SHUTTLE_MIN_WALK_M)) return { p: q, walkOnly, shuttleNote };
+    // A ride counts only if it meets the slope and indoor settings at least as well as the walking route
+    const usesShuttle = (r) => r?.route && (!r.unmet || walking.unmet || !walking.route) && r.route.nodes.some((n) => n >= r.graph.base.nodes.length);
+    const walkCost = walking.route ? walking.route.cost : Infinity;
+    const running = await shuttleGraph(walking.graph);
+    if (request !== routeRequest) return null;
     const t = running && await plan(running);
-    if (request !== routeRequest) return;
+    if (request !== routeRequest) return null;
     if (usesShuttle(t) && t.route.cost < walkCost * SHUTTLE_MUST_SAVE) {
-      if (p.route) walkOnly = p.route.length;
-      p = t;
+      if (walking.route) walkOnly = walking.route.length;
+      q = t;
     } else if (!routing.autoStart) { // the note isn't shown mid-walk
-      const anytime = await shuttleGraph(p.graph, { anytime: true });
+      const anytime = await shuttleGraph(walking.graph, { anytime: true });
       const a = anytime && await plan(anytime);
-      if (request !== routeRequest) return;
+      if (request !== routeRequest) return null;
       if (usesShuttle(a) && a.route.cost < walkCost * SHUTTLE_MUST_SAVE) {
         // The next shuttle between the same two stops, on any route
         const ride = module.describeRoute(a.graph, a.route).steps.find((st) => st.shuttle)?.shuttle;
-        const next = ride && shuttleData.routes.filter((r) => routing.transit.serves(r, ride.from, ride.to))
+        const next = ride && (shuttleData?.routes || []).filter((r) => routing.transit.serves(r, ride.from, ride.to))
           .map((r) => ({ r, next: routing.transit.nextService(r, tripTime()) })).filter((x) => x.next)
           .sort((x, y) => x.next.minutes - y.next.minutes)[0];
         if (next) {
@@ -965,7 +994,25 @@ async function updateRoute(map) {
         }
       }
     }
+    return { p: q, walkOnly, shuttleNote };
+  };
+  // How long a planned trip takes (walking at your pace, plus rides and their waits), in ms
+  const tripMs = (q) => { const d = module.describeRoute(q.graph, q.route); return (d.walkLength / walkSpeed() + d.shuttleSeconds) * 1000; };
+  // Arriving by a time: choose rides for leaving the walking time before it; then, as a ride makes the trip shorter
+  // (so you leave later), choose again for that later time, so a shuttle that has stopped by then isn't offered
+  if (routing.timeMode === 'arrive' && walking.route) routing.departAt = new Date(routing.chosenTime.getTime() - tripMs(walking));
+  let choice = await withRides();
+  if (!choice) return;
+  if (routing.timeMode === 'arrive' && choice.p.route && choice.p !== walking) {
+    const later = new Date(routing.chosenTime.getTime() - tripMs(choice.p));
+    if (Math.abs(later - routing.departAt) > 60000) {
+      routing.departAt = later;
+      choice = await withRides();
+      if (!choice) return;
+    }
   }
+  p = choice.p;
+  const { walkOnly, shuttleNote } = choice;
   const { graph, route, unmet, failedStop, sources, targets, startNote, detour } = p;
   if (!route) {
     const startNode = graph.nodes[sources[0]];
@@ -1017,7 +1064,7 @@ async function updateRoute(map) {
     ? `To arrive by ${escapeHtml(tripTimeWords(routing.chosenTime))}, leave by <strong>${escapeHtml(tripTimeWords(routing.departAt).replace(/^.*?, .*?, /, ''))}</strong>.`
     : routing.timeMode === 'later' ? `Leaving ${escapeHtml(tripTimeWords(routing.departAt))}.` : '';
   const shuttleInfo = (shuttleRide ? `<p class="route-warning">This route includes a ride on the <strong>${escapeHtml(shuttleRide.route)}</strong> shuttle. Times are estimates from BC’s published schedule, including an average wait. Whether the shuttle has a wheelchair lift or ramp isn’t confirmed: check with BC Transportation before relying on it. <a href="https://bostoncollege.transloc.com/" target="_blank" rel="noopener">Live shuttle tracker</a></p>` : '')
-    + (trainRide ? `<p class="route-note">This route includes a ride on the <strong>${escapeHtml(trainRide.route)}</strong>${trainRide.toward ? ` toward ${escapeHtml(trainRide.toward)}` : ''}, from ${escapeHtml(trainRide.from)} to ${escapeHtml(trainRide.to)}. Times are estimates from the MBTA’s schedule (trains about every ${trainRide.every} minutes), including an average wait; live times for the station are below.${options.stairs ? '' : ' Both stations are wheelchair accessible (MBTA).'}</p>` : '');
+    + (trainRide ? `<p class="route-note">This route includes a ride on the <strong>${escapeHtml(trainRide.route)}</strong>${trainRide.toward ? ` toward ${escapeHtml(trainRide.toward)}` : ''}, from ${escapeHtml(trainRide.from)} to ${escapeHtml(trainRide.to)}. Times are estimates from the MBTA’s schedule (trains about every ${trainRide.every} minutes), including an average wait; live times for the station are below.${trainAccess(trainRide)}</p>` : '');
   const walkOnlyNote = walkOnly ? `<p class="route-note">Walking all the way instead: about ${walkMinutes(walkOnly)} min (${feet(walkOnly)}). To walk, turn off <strong>Use BC shuttles and the Green Line</strong> in Edit trip.</p>` : '';
   const broken = brokenRouteNotes(graph, route, [fromIsBuilding && fromValue, !toIsPlace && toValue].filter(Boolean));
   // City sidewalks: how much of the route, and its street crossings, with curb ramps confirmed or not
@@ -1079,7 +1126,7 @@ async function updateRoute(map) {
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
   rememberDestination();
   syncSaveButton();
-  showStationNotes(); // to or from a T station: its accessibility and live MBTA alerts
+  showStationNotes(description); // to or from a T station, or by train: its accessibility and live MBTA alerts
   // Screen readers hear the summary (showResult announces it); nothing is read aloud until you Start
   if (routing.autoStart) {
     const { follow, step, intro, keepFocus, restored } = routing.autoStart;
@@ -1106,12 +1153,16 @@ function routeCrossings(graph, route) {
 // Slope figures for every segment of a graph, measured the first time a slope limit is used.
 async function ensureGrades(graph) {
   if (graph.grades) return;
-  try {
-    graph.grades = await routing.elevation.segmentGrades(routing.terrain, graph);
-  } catch (err) {
-    console.warn('Slope estimates unavailable:', err);
-    graph.grades = new Float32Array(graph.segments.length).fill(NaN);
-  }
+  // Once per graph: callers arriving while it's being measured (the background preparation, a route) wait for it
+  graph.gradesPending ||= (async () => {
+    try {
+      graph.grades = await routing.elevation.segmentGrades(routing.terrain, graph);
+    } catch (err) {
+      console.warn('Slope estimates unavailable:', err);
+      graph.grades = new Float32Array(graph.segments.length).fill(NaN);
+    }
+  })();
+  await graph.gradesPending;
 }
 
 function stopNote(stops) {

@@ -131,13 +131,12 @@ async function fillStationAlerts(element) {
 }
 
 // On a route to or from a station: its accessibility and live alerts, under the route summary
-async function showStationNotes() {
+async function showStationNotes(description) {
   const box = document.getElementById('station-notes');
   if (!box) return;
   // The trip's start and end, if they're stations, and any station a train is boarded or left at on the way
   const byName = (name) => stationFeatures().find((f) => f.properties.Name === name);
-  const trainStations = routing.current ? routing.module.describeRoute(routing.current.graph, routing.current.route).steps
-    .filter((st) => st.shuttle?.mode === 'train').flatMap((st) => [byName(st.shuttle.from), byName(st.shuttle.to)]) : [];
+  const trainStations = (description?.steps || []).filter((st) => st.shuttle?.mode === 'train').flatMap((st) => [byName(st.shuttle.from), byName(st.shuttle.to)]);
   const ends = [...new Set([
     document.getElementById('route-from').value === HERE && routing.fromPlace && stationByLabel(routing.fromPlace.label),
     ...trainStations,

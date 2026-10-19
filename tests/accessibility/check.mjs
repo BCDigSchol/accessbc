@@ -8,21 +8,14 @@
 //
 // Usage (from this folder): npm ci && npx playwright install chromium && npm run check
 // Exits non-zero if axe finds serious or critical problems, or a behaviour check fails.
-import { spawn } from 'node:child_process';
-import path from 'node:path';
-import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import { startServer, launchBrowser, seedStorage, appReady } from './harness.mjs';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const PORT = 8799;
 const BASE = `http://localhost:${PORT}/`;
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 const FAIL_ON = new Set(['serious', 'critical']);
 const ON_CAMPUS = { longitude: -71.17, latitude: 42.3355 }; // near Gasson Hall
-// CI machines have no graphics card, so the map is drawn in software. Tilting it into 3D (buildings and terrain)
-// in step-by-step mode is then slow enough to freeze the page, so these checks keep the map flat and still.
-// That doesn't change anything the checks look at: the panels, dialogs, and announcements.
-const LIGHT_MAP = { guidance3D: false, headingUp: false, reduceMotion: true };
 
 const problems = [];   // failures: axe serious/critical, and failed behaviour checks
 const notes = [];      // axe minor/moderate, reported but not failing
@@ -42,14 +35,10 @@ function expect(ok, state, message) {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${state}: ${message}`);
 }
 
-const appReady = (page) => page.waitForFunction(() => typeof routing !== 'undefined' && routing && typeof routePoints !== 'undefined' && routePoints, null, { timeout: 60000 });
 
 async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {}, noticeSeen = true, time = null } = {}) {
   const context = await browser.newContext({ viewport, geolocation: ON_CAMPUS, permissions: ['geolocation'] });
-  await context.addInitScript(({ s, seen }) => {
-    localStorage.setItem('accessbc.settings', JSON.stringify(s));
-    if (seen) localStorage.setItem('accessbc.liveDirectionsNotice', 'understood');
-  }, { s: { ...LIGHT_MAP, ...settings }, seen: noticeSeen });
+  await seedStorage(context, settings, { noticeSeen });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
   if (time) { await page.clock.install({ time }); await page.clock.resume(); } // shuttles run by the clock
@@ -69,10 +58,8 @@ async function findRoute(page, from = 'Gasson Hall', to = 'McElroy Commons') {
 }
 
 async function main() {
-  const server = spawn('python3', ['scripts/serve.py', String(PORT)], { cwd: ROOT, stdio: 'ignore' });
-  await new Promise((r) => setTimeout(r, 800));
-  // Software WebGL, so the map renders on machines without a GPU (like CI)
-  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const stopServer = await startServer(PORT);
+  const browser = await launchBrowser();
   try {
     console.log('Desktop');
     let page = await openApp(browser, { noticeSeen: false });
@@ -267,7 +254,7 @@ async function main() {
     }
   } finally {
     await browser.close();
-    server.kill();
+    stopServer();
   }
 
   if (notes.length) console.log(`\nMinor and moderate issues (not failing the check):\n${notes.map((n) => `  ${n}`).join('\n')}`);

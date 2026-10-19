@@ -4,7 +4,9 @@
   "description": "Automated accessibility checks for Access BC (axe-core in a real browser). Used by CI only; the site has no build step or dependencies.",
   "type": "module",
   "scripts": {
-    "check": "node check.mjs"
+    "check": "node check.mjs",
+    "walks": "node walks.mjs",
+    "perf": "node perf.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

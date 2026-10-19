@@ -108,6 +108,12 @@ On computers it's a column down the left; on phones a search bar at the top and 
 wording, shuttle schedules and rides, and slopes: `node --test tests/routing/*.test.mjs` (no packages needed). They
 run in CI too ([.github/workflows/routing-tests.yml](.github/workflows/routing-tests.yml)).
 
+**Simulated walks** ([tests/accessibility/walks.mjs](tests/accessibility/walks.mjs)) test live walking directions
+on the move, feeding GPS fixes along routes: a normal walk, a wrong turn (re-routing), poor signal, and a shuttle ride.
+`cd tests/accessibility && npm run walks`, or `npm run walks -- shuttle` for one. **Timings at phone speed**
+(`npm run perf`, with the preview server on port 8765) measure the first load, routes, a re-route and Find nearby
+with the processor slowed 6x.
+
 **Testing.** Automated accessibility checks run on every push to `dev` and every pull request into `main`
 ([.github/workflows/accessibility.yml](.github/workflows/accessibility.yml); run them locally with
 `cd tests/accessibility && npm ci && npx playwright install chromium && npm run check`). Testing with

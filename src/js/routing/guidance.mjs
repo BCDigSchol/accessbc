@@ -161,7 +161,8 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
   // Crossings right after one another (a crossing, a few steps, the next crossing) are one step
   for (let k = 0; k + 2 < kept.length; k++) {
     const cross = kept[k], gap = kept[k + 1], next = kept[k + 2];
-    if (cross.kind === 'cross' && gap.afterCrossing && next.kind === 'cross' && next.s - gap.s < CROSSINGS_JOIN_M) {
+    // Only across a plain bit of sidewalk: a turn between the crossings (at a corner) stays a step of its own
+    if (cross.kind === 'cross' && gap.afterCrossing && gap.kind === 'outdoor' && next.kind === 'cross' && next.s - gap.s < CROSSINGS_JOIN_M) {
       cross.also = [...(cross.also || []), next.crossing, ...(next.also || [])];
       kept.splice(k + 1, 2);
       k--;

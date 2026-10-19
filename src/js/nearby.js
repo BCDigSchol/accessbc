@@ -76,7 +76,9 @@ async function findNearby(map) {
   let sources, startOffset = 0, fromWhat, here = null, start = null;
   if (near === 'route') {
     if (!routing.current) return nearbyMessage(out, '<p>There’s no route yet. Choose My location or a building under Near.</p>');
-    sources = routing.current.route.nodes;
+    // On the route's own walking graph (campus or city), leaving out shuttle and train ride nodes
+    graph = routing.current.graph.base || routing.current.graph;
+    sources = routing.current.route.nodes.filter((n) => n < graph.nodes.length);
     fromWhat = 'route';
   } else if (near === 'me') {
     out.innerHTML = '<p>Finding your location…</p>';

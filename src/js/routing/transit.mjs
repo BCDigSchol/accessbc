@@ -81,8 +81,8 @@ export function serviceHours(route) {
 
 // A copy of a walking graph with shuttle and train rides added, for the given routes ([{route, every}]: every in
 // minutes). The walking graph's nodes keep their indexes, and graph.base is the walking graph (for snapping
-// locations). With stepFree, a stop marked wheelchair: 'no' (a T station without step-free access) can't be got on
-// or off at, though rides still pass through it.
+// locations). With stepFree, a station whose access isn't known to be step-free (wheelchair 'no' or 'unknown') can't
+// be got on or off at, though rides still pass through it. (Shuttle stops have no wheelchair field.)
 export function addShuttles(base, routes, { stepFree = false } = {}) {
   const nodes = base.nodes.slice();
   const adjacency = base.adjacency.map((edges) => edges.slice());
@@ -103,7 +103,7 @@ export function addShuttles(base, routes, { stepFree = false } = {}) {
   };
 
   for (const { route, every } of routes) {
-    const boardable = (stop) => !(stepFree && stop.wheelchair === 'no');
+    const boardable = (stop) => !(stepFree && stop.wheelchair && stop.wheelchair !== 'yes');
     const stops = route.stops.map((stop) => ({ stop, place: boardable(stop) ? placeFor(stop) : null }));
     // A ride node at every stop, so a ride can carry on through stops it can't be got on or off at
     const rideNodes = stops.map(({ stop }) => addNode(stop.lonlat));

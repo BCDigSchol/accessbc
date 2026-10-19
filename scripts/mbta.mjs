@@ -123,6 +123,16 @@ for (const [route, line] of Object.entries(BRANCHES)) {
     console.log(`  ${line} toward ${routeInfo.attributes.direction_destinations[direction]}: ${stops.map((st) => st.name).join(' → ')}, every ${every} min`);
   }
 }
+// A branch with no trains through here in the window that day (a diversion, buses replacing trains, a holiday) keeps
+// its previous data, so one unusual day doesn't take it out of routing
+const previous = fs.existsSync(TRAINS_OUT) ? JSON.parse(fs.readFileSync(TRAINS_OUT, 'utf8')).routes : [];
+for (const old of previous) {
+  if (trainRoutes.some((r) => r.id === old.id)) continue;
+  console.warn(`  ${old.name} toward ${old.toward}: no trains in today's schedule here; keeping the previous data`);
+  trainRoutes.push(old);
+}
+const expected = Object.keys(BRANCHES).length * 2;
+if (trainRoutes.length < expected) console.warn(`  Only ${trainRoutes.length} of ${expected} branch directions: check the MBTA's service changes, and run this again on a normal weekday`);
 fs.writeFileSync(TRAINS_OUT, JSON.stringify({
   source: `MBTA V3 API schedules, ${new Date().toISOString().slice(0, 10)}`,
   note: 'Approximate: the Green Line runs about 5 a.m. to 1 a.m.; frequency measured from a late-morning schedule.',
