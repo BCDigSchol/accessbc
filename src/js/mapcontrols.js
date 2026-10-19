@@ -76,12 +76,14 @@ class ThreeDControl {
 const legendData = [
     { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png', category: 'Transportation' },
     { id: 'bikerack', name: 'Bike Racks', icon: 'src/icons/bike.png', category: 'Transportation' },
+    { id: 'mbta', name: 'T Stations (Green Line)', color: '#00843D', category: 'Transportation' },
     { id: 'bluelight', name: 'Bluelights', color: '#0000ff', category: 'Campus Resources' },
     { id: 'reststop', name: 'Outdoor Seating', color: '#73AF48', category: 'Campus Resources' },
     { id: 'elevators', name: 'Elevators', color: '#94346E', category: 'Navigating Campus' },
     { id: 'entrances', name: 'Accessible Entrances', color: '#f97b72', category: 'Navigating Campus' },
     { id: 'paths', name: 'Stairs', color: '#F2B701', category: 'Navigating Campus' },
     { id: 'curbcuts', name: 'Curb Cuts', color: '#3969AC', category: 'Navigating Campus' },
+    { id: 'entrance-links', name: 'Links to Entrances (not checked)', color: '#0F8554', category: 'Navigating Campus' },
     { id: 'accessiblepaths-int', name: 'Exterior Accessible Paths', color: '#0F8554', category: 'Navigating Campus' },
     { id: 'accessiblepaths-ext', name: 'Interior Accessible Paths', color: '#5F4690', category: 'Navigating Campus' }
 ];

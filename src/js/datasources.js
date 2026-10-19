@@ -2,7 +2,7 @@ function addMapData(map) {
   return new Promise((resolve) => {
    // Load data sources from the GeoJSON files in src/geojson
     ['bikeracks', 'bluelights', 'elevators', 'entrances', 'curbcuts', 'shuttlestops',
-     'paths', 'buildings', 'accessiblepaths'].forEach(name => {
+     'paths', 'buildings', 'accessiblepaths', 'entrance-links', 'mbta-stations'].forEach(name => {
       map.addSource(name, {
           'type': 'geojson',
           'data': `src/geojson/${name}.geojson`
@@ -71,6 +71,14 @@ function addMapData(map) {
       }
     });
     
+    // Links drawn automatically to entrances that weren't connected to a path (not checked): thin and dashed
+    map.addLayer({
+      id: 'entrance-links',
+      type: 'line',
+      source: 'entrance-links',
+      paint: { 'line-color': '#0F8554', 'line-width': 2, 'line-dasharray': [1, 1.5] },
+    });
+
     map.addLayer({
       id: 'accessiblepaths-ext',
       type: 'line',
@@ -179,6 +187,19 @@ function addMapData(map) {
         }
       });
       applyMapSettings(map); // icon size follows the bigger-symbols setting
+    });
+
+    // MBTA Green Line stations: Green Line green, with a white ring; grey ring for stations that aren't accessible
+    map.addLayer({
+      id: 'mbta',
+      type: 'circle',
+      source: 'mbta-stations',
+      paint: {
+        'circle-radius': 7,
+        'circle-color': '#00843D',
+        'circle-stroke-width': 2.5,
+        'circle-stroke-color': ['case', ['==', ['get', 'Wheelchair'], 'yes'], '#ffffff', '#8a8a8a'],
+      },
     });
 
     map.addLayer({

@@ -5,8 +5,11 @@
 // Usage: node scripts/routing/sample-instructions.mjs
 import fs from 'node:fs';
 import path from 'node:path';
-import { ROOT, load, buildGraph, routeBetweenBuildings } from './lib.mjs';
+import { ROOT, load, buildGraph, routeBetweenBuildings, shortestRoute, nearestNode } from './lib.mjs';
 import { buildSteps } from '../../src/js/routing/guidance.mjs';
+import { addShuttles, shuttleCost, runningService } from '../../src/js/routing/transit.mjs';
+import { createTerrain, segmentGrades } from '../../src/js/routing/elevation.mjs';
+import { terrainTileLoader } from '../terrain.mjs';
 
 // Routes chosen to cover short and long walks, indoor stretches, and busy parts of Middle Campus.
 // Pairs that can't be routed (no accessible entrance on the network) are skipped and listed.
@@ -21,8 +24,9 @@ const PAIRS = [
   ['Lyons Hall', 'Cushing Hall'],
 ];
 
-const data = { paths: load('accessiblepaths.geojson'), entrances: load('entrances.geojson'), buildings: load('buildings.geojson'), elevators: load('elevators.geojson') };
+const data = { paths: [...load('accessiblepaths.geojson'), ...load('entrance-links.geojson')], entrances: load('entrances.geojson'), buildings: load('buildings.geojson'), elevators: load('elevators.geojson') };
 const graph = buildGraph(data);
+const readJson = (name) => JSON.parse(fs.readFileSync(path.join(ROOT, 'src/geojson', name), 'utf8'));
 const feet = (m) => `${Math.round(m * 3.28084).toLocaleString()} ft`;
 
 const sections = [], skipped = [];
@@ -31,6 +35,33 @@ for (const [from, to] of PAIRS) {
   if (!route) { skipped.push(`${from} to ${to}`); continue; }
   const steps = buildSteps(graph, route, { from, to });
   sections.push(`### ${from} to ${to} (${feet(route.length)}, ${steps.length} steps)\n\n${steps.map((s, i) => `${i + 1}. ${s.text}`).join('\n')}\n`);
+}
+
+// Off campus, by shuttle, and by train: on campus paths plus city sidewalks (as the site does when a trip needs
+// them, avoiding stairs and slopes steeper than 1:12, its defaults), on a Wednesday at 10 a.m. Boston time, when
+// the shuttles and trains are running
+const city = buildGraph({ ...data, sidewalks: load('sidewalks.geojson').filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no') });
+const when = new Date('2026-10-21T10:00:00-04:00');
+const running = [...readJson('shuttles.json').routes, ...readJson('mbta-trains.json').routes]
+  .map((route) => ({ route, service: runningService(route, when) })).filter((r) => r.service).map(({ route, service }) => ({ route, every: service.every }));
+city.grades = await segmentGrades(createTerrain(terrainTileLoader(), city.buildings), city);
+const rides = addShuttles(city, running, { stepFree: true });
+const doors = (g, name) => g.entrances.filter((e) => e.building === name).map((e) => e.node);
+const ridingCost = (e) => {
+  if (e.seg >= 0 && city.grades[e.seg] > 1 / 12) return Infinity; // the default slope limit
+  return shuttleCost(e) ?? e.length * (e.type === 'Sidewalk' || e.type === 'Crossing' ? 1.15 : 1);
+};
+const station = (name) => readJson('mbta-stations.geojson').features.find((f) => f.properties.Name === name).geometry.coordinates;
+const OFF_CAMPUS = [
+  { title: 'Gasson Hall to Kenny Cottle Library, Newton campus, walking', g: city, from: doors(city, 'Gasson Hall'), to: 'Kenny Cottle Library', cost: (e) => ridingCost(e) },
+  { title: 'Gasson Hall to Kenny Cottle Library, with the shuttle (Wednesday 10 a.m.)', g: rides, from: doors(rides, 'Gasson Hall'), to: 'Kenny Cottle Library', cost: ridingCost },
+  { title: 'Newton Centre T station to Gasson Hall, with the train (Wednesday 10 a.m.)', g: rides, fromPlace: 'Newton Centre station', from: [nearestNode(city, station('Newton Centre')).node], to: 'Gasson Hall', cost: ridingCost },
+];
+for (const trip of OFF_CAMPUS) {
+  const route = shortestRoute(trip.g, trip.from, doors(trip.g, trip.to), trip.cost);
+  if (!route) { skipped.push(trip.title); continue; }
+  const steps = buildSteps(trip.g, route, { from: trip.fromPlace || 'Gasson Hall', to: trip.to, fromBuilding: !trip.fromPlace });
+  sections.push(`### ${trip.title} (${steps.length} steps)\n\n${steps.map((st, i) => `${i + 1}. ${st.text}`).join('\n')}\n`);
 }
 
 const out = `# Sample directions for review
@@ -64,6 +95,15 @@ Examples; distances, directions, and names change with the route.
 | Where am I? | “You’re about 40 ft from Gasson Hall, at your 10 o’clock. You’re on your route. In about 35 ft: Turn left…” |
 | What’s around (Where am I?) | “Accessible entrance of Devlin Hall: about 80 ft, at your 4 o’clock.” |
 | Arrival | “Arrive at the accessible entrance of McElroy Commons. It’s on your right.” |
+| A street crossing (off campus) | “Cross Beacon Street at the traffic lights. There are curb ramps on both sides.” / “Cross Hammond Street, where there’s no marked crosswalk. Curb ramps aren’t confirmed here.” |
+| Crossings one after another | “Cross Commonwealth Avenue Service Road, then Grant Avenue at the crosswalk. There are curb ramps or level curbs at each.” |
+| Off campus, with no buildings to steer by | “Turn left and continue for 450 feet along Centre Street.” |
+| Off the route for a few readings (following location) | “Off route. Finding a new route from here.” then “New route. Step 1. …” |
+| Location very inaccurate (near tall buildings) | “Location is approximate (within 490 feet). Use Next and Back if steps don’t advance.” |
+| A step passed between two location readings (on a bus) | “Get off at Stuart and continue for 30 feet…”, said before the step you're on |
+| Taking a shuttle | “At the Main Gate Chestnut Hill stop, take the Newton Eagle Direct shuttle to Stuart (1 stop). Shuttles come about every 9 minutes.” |
+| Taking the train | “At Newton Centre station, take a Green Line D train toward Union Square to Reservoir (2 stops). Trains come about every 8 minutes.” |
+| Blue light (emergency) | “Emergency directions to the nearest blue-light phone, 40 ft away.” |
 
 Sounds and vibration: one tone for a new step (from the side of a turn, with headphones); two quick high tones
 for a turn coming up; two falling tones for leaving the route; three rising tones on arrival. On Android, two

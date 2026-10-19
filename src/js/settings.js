@@ -18,7 +18,12 @@ const SETTINGS_DEFAULTS = {
   largeSymbols: false,   // bigger map symbols and thicker paths and routes
   bigSteps: false,       // step-by-step directions fill the screen, with big text and buttons
   reduceMotion: 'auto',
+  pace: 'gentle',        // walking or wheeling pace, for time estimates and whether a shuttle is worth it
 };
+
+// Metres a second for each pace (a gentle walk is about 2.7 mph; wheelchair and cane users vary widely)
+const PACES = { slower: 0.8, gentle: 1.2, brisk: 1.4 };
+const walkSpeed = () => PACES[settings.pace] || PACES.gentle;
 
 // Saved settings carry a version, so a changed default can be applied once to settings saved before it.
 // Version 2: reading aloud became on by default (with Mute while walking), after being off by default.
@@ -93,6 +98,18 @@ for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)',
   window.matchMedia?.(query).addEventListener?.('change', applySettings);
 }
 
+// Keeps keyboard focus inside an open dialog: Tab from the last control goes to the first, Shift+Tab from the
+// first to the last. Call from the dialog's keydown handler. Only visible, enabled controls count.
+function trapFocus(container, e) {
+  if (e.key !== 'Tab') return;
+  const focusable = [...container.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && !el.hidden && el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable.at(-1);
+  if (e.shiftKey && (document.activeElement === first || !container.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (document.activeElement === last || !container.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+}
+
 // ---- Settings dialog --------------------------------------------------------------------------------
 
 // Opens the settings dialog (from the menu, or More in walk mode). Closing it returns focus to whatever opened it.
@@ -102,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   let returnFocus = null;
   const checkboxes = ['screenReader', 'readAloud', 'autoReroute', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
-  const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
+  const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion', 'pace'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
   const speech = 'speechSynthesis' in window;
@@ -147,13 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('settings-close').addEventListener('click', close);
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();
-    if (e.key === 'Tab') {
-      // keep keyboard focus inside the dialog while it's open
-      const focusable = [...dialog.querySelectorAll('button, input, select, a[href]')];
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
+    trapFocus(dialog, e);
   });
   if (!speech) document.getElementById('set-testVoice').disabled = true;
 });

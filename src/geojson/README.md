@@ -40,6 +40,16 @@ It's the main roof height, so towers and spires aren't included. 258 of 298 buil
 small garages and sheds with too few lidar points, so they're `null` (the 3D view shows them at 3 m). Re-run
 the script after adding or reshaping buildings.
 
+## Entrance links (`entrance-links.geojson`)
+
+Short links from accessible entrances that weren't connected to any path, to the nearest BC path or city sidewalk,
+drawn by [scripts/link-entrances.mjs](../../scripts/link-entrances.mjs): straight, or round the building by its
+corners, at most 60 m (90 m going round), never through a building, across stairs, or across a public street.
+`Type` is `Connector`. They haven't been checked on the ground: routes say so, prefer checked paths, and apply the
+slope limit to them; the map shows them as thin dashed lines. The ones to check are listed in
+[docs/data-collection/entrance-links-to-check.csv](../../docs/data-collection/entrance-links-to-check.csv). Re-run the
+script after adding paths or entrances: buildings that become connected no longer get a link.
+
 ## City sidewalks (`sidewalks.geojson`)
 
 City sidewalks, street crossings and footways around the campuses, from OpenStreetMap, built by
@@ -56,6 +66,20 @@ sidewalk that isn't drawn separately), or `Stairs`. Crossings carry `crossing` (
 unpaved ways, ways inside a BC campus boundary, and bridges and tunnels. None of it has been checked for
 accessibility, and the app says so on every route that uses it. Many curb ramps aren't tagged in OpenStreetMap
 yet; adding them there (`kerb=lowered` on the crossing's end nodes) improves the routes after the next refresh.
+
+## MBTA stations (`mbta-stations.geojson`)
+
+The Green Line stations near the campuses (B, C and D branches), from the MBTA's public
+[V3 API](https://www.mbta.com/developers/v3-api), built by [scripts/mbta.mjs](../../scripts/mbta.mjs): name, branch,
+and whether the station and each platform are wheelchair accessible (`Wheelchair`: `yes`, `no`, or `unknown`). Live
+alerts (elevator closures, access problems, suspensions) and train times aren't stored: the app fetches them from the
+MBTA when they're shown.
+
+`mbta-trains.json` (from the same script) has each Green Line branch and direction through those stations, in
+order, with the scheduled ride time between them, the track's line, and when trains run: the first and last train
+and how often they come in each part of the day (early, morning rush, midday, evening rush, night), measured from
+the MBTA's schedule for a typical weekday, a Saturday, and a Sunday. Same form as `shuttles.json`, so routes can
+include a train ride.
 
 ## BC shuttles (`shuttles.json`)
 

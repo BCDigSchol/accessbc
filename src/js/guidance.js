@@ -178,6 +178,8 @@ async function showStep(map, index, intro = '') {
   const total = guide.steps.length;
   document.getElementById('guidance-progress').textContent = `Step ${guide.index + 1} of ${total}`;
   document.getElementById('guidance-instruction').textContent = step.text;
+  // What's said before the step ("New route.", or a step passed too quickly to show): on screen and to screen readers too
+  if (intro) guidanceStatus(escapeHtml(intro));
   // Setting off (at the start, after a stop, out of a building): which way that is from where you face
   const hint = ['depart', 'stop', 'exit'].includes(step.kind) && facing() !== null && settings.clockFace
     ? `The way to go is ${directionWords(step.heading)}.` : '';
@@ -322,7 +324,10 @@ function onPosition(map, position) {
   while (next + 1 < guide.steps.length && along >= guide.starts[next + 1] - 4) next++;
   if (next !== guide.index) {
     guidanceStatus('');
-    showStep(map, next);
+    // Past more than one step at once (fixes far apart, as on a bus): say any skipped step that mustn't be missed
+    // (getting on or off, a stop, a street crossing) before the current one
+    const skipped = guide.steps.slice(guide.index + 1, next).filter((st) => ['board', 'alight', 'stop', 'cross'].includes(st.kind));
+    showStep(map, next, skipped.map((st) => st.text).join(' '));
     return;
   }
   // A heads-up shortly before the next step.
@@ -385,10 +390,7 @@ function confirmLiveDirections(start) {
   cancel.onclick = () => close(false);
   dialog.onkeydown = (e) => {
     if (e.key === 'Escape') close(false);
-    if (e.key === 'Tab') { // two buttons: keep focus on them
-      e.preventDefault();
-      (document.activeElement === ok ? cancel : ok).focus();
-    }
+    trapFocus(dialog, e);
   };
   dialog.hidden = false;
   ok.focus();

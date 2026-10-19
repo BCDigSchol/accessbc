@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <title>Access BC</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Add to home screen: an app icon and full-screen launch, on Android and iPhone -->
+<link rel="manifest" href="src/manifest.webmanifest">
+<link rel="icon" href="src/icons/app/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="src/icons/app/apple-touch-icon.png">
+<meta name="theme-color" content="#8a0d09">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Access BC">
 <link href="src/vendor/maplibre-gl/maplibre-gl.css" rel="stylesheet">
 <link href="src/input.css" rel="stylesheet">
 <script src="src/vendor/maplibre-gl/maplibre-gl.js"></script>
@@ -16,13 +24,16 @@
 <script src="src/js/popups.js"></script>
 <script src="src/js/elevation.js"></script>
 <script src="src/js/menu.js"></script>
+<script src="src/js/places.js"></script>
 <script src="src/js/searchbar.js"></script>
 <script src="src/js/directions.js"></script>
 <script src="src/js/guidance.js"></script>
 <script src="src/js/nearby.js"></script>
 <script src="src/js/orientation.js"></script>
 <script src="src/js/emergency.js"></script>
+<script src="src/js/mbta.js"></script>
 <script src="src/js/reports.js"></script>
+<script src="src/js/offline.js"></script>
 </head>
 <body>
 
@@ -51,7 +62,17 @@
       <label for="set-slope">Steepest slope allowed</label>
       <select id="set-slope"></select>
     </div>
-    <p class="route-note">The same as the route options in Edit trip. Every route also has an Avoid steep slopes button.</p>
+    <div class="setting">
+      <label for="set-slopeDir">Apply the slope limit to</label>
+      <select id="set-slopeDir"><option value="both">Uphill and downhill</option><option value="up">Uphill only</option><option value="down">Downhill only</option></select>
+    </div>
+    <div class="setting"><input type="checkbox" id="set-curbs"><label for="set-curbs">Avoid street crossings without confirmed curb ramps</label></div>
+    <div class="setting">
+      <label for="set-pace">My pace</label>
+      <select id="set-pace" aria-describedby="set-pace-help"><option value="slower">Slower (about 1.8 mph)</option><option value="gentle">Gentle (about 2.7 mph)</option><option value="brisk">Brisk (about 3.1 mph)</option></select>
+    </div>
+    <p id="set-pace-help" class="route-note">For time estimates, and for when a shuttle is quicker than walking or wheeling.</p>
+    <p class="route-note">Stairs and slopes are the same as the route options in Edit trip. Every route also has an Avoid steep slopes button.</p>
   </fieldset>
   <fieldset>
     <legend>Directions</legend>
@@ -107,6 +128,9 @@
       <button type="button" id="where-to-clear" class="where-to-clear" aria-label="Clear search" hidden>×</button>
       <div id="where-to-list" class="search-dropdown" role="listbox" aria-label="Places"></div>
     </div>
+    <p id="offline-note" class="offline-note" role="status" hidden>You're offline. The map, directions, Where am I? and your places still work. Shuttle times may be out of date, and reports and sharing need a connection.</p>
+    <div id="my-places" class="my-places" role="group" aria-label="Your places" hidden></div>
+    <div id="places-edit" class="places-edit" role="group" aria-label="Edit your places" hidden></div>
     <div class="chips" role="group" aria-label="Quick searches">
       <button type="button" class="chip where-am-i">Where am I?</button>
       <button type="button" class="chip" data-find="restroom">Single-stall restrooms</button>
@@ -155,7 +179,7 @@
       </div>
       <div id="route-result"></div>
       <details id="edit-trip" class="route-options">
-        <summary>Edit trip: start, stops, and route options</summary>
+        <summary>Edit trip: start, stops, time, and route options</summary>
         <div class="route-field">
           <label for="route-from">From</label>
           <select id="route-from"></select>
@@ -169,6 +193,19 @@
         <div class="route-field">
           <label for="route-to">To</label>
           <select id="route-to"></select>
+        </div>
+        <div class="route-field">
+          <label for="trip-when">When</label>
+          <select id="trip-when" aria-describedby="trip-when-help">
+            <option value="now">Leave now</option>
+            <option value="later">Leave at a time…</option>
+            <option value="arrive">Arrive by a time…</option>
+          </select>
+          <p id="trip-when-help" class="route-note">For which BC shuttles are running. Walking directions are the same at any time.</p>
+        </div>
+        <div class="route-field" id="trip-time-field" hidden>
+          <label for="trip-time" id="trip-time-label">Leaving at</label>
+          <input type="datetime-local" id="trip-time">
         </div>
         <h3>Route options</h3>
         <div class="route-check">
@@ -192,10 +229,23 @@
             <option value="0.05" data-label="1:20 (5%)">1:20 (5%), the steepest an accessible walkway should be</option>
           </select>
         </div>
+        <div class="route-field">
+          <label for="opt-slope-dir">Apply the slope limit to</label>
+          <select id="opt-slope-dir">
+            <option value="both">Uphill and downhill</option>
+            <option value="up">Uphill only</option>
+            <option value="down">Downhill only</option>
+          </select>
+        </div>
+        <div class="route-check">
+          <input type="checkbox" id="opt-curbs" aria-describedby="opt-curbs-help">
+          <label for="opt-curbs">Avoid street crossings without confirmed curb ramps</label>
+          <p id="opt-curbs-help" class="route-note">Off campus. Many curb ramps aren't recorded yet, so routes may be longer; if there's no way round, the route says so.</p>
+        </div>
         <div class="route-check">
           <input type="checkbox" id="opt-shuttle" checked aria-describedby="opt-shuttle-help">
-          <label for="opt-shuttle">Use BC shuttles when quicker</label>
-          <p id="opt-shuttle-help" class="route-note">Only shuttles running at the time. Whether they have a wheelchair lift or ramp isn't confirmed yet.</p>
+          <label for="opt-shuttle">Use BC shuttles and the Green Line when quicker</label>
+          <p id="opt-shuttle-help" class="route-note">Only those running at the time. Avoiding stairs, trains are used only between wheelchair-accessible stations. Whether BC shuttles have a wheelchair lift or ramp isn't confirmed yet.</p>
         </div>
         <div class="route-check"><input type="checkbox" id="route-focus" checked><label for="route-focus">Only show map features along the route</label></div>
         <h3>Route line colours</h3>
@@ -314,6 +364,7 @@
     <li><button type="button" id="settings-toggle" aria-haspopup="dialog">Accessibility settings</button></li>
     <li><button type="button" id="menu-layers">Map layers</button></li>
     <li><button type="button" data-report-here aria-haspopup="dialog">Report a problem</button></li>
+    <li id="menu-install-item" hidden><button type="button" id="menu-install">Add Access BC to your home screen</button></li>
     <li><a href="help.html">Help: how to use Access BC</a></li>
     <li><button type="button" id="about" aria-haspopup="dialog">About</button></li>
   </ul>

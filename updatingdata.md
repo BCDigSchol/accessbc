@@ -14,12 +14,25 @@ The layers are GeoJSON files in [src/geojson/](src/geojson/), one feature per li
 4. Preview locally with `python3 scripts/serve.py` and open http://localhost:8000.
 5. Commit and push. GitHub Pages publishes the change.
 
+## Entrance links
+
+After adding or moving paths or entrances, run `node scripts/link-entrances.mjs` to redraw the automatic links to
+entrances that aren't connected to a path (it downloads street lines from OpenStreetMap), then
+`node scripts/make-data-collection-sheets.mjs` to update the list of links to check.
+
 ## City sidewalks
 
 [src/geojson/sidewalks.geojson](src/geojson/sidewalks.geojson) comes from OpenStreetMap. To refresh it with newer
 data, run `node scripts/osm-sidewalks.mjs` (Node 18 or later, no packages needed; it downloads about 10 MB from the
 public Overpass API, and retries if the servers are busy). See [src/geojson/README.md](src/geojson/README.md) for
 the fields and the licence.
+
+## MBTA stations
+
+[src/geojson/mbta-stations.geojson](src/geojson/mbta-stations.geojson) lists the Green Line stations near campus. If
+the MBTA adds, closes, or makes a station accessible, run `node scripts/mbta.mjs` (it also refreshes the train ride times and schedules in `mbta-trains.json`, from
+the MBTA's schedule for the coming weekday, Saturday and Sunday; if a branch has no trains then, its previous data
+is kept). Live alerts and train times need no updating.
 
 ## BC shuttles
 

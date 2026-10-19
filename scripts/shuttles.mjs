@@ -15,12 +15,14 @@ import path from 'node:path';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const OUT = path.join(ROOT, 'src/geojson/shuttles.json');
+const STOPS_OUT = path.join(ROOT, 'src/geojson/shuttlestops.geojson'); // the stops, for the map and Find nearby
 const TRACKER = 'https://bostoncollege.transloc.com/Services/JSONPRelay.svc/';
 const SCHEDULE_PAGE = 'https://www.bc.edu/bc-web/offices/aux-services/sites/transportation-parking/shuttles.html';
 
 // When each route runs, from BC's shuttle page (checked 2026-10-16). Keyed by tracker route id.
 // days: 0 = Sunday … 6 = Saturday. Times are 24-hour "HH:MM"; past midnight continues the day ("26:00" = 2 a.m.).
 // every: minutes between shuttles (the middle of a range like "8–10 minutes"). loop: the last stop runs on to the first.
+// endAt: the last stop riders can get off at, when the tracker lists the bus's empty run back too.
 // Event routes (football, holidays) aren't included.
 const WEEKDAYS = [1, 2, 3, 4, 5], WEEKEND = [0, 6];
 const SERVICE = {
@@ -50,7 +52,8 @@ const SERVICE = {
   21: { name: 'Law School Express (afternoon)', loop: false, service: [{ days: WEEKDAYS, from: '15:05', to: '17:05', every: 110 }] },
   9: { name: 'Mall and Grocery Shuttle (Saturday)', loop: false, service: [{ days: [6], from: '11:00', to: '15:05', every: 60 }] },
   25: { name: 'Mall and Grocery Shuttle (Sunday)', loop: false, service: [{ days: [0], from: '11:00', to: '16:05', every: 60 }] },
-  24: { name: 'Early Morning Shuttle (Newton)', loop: false, service: [
+  // BC's page: "Direct service from Stuart stop to Conte Forum"; the tracker's last stop is the bus going back
+  24: { name: 'Early Morning Shuttle (Newton)', loop: false, endAt: 'Conte Forum', service: [
     { days: WEEKDAYS, from: '05:55', to: '06:35', every: 30 },
     { days: WEEKEND, from: '06:55', to: '07:35', every: 30 },
   ] },
@@ -114,6 +117,7 @@ async function main() {
       rideToNext: s.SecondsToNextStop,
       dwell: s.SecondsAtStop,
     }));
+    if (info.endAt) stops = stops.slice(0, stops.findIndex((st) => st.name === info.endAt) + 1 || stops.length);
     // A loop listed with its first stop again at the end: keep it once
     if (stops.length > 1 && metres(stops[0].lonlat, stops.at(-1).lonlat) < 30 && stops[0].name === stops.at(-1).name) stops = stops.slice(0, -1);
     const at = stopIndexes(line, stops);
@@ -129,6 +133,27 @@ async function main() {
   };
   fs.writeFileSync(OUT, JSON.stringify(data) + '\n');
   console.log(`Wrote ${path.relative(ROOT, OUT)}: ${out.length} routes, ${(fs.statSync(OUT).size / 1e3).toFixed(0)} kB`);
+
+  // The stops as map points: one per place (within 20 m, or 30 m with the same name), with the routes that stop there.
+  // Shelter and heater details carry over from the stops already in the file, where one is within 30 m.
+  const old = fs.existsSync(STOPS_OUT) ? JSON.parse(fs.readFileSync(STOPS_OUT, 'utf8')).features : [];
+  const places = [];
+  for (const route of out) {
+    for (const stop of route.stops) {
+      // The same stop can have different names on different routes ("Reservoir T Stop", "Reservoir MBTA stop")
+      let place = places.find((p) => metres(p.lonlat, stop.lonlat) < (p.name === stop.name ? 30 : 20));
+      if (!place) places.push(place = { name: stop.name, lonlat: stop.lonlat, routes: [] });
+      if (!place.routes.includes(route.name)) place.routes.push(route.name);
+    }
+  }
+  const features = places.map((p, i) => {
+    const before = old.find((f) => metres(f.geometry.coordinates, p.lonlat) < 30)?.properties || {};
+    const properties = { OBJECTID: i + 1, Name: p.name, Routes: p.routes.join('; ') };
+    for (const k of ['Sheltered', 'Heater']) if (before[k]) properties[k] = before[k];
+    return { type: 'Feature', properties, geometry: { type: 'Point', coordinates: p.lonlat } };
+  });
+  fs.writeFileSync(STOPS_OUT, `{"type":"FeatureCollection","features":[\n${features.map((f) => JSON.stringify(f)).join(',\n')}\n]}\n`);
+  console.log(`Wrote ${path.relative(ROOT, STOPS_OUT)}: ${features.length} stops`);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

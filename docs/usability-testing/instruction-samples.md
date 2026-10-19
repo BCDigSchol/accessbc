@@ -100,6 +100,109 @@ you were walking the route without sight, and note anything that's unclear, unhe
 2. Turn right and continue for 35 feet, with Fulton Hall on your left.
 3. Arrive at the accessible entrance of Fulton Hall.
 
+### Gasson Hall to Kenny Cottle Library, Newton campus, walking (54 steps)
+
+1. Leave Gasson Hall by its accessible entrance and head northeast for 5 feet, with Gasson Hall on your right.
+2. Turn right and continue for 40 feet, with Gasson Hall on your right.
+3. Turn left and continue for 25 feet, with Gasson Hall on your left.
+4. Turn left and continue for 35 feet, with Gasson Hall on your left.
+5. Turn right and continue for 20 feet, with Gasson Hall on your left.
+6. Bear left and continue for 25 feet, with Gasson Hall on your left.
+7. Bear right and continue for 580 feet.
+8. Bear left and continue for 55 feet.
+9. Turn left and continue for 220 feet.
+10. Cross Commonwealth Avenue at the crosswalk. Curb ramps aren’t confirmed here.
+11. Continue outside for 30 feet.
+12. Turn right and continue for 25 feet.
+13. Cross Commonwealth Avenue Service Road at the crosswalk. Curb ramps aren’t confirmed here.
+14. Turn left and continue for 55 feet along Commonwealth Avenue Service Road.
+15. Cross Mount Alvernia Road at the crosswalk. Curb ramps aren’t confirmed here.
+16. Continue outside for 695 feet along Commonwealth Avenue Service Road.
+17. Cross Manet Road at the crosswalk. Curb ramps aren’t confirmed here.
+18. Continue outside for 545 feet along Commonwealth Avenue Service Road.
+19. Cross Garrison Street at the crosswalk. Curb ramps aren’t confirmed here.
+20. Continue outside for 410 feet along Commonwealth Avenue Service Road.
+21. Cross Hammond Street at the traffic lights. Curb ramps aren’t confirmed here.
+22. Continue outside for 670 feet along Commonwealth Avenue Service Road.
+23. Cross Nobscot Road at the crosswalk. Curb ramps aren’t confirmed here.
+24. Continue outside for 345 feet along Commonwealth Avenue Service Road.
+25. Cross Hobart Road at the crosswalk. Curb ramps aren’t confirmed here.
+26. Continue outside for 310 feet along Commonwealth Avenue Service Road.
+27. Cross Prentice Road at the crosswalk. Curb ramps aren’t confirmed here.
+28. Continue outside for 360 feet along Grant Avenue.
+29. Cross Commonwealth Avenue Service Road, then Grant Avenue at the crosswalk. There are curb ramps or level curbs at each.
+30. Bear left and continue for 205 feet along Commonwealth Avenue Service Road.
+31. Cross Avondale Road at the crosswalk. Curb ramps aren’t confirmed here.
+32. Continue outside for 255 feet along Commonwealth Avenue Service Road.
+33. Cross Westbourne Road at the crosswalk. Curb ramps aren’t confirmed here.
+34. Continue outside for 35 feet along Commonwealth Avenue Service Road.
+35. Bear right and continue for 540 feet along Westbourne Road.
+36. Cross Irving Street at the crosswalk. There are curb ramps on both sides.
+37. Bear left and continue for 550 feet along Commonwealth Avenue Service Road.
+38. Cross Sumner Street at the crosswalk. Curb ramps aren’t confirmed here.
+39. Turn right and continue for 210 feet along Commonwealth Avenue Service Road.
+40. Turn left and continue for 450 feet along Alden Street.
+41. Cross Alden Street at the crosswalk. There are curb ramps on both sides.
+42. Turn right and continue for 295 feet along Nathan Road.
+43. Cross Ward Street at the traffic lights. There are curb ramps on both sides.
+44. Continue outside for 455 feet along Ward Street.
+45. Cross Clinton Place at the crosswalk. There are curb ramps on both sides.
+46. Continue outside for 460 feet along Centre Street.
+47. Cross Mill Street at the crosswalk. There are curb ramps on both sides.
+48. Continue outside for 315 feet along Centre Street.
+49. Bear left and continue for 440 feet.
+50. Bear right and continue for 80 feet, with Stuart House on your left.
+51. Bear right and continue for 45 feet, with Stuart House on your left.
+52. Turn left and continue for 175 feet, with Barat House on your right.
+53. Bear left and continue for 10 feet, with Kenny Cottle Library on your left.
+54. Arrive at the accessible entrance of Kenny Cottle Library. It's on your left.
+
+### Gasson Hall to Kenny Cottle Library, with the shuttle (Wednesday 10 a.m.) (19 steps)
+
+1. Leave Gasson Hall by its accessible entrance and head northeast for 5 feet, with Gasson Hall on your right.
+2. Turn right and continue for 40 feet, with Gasson Hall on your right.
+3. Turn left and continue for 25 feet, with Gasson Hall on your left.
+4. Turn right and continue for 40 feet, with Gasson Hall on your right.
+5. Turn left and continue for 25 feet, with Gasson Hall on your left.
+6. Turn right and continue for 30 feet, with Gasson Hall on your right.
+7. Bear left and continue for 710 feet.
+8. Turn right and continue for 40 feet, with Voute Hall on your right.
+9. Turn left and continue for 10 feet, with Voute Hall on your left.
+10. At the Main Gate Chestnut Hill stop, take the Newton Eagle Direct shuttle to Stuart Hall Loading Dock (1 stop). Shuttles come about every 9 minutes.
+11. Get off at Stuart Hall Loading Dock and continue for 30 feet, with Stuart House on your right.
+12. Turn left and continue for 25 feet, with Stuart House on your right.
+13. Turn right and continue for 30 feet, with Stuart House on your left.
+14. Go into Stuart House and follow the indoor accessible route for 30 feet. Stuart House has an elevator.
+15. Turn left inside Stuart House and continue for 195 feet.
+16. Turn right inside Kenny Cottle Library and continue for 145 feet.
+17. Turn right inside Kenny Cottle Library and continue for 40 feet.
+18. Leave Kenny Cottle Library and continue outside for 5 feet.
+19. Arrive at the accessible entrance of Kenny Cottle Library. It's on your right.
+
+### Newton Centre T station to Gasson Hall, with the train (Wednesday 10 a.m.) (21 steps)
+
+1. Head north for 15 feet.
+2. At Newton Centre station, take a Green Line D train toward Union Square to Reservoir (2 stops). Trains come about every 8 minutes.
+3. Get off at Reservoir and continue for 20 feet.
+4. Turn right and continue for 35 feet.
+5. At the Reservoir MBTA stop, take the Comm Ave Direct shuttle to Robsham Theater (6 stops). Shuttles come about every 9 minutes.
+6. Get off at Robsham Theater and continue for 5 feet.
+7. Turn left and continue for 400 feet, with Robsham Theater on your left.
+8. Turn right and continue for 60 feet, with Commonwealth Ave Garage on your left.
+9. Go into Commonwealth Ave Garage and follow the indoor accessible route for 35 feet. Commonwealth Ave Garage has an elevator.
+10. Turn left inside Commonwealth Ave Garage and continue for 30 feet.
+11. Turn right inside Commonwealth Ave Garage and continue for 245 feet.
+12. Leave Commonwealth Ave Garage and continue outside for 55 feet.
+13. Bear left and continue for 215 feet, with St Marys Hall on your right.
+14. Turn right and continue for 230 feet, with O'Neill Library on your right.
+15. Turn left and continue for 30 feet, with Gasson Hall on your left.
+16. Turn left and continue for 25 feet, with Gasson Hall on your right.
+17. Turn sharply right and continue for 40 feet, with Gasson Hall on your left.
+18. Turn left and continue for 25 feet, with Gasson Hall on your right.
+19. Turn right and continue for 40 feet, with Gasson Hall on your left.
+20. Turn left and continue for 5 feet, with Gasson Hall on your right.
+21. Arrive at the accessible entrance of Gasson Hall.
+
 Not routable with the current data: Lyons Hall to Cushing Hall.
 
 ## Other things Access BC says while guiding
@@ -121,6 +224,15 @@ Examples; distances, directions, and names change with the route.
 | Where am I? | “You’re about 40 ft from Gasson Hall, at your 10 o’clock. You’re on your route. In about 35 ft: Turn left…” |
 | What’s around (Where am I?) | “Accessible entrance of Devlin Hall: about 80 ft, at your 4 o’clock.” |
 | Arrival | “Arrive at the accessible entrance of McElroy Commons. It’s on your right.” |
+| A street crossing (off campus) | “Cross Beacon Street at the traffic lights. There are curb ramps on both sides.” / “Cross Hammond Street, where there’s no marked crosswalk. Curb ramps aren’t confirmed here.” |
+| Crossings one after another | “Cross Commonwealth Avenue Service Road, then Grant Avenue at the crosswalk. There are curb ramps or level curbs at each.” |
+| Off campus, with no buildings to steer by | “Turn left and continue for 450 feet along Centre Street.” |
+| Off the route for a few readings (following location) | “Off route. Finding a new route from here.” then “New route. Step 1. …” |
+| Location very inaccurate (near tall buildings) | “Location is approximate (within 490 feet). Use Next and Back if steps don’t advance.” |
+| A step passed between two location readings (on a bus) | “Get off at Stuart and continue for 30 feet…”, said before the step you're on |
+| Taking a shuttle | “At the Main Gate Chestnut Hill stop, take the Newton Eagle Direct shuttle to Stuart (1 stop). Shuttles come about every 9 minutes.” |
+| Taking the train | “At Newton Centre station, take a Green Line D train toward Union Square to Reservoir (2 stops). Trains come about every 8 minutes.” |
+| Blue light (emergency) | “Emergency directions to the nearest blue-light phone, 40 ft away.” |
 
 Sounds and vibration: one tone for a new step (from the side of a turn, with headphones); two quick high tones
 for a turn coming up; two falling tones for leaving the route; three rising tones on arrival. On Android, two

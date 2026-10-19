@@ -1,0 +1,17 @@
+{"type":"FeatureCollection","source":"MBTA V3 API, 2026-10-19","features":[
+{"type":"Feature","properties":{"Id":"place-bcnfd","Name":"Beaconsfield","Lines":"Green Line D","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.140455,42.335765]}},
+{"type":"Feature","properties":{"Id":"place-lake","Name":"Boston College","Lines":"Green Line B","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.166769,42.340081]}},
+{"type":"Feature","properties":{"Id":"place-chhil","Name":"Chestnut Hill","Lines":"Green Line D","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.164699,42.326753]}},
+{"type":"Feature","properties":{"Id":"place-chill","Name":"Chestnut Hill Avenue","Lines":"Green Line B","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.15316,42.338169]}},
+{"type":"Feature","properties":{"Id":"place-chswk","Name":"Chiswick Road","Lines":"Green Line B","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.150711,42.340805]}},
+{"type":"Feature","properties":{"Id":"place-clmnl","Name":"Cleveland Circle","Lines":"Green Line C","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.149326,42.336142]}},
+{"type":"Feature","properties":{"Id":"place-denrd","Name":"Dean Road","Lines":"Green Line C","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.142156,42.337656]}},
+{"type":"Feature","properties":{"Id":"place-engav","Name":"Englewood Avenue","Lines":"Green Line C","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.144852,42.337104]}},
+{"type":"Feature","properties":{"Id":"place-newto","Name":"Newton Centre","Lines":"Green Line D","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.192414,42.329443]}},
+{"type":"Feature","properties":{"Id":"place-rsmnl","Name":"Reservoir","Lines":"Green Line D","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.148758,42.335088]}},
+{"type":"Feature","properties":{"Id":"place-sougr","Name":"South Street","Lines":"Green Line B","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.157661,42.3396]}},
+{"type":"Feature","properties":{"Id":"place-sthld","Name":"Sutherland Road","Lines":"Green Line B","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.146202,42.341614]}},
+{"type":"Feature","properties":{"Id":"place-tapst","Name":"Tappan Street","Lines":"Green Line C","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.138702,42.338459]}},
+{"type":"Feature","properties":{"Id":"place-wrnst","Name":"Warren Street","Lines":"Green Line B","Wheelchair":"no","Platforms":"null: not accessible"},"geometry":{"type":"Point","coordinates":[-71.140457,42.348343]}},
+{"type":"Feature","properties":{"Id":"place-wascm","Name":"Washington Street","Lines":"Green Line B","Wheelchair":"yes","Platforms":"null: accessible"},"geometry":{"type":"Point","coordinates":[-71.142853,42.343864]}}
+]}

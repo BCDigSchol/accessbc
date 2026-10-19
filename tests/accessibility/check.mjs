@@ -8,21 +8,14 @@
 //
 // Usage (from this folder): npm ci && npx playwright install chromium && npm run check
 // Exits non-zero if axe finds serious or critical problems, or a behaviour check fails.
-import { spawn } from 'node:child_process';
-import path from 'node:path';
-import { chromium } from 'playwright';
 import AxeBuilder from '@axe-core/playwright';
+import { startServer, launchBrowser, seedStorage, appReady } from './harness.mjs';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const PORT = 8799;
 const BASE = `http://localhost:${PORT}/`;
 const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'];
 const FAIL_ON = new Set(['serious', 'critical']);
 const ON_CAMPUS = { longitude: -71.17, latitude: 42.3355 }; // near Gasson Hall
-// CI machines have no graphics card, so the map is drawn in software. Tilting it into 3D (buildings and terrain)
-// in step-by-step mode is then slow enough to freeze the page, so these checks keep the map flat and still.
-// That doesn't change anything the checks look at: the panels, dialogs, and announcements.
-const LIGHT_MAP = { guidance3D: false, headingUp: false, reduceMotion: true };
 
 const problems = [];   // failures: axe serious/critical, and failed behaviour checks
 const notes = [];      // axe minor/moderate, reported but not failing
@@ -42,14 +35,10 @@ function expect(ok, state, message) {
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${state}: ${message}`);
 }
 
-const appReady = (page) => page.waitForFunction(() => typeof routing !== 'undefined' && routing && typeof routePoints !== 'undefined' && routePoints, null, { timeout: 60000 });
 
 async function openApp(browser, { viewport = { width: 1280, height: 850 }, settings = {}, noticeSeen = true, time = null } = {}) {
   const context = await browser.newContext({ viewport, geolocation: ON_CAMPUS, permissions: ['geolocation'] });
-  await context.addInitScript(({ s, seen }) => {
-    localStorage.setItem('accessbc.settings', JSON.stringify(s));
-    if (seen) localStorage.setItem('accessbc.liveDirectionsNotice', 'understood');
-  }, { s: { ...LIGHT_MAP, ...settings }, seen: noticeSeen });
+  await seedStorage(context, settings, { noticeSeen });
   const page = await context.newPage();
   page.setDefaultTimeout(60000);
   if (time) { await page.clock.install({ time }); await page.clock.resume(); } // shuttles run by the clock
@@ -69,10 +58,8 @@ async function findRoute(page, from = 'Gasson Hall', to = 'McElroy Commons') {
 }
 
 async function main() {
-  const server = spawn('python3', ['scripts/serve.py', String(PORT)], { cwd: ROOT, stdio: 'ignore' });
-  await new Promise((r) => setTimeout(r, 800));
-  // Software WebGL, so the map renders on machines without a GPU (like CI)
-  const browser = await chromium.launch({ args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  const stopServer = await startServer(PORT);
+  const browser = await launchBrowser();
   try {
     console.log('Desktop');
     let page = await openApp(browser, { noticeSeen: false });
@@ -133,8 +120,16 @@ async function main() {
     await axe(page, 'building info');
     await page.keyboard.press('Escape');
 
+    // Your places: the route just found is recent; Save keeps it; both show under Where to?, with Edit
+    await page.click('.save-place');
+    expect(await page.evaluate(() => document.querySelector('.save-place').getAttribute('aria-pressed') === 'true'), 'places', 'Save marks the destination as saved');
+    expect(await page.evaluate(() => !!document.querySelector('#route-result .copy-directions')), 'route', 'the route has Copy directions');
     // Quick search: the nearest single-stall restrooms
     await page.click('#route-back');
+    expect(await page.evaluate(() => /McElroy Commons/.test(document.getElementById('my-places').textContent)), 'places', 'the saved place is a button under Where to?');
+    await page.click('#places-edit-toggle');
+    await axe(page, 'your places, editing');
+    await page.click('#places-edit-done');
     await page.click('.chip[data-find="restroom"]');
     await page.waitForSelector('.nearby-list');
     expect(await page.evaluate(() => document.activeElement.id === 'results-title'), 'results', 'a quick search moves focus to its results');
@@ -205,6 +200,13 @@ async function main() {
     expect(await page.evaluate(() => /Newton Eagle Direct/.test(document.getElementById('route-result').textContent) && /lift or ramp isn’t confirmed/.test(document.getElementById('route-result').textContent)),
       'between campuses', 'with the Newton shuttle running, the route uses it, and says its accessibility isn’t confirmed');
     await axe(page, 'between campuses: shuttle route');
+    // A T station: in Where to?, and its accessibility on the route
+    await page.click('#route-back');
+    await findRoute(page, 'Gasson Hall', 'Reservoir T station');
+    await page.waitForFunction(() => /wheelchair accessible/.test(document.getElementById('station-notes').textContent));
+    expect(true, 'T station', 'a route to a T station says whether it is wheelchair accessible');
+    await axe(page, 'T station route');
+    await findRoute(page, 'Gasson Hall', 'Kenny Cottle Library');
     await page.click('#guidance-start-audio');
     await page.waitForFunction(() => currentView() === 'walk');
     expect(await page.evaluate(() => guide.steps.some((st) => st.kind === 'board' && /take the Newton Eagle Direct shuttle/.test(st.text))), 'between campuses', 'walking directions include a step to take the shuttle');
@@ -241,6 +243,17 @@ async function main() {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'zoom 400%', 'no sideways scrolling');
     await page.context().close();
 
+    console.log('Data review page');
+    {
+      const context = await browser.newContext();
+      page = await context.newPage();
+      await page.goto(BASE + 'review.html');
+      await page.waitForSelector('.review-item');
+      expect(await page.evaluate(() => document.querySelectorAll('.review-item').length > 0), 'review', 'lists the items to review');
+      await axe(page, 'data review page');
+      await context.close();
+    }
+
     console.log('Help page');
     for (const settings of [{}, { darkMode: true }]) {
       const context = await browser.newContext();
@@ -252,7 +265,7 @@ async function main() {
     }
   } finally {
     await browser.close();
-    server.kill();
+    stopServer();
   }
 
   if (notes.length) console.log(`\nMinor and moderate issues (not failing the check):\n${notes.map((n) => `  ${n}`).join('\n')}`);

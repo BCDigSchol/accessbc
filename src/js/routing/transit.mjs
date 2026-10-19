@@ -53,6 +53,16 @@ export function serves(route, from, to) {
   return i >= 0 && j >= 0 && i !== j;
 }
 
+// When a route next runs (from nextService(route, date)), in words: "today at 5 p.m.", "tomorrow at 7 a.m.",
+// "on Sunday at 11 a.m.". Today and tomorrow are the real ones, also for a trip planned for another day.
+export function nextServiceWords(next, date = new Date()) {
+  const dayOf = (d) => d.toLocaleDateString('en-US', { timeZone: TIME_ZONE });
+  const when = new Date(date.getTime() + next.dayOffset * 864e5), now = new Date();
+  const day = dayOf(when) === dayOf(now) ? 'today' : dayOf(when) === dayOf(new Date(now.getTime() + 864e5)) ? 'tomorrow'
+    : `on ${when.toLocaleDateString('en-US', { weekday: 'long', timeZone: TIME_ZONE })}`;
+  return `${day} at ${clockTime(next.from)}`;
+}
+
 // "8:15 a.m." from "08:15" (or "26:00")
 export function clockTime(hhmm) {
   const m = minutesOf(hhmm) % 1440, h = Math.floor(m / 60), min = m % 60;
@@ -69,9 +79,11 @@ export function serviceHours(route) {
   return route.service.map((s) => `${dayWords(s.days)} ${clockTime(s.from)} – ${clockTime(s.to)}`).join('; ');
 }
 
-// A copy of a walking graph with shuttle rides added, for the given routes ([{route, every}]: every in minutes).
-// The walking graph's nodes keep their indexes, and graph.base is the walking graph (for snapping locations).
-export function addShuttles(base, routes) {
+// A copy of a walking graph with shuttle and train rides added, for the given routes ([{route, every}]: every in
+// minutes). The walking graph's nodes keep their indexes, and graph.base is the walking graph (for snapping
+// locations). With stepFree, a station whose access isn't known to be step-free (wheelchair 'no' or 'unknown') can't
+// be got on or off at, though rides still pass through it. (Shuttle stops have no wheelchair field.)
+export function addShuttles(base, routes, { stepFree = false } = {}) {
   const nodes = base.nodes.slice();
   const adjacency = base.adjacency.map((edges) => edges.slice());
   const addNode = (lonlat) => { nodes.push(lonlat); adjacency.push([]); return nodes.length - 1; };
@@ -91,18 +103,20 @@ export function addShuttles(base, routes) {
   };
 
   for (const { route, every } of routes) {
-    const stops = route.stops.map((stop) => ({ stop, place: placeFor(stop) }));
-    const rideNodes = stops.map(({ stop, place }) => (place ? addNode(stop.lonlat) : -1));
+    const boardable = (stop) => !(stepFree && stop.wheelchair && stop.wheelchair !== 'yes');
+    const stops = route.stops.map((stop) => ({ stop, place: boardable(stop) ? placeFor(stop) : null }));
+    // A ride node at every stop, so a ride can carry on through stops it can't be got on or off at
+    const rideNodes = stops.map(({ stop }) => addNode(stop.lonlat));
+    const mode = route.mode || 'shuttle';
     stops.forEach(({ stop, place }, k) => {
       if (!place) return;
-      const shuttle = { route: route.name, stop: stop.name, every };
+      const shuttle = { route: route.name, stop: stop.name, every, mode, toward: route.toward };
       adjacency[place.node].push({ to: rideNodes[k], length: 0, type: 'Board', seg: -1, wait: (every * 60) / 2 + BOARDING_PENALTY_S, shuttle });
       adjacency[rideNodes[k]].push({ to: place.node, length: 0, type: 'Alight', seg: -1, shuttle });
     });
     const last = route.loop ? stops.length : stops.length - 1;
     for (let k = 0; k < last; k++) {
       const n = (k + 1) % stops.length;
-      if (rideNodes[k] < 0 || rideNodes[n] < 0) continue;
       const a = route.stops[k], b = route.stops[n];
       const coords = n > k ? route.line.slice(a.at, b.at + 1) : [...route.line.slice(a.at), ...route.line.slice(0, b.at + 1)];
       const line = coords.length >= 2 ? coords : [a.lonlat, b.lonlat];
@@ -110,17 +124,17 @@ export function addShuttles(base, routes) {
       for (let i = 1; i < line.length; i++) length += dist(proj(line[i - 1]), proj(line[i]));
       adjacency[rideNodes[k]].push({
         to: rideNodes[n], length, type: 'Ride', seg: -1, seconds: (a.rideToNext || length / 6) + (b.dwell || 0),
-        coords: [a.lonlat, ...line, b.lonlat], shuttle: { route: route.name, from: a.name, to: b.name, every },
+        coords: [a.lonlat, ...line, b.lonlat], shuttle: { route: route.name, from: a.name, to: b.name, every, mode, toward: route.toward },
       });
     }
   }
   return { ...base, nodes, adjacency, base: base.base || base };
 }
 
-// The cost of a shuttle edge in metres of walking, or null for other edges
-export function shuttleCost(e) {
-  if (e.type === 'Board') return e.wait * WALK_SPEED;
-  if (e.type === 'Ride') return e.seconds * WALK_SPEED;
+// The cost of a shuttle edge in metres of walking at a speed (metres a second), or null for other edges
+export function shuttleCost(e, speed = WALK_SPEED) {
+  if (e.type === 'Board') return e.wait * speed;
+  if (e.type === 'Ride') return e.seconds * speed;
   if (e.type === 'Alight') return 0;
   return null;
 }

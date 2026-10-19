@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access BC data review</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="src/icons/app/icon.svg" type="image/svg+xml">
+<link href="src/vendor/maplibre-gl/maplibre-gl.css" rel="stylesheet">
+<link href="src/review.css" rel="stylesheet">
+<script src="src/vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="src/vendor/pmtiles/pmtiles.js"></script>
+<script src="src/basemap/style.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#items">Skip to the list to review</a>
+<header class="review-header">
+  <h1>Access BC data review</h1>
+  <p>Things in Access BC's map data that need checking by someone who knows the campus or can go and look. For each,
+    choose whether it looks right, and add a note if not. Your answers are kept in this browser; when you're done (or
+    any time), download them and send the file to the Access BC team.</p>
+  <div class="review-tools">
+    <label for="reviewer">Your name (optional)</label>
+    <input type="text" id="reviewer" autocomplete="name">
+    <p id="progress" class="progress" role="status"></p>
+    <button type="button" id="download">Download your answers (spreadsheet)</button>
+  </div>
+</header>
+<main class="review-main">
+  <section id="items" class="review-list" aria-label="Items to review" tabindex="-1">
+    <p>Loading the map data…</p>
+  </section>
+  <div id="map" class="review-map" role="region" aria-label="Map of the selected item (everything on it is also in the list)"></div>
+</main>
+<script type="module" src="src/js/review.js"></script>
+</body>
+</html>
