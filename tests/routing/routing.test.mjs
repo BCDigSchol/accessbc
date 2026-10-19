@@ -236,6 +236,22 @@ test('trains pass through stations, and avoiding stairs, are boarded and left on
   assert.ok(texts.includes('At West station, take a Green Line T train toward East to East (2 stops). Trains come about every 8 minutes.'), texts.join('\n'));
 });
 
+test('mbta-trains.json: each branch through campus, with service for every day and no gaps within a day', () => {
+  const { routes } = readJson('mbta-trains.json');
+  assert.equal(routes.length, 6, 'B, C and D, both directions');
+  for (const r of routes) {
+    assert.ok(r.stops.length >= 2 && r.stops.slice(0, -1).every((st) => st.rideToNext > 0), `${r.name} toward ${r.toward}: ride times`);
+    for (const day of [0, 1, 2, 3, 4, 5, 6]) {
+      const parts = r.service.filter((sv) => sv.days.includes(day)).sort((a, b) => a.from.localeCompare(b.from));
+      assert.ok(parts.length, `${r.name} toward ${r.toward} runs on day ${day}`);
+      parts.slice(1).forEach((sv, i) => assert.equal(sv.from, parts[i].to, `${r.name} toward ${r.toward}, day ${day}: no gap at ${parts[i].to}`));
+    }
+  }
+  const d = routes.find((r) => r.id === 'Green-D-0');
+  assert.ok(transit.runningService(d, boston('2026-10-21T07:00:00')), 'a D train at 7 a.m. on a Wednesday (a part boundary)');
+  assert.equal(transit.runningService(d, boston('2026-10-21T03:30:00')), null, 'no trains at 3:30 a.m.');
+});
+
 // ---- The real campus data ----
 
 const data = {

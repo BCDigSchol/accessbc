@@ -1,5 +1,10 @@
 # Data collection templates
 
+**The easiest way to check the data:** the [data review page](https://bcdigschol.github.io/accessbc/review.html)
+(`review.html`) lists everything that needs checking (the entrance links, entrance points to check, and buildings
+directions can't reach) on a map, each with "looks right / wrong" and a note, and downloads the answers as a
+spreadsheet. It works out the list from the current data, so it's never out of date.
+
 To map walkways where none are mapped yet (the Brookline campus), see the volunteer
 [OpenStreetMap mapping guide](openstreetmap-mapping-guide.md).
 

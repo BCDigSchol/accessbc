@@ -23,8 +23,8 @@ What's planned next, and what each item needs. Roughly in priority order within 
 
 ## Data to check
 
-- **Entrance links:** 53 links drawn automatically to 49 buildings' entrances
-  ([list](docs/data-collection/entrance-links-to-check.csv), longest first). Check each on the ground, and redraw
+- **Entrance links:** 53 links drawn automatically to 49 buildings' entrances: check them on the
+  [data review page](review.html) ([or the list](docs/data-collection/entrance-links-to-check.csv), longest first). Check each on the ground, and redraw
   checked ones as real paths. Seven entrance points are drawn well inside their building: where are the doors?
 - **Buildings still unreachable:** 9 (Brookline campus buildings, Claver Hall, 214 Beacon Street, 19 Mayflower Rd,
   Haley House), in [buildings-without-accessible-entrance.csv](docs/data-collection/buildings-without-accessible-entrance.csv).
@@ -32,8 +32,8 @@ What's planned next, and what each item needs. Roughly in priority order within 
 ## Getting around
 
 - **Shuttles:** live arrival times (see BC Transportation above); routes that change by day (holidays, football).
-- **MBTA Green Line:** stations, live alerts, live train times, and train rides in routes are in. Next: frequency by
-  time of day and weekends (now one late-morning figure), and the MBTA buses at Reservoir and Chestnut Hill.
+- **MBTA Green Line:** stations, live alerts, live train times, and train rides in routes (with schedules by time of
+  day and weekend) are in. Next: the MBTA buses at Reservoir and Chestnut Hill.
 - **City sidewalks:** 1,432 crossings around campus have no curb information in OpenStreetMap. Tagging curb ramps
   there (`kerb=lowered` on a crossing's end nodes) improves routes after `node scripts/osm-sidewalks.mjs`.
 - The Brookline campus has entrances mapped but no paths, in BC's data or OpenStreetMap. Volunteers can map them in
@@ -59,6 +59,9 @@ What's planned next, and what each item needs. Roughly in priority order within 
 7. Building hours, so routes don't go through buildings that are closed.
 
 ## Before relying on live directions
+
+- Time the first load on a few real phones (`tests/accessibility/perf.mjs` slows the processor, but draws the map in
+  software, so it overstates map drawing, which a phone's graphics chip does).
 
 - Test with students on real phones (iPhone and Android, with VoiceOver and TalkBack).
 - Confirm the accessibility checks run on GitHub's servers ([.github/workflows/accessibility.yml](.github/workflows/accessibility.yml)).

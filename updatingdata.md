@@ -30,8 +30,9 @@ the fields and the licence.
 ## MBTA stations
 
 [src/geojson/mbta-stations.geojson](src/geojson/mbta-stations.geojson) lists the Green Line stations near campus. If
-the MBTA adds, closes, or makes a station accessible, run `node scripts/mbta.mjs` (it also refreshes the train ride times in `mbta-trains.json`; run it on a weekday
-morning, as it measures frequency from that day's schedule). Live alerts and train times need no updating.
+the MBTA adds, closes, or makes a station accessible, run `node scripts/mbta.mjs` (it also refreshes the train ride times and schedules in `mbta-trains.json`, from
+the MBTA's schedule for the coming weekday, Saturday and Sunday; if a branch has no trains then, its previous data
+is kept). Live alerts and train times need no updating.
 
 ## BC shuttles
 

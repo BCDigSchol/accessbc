@@ -243,6 +243,17 @@ async function main() {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'zoom 400%', 'no sideways scrolling');
     await page.context().close();
 
+    console.log('Data review page');
+    {
+      const context = await browser.newContext();
+      page = await context.newPage();
+      await page.goto(BASE + 'review.html');
+      await page.waitForSelector('.review-item');
+      expect(await page.evaluate(() => document.querySelectorAll('.review-item').length > 0), 'review', 'lists the items to review');
+      await axe(page, 'data review page');
+      await context.close();
+    }
+
     console.log('Help page');
     for (const settings of [{}, { darkMode: true }]) {
       const context = await browser.newContext();

@@ -11,8 +11,23 @@ import path from 'node:path';
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const OUT = path.join(ROOT, 'src/geojson/mbta-stations.geojson');
 const TRAINS_OUT = path.join(ROOT, 'src/geojson/mbta-trains.json');
-// When the Green Line runs (approximately, every day), for routing; the frequency is measured from the schedule
-const TRAIN_HOURS = { from: '05:00', to: '25:00' };
+// Parts of the day whose train frequency is measured separately (hours; 24+ is after midnight)
+const DAY_PARTS = [[0, 7], [7, 9.5], [9.5, 15.5], [15.5, 19], [19, 30]];
+const pad = (n) => String(n).padStart(2, '0');
+const hhmm = (minutes) => `${pad(Math.floor(minutes / 60))}:${pad(Math.round(minutes % 60))}`;
+// The next weekday (Tuesday to Thursday, a typical day), Saturday and Sunday from today, as YYYY-MM-DD in Boston
+function nextDates() {
+  const out = {};
+  for (let d = 1; d <= 8; d++) {
+    const date = new Date(Date.now() + d * 864e5);
+    const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(date.toLocaleString('en-US', { timeZone: 'America/New_York', weekday: 'short' }));
+    const iso = date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+    if ([2, 3, 4].includes(day)) out.weekday ||= iso;
+    if (day === 6) out.saturday ||= iso;
+    if (day === 0) out.sunday ||= iso;
+  }
+  return out;
+}
 const API = 'https://api-v3.mbta.com';
 const CENTRE = { latitude: 42.335, longitude: -71.172 }, RADIUS_DEG = 0.035; // the campuses and a little beyond
 const BRANCHES = { 'Green-B': 'Green Line B', 'Green-C': 'Green Line C', 'Green-D': 'Green Line D' };
@@ -77,6 +92,8 @@ function decodePolyline(str) {
 }
 const metres = ([lon1, lat1], [lon2, lat2]) => Math.hypot((lon2 - lon1) * 111320 * Math.cos((lat1 * Math.PI) / 180), (lat2 - lat1) * 110540);
 
+const DATES = nextDates();
+console.log(`Measuring train frequency on ${Object.entries(DATES).map(([k, v]) => `${k} ${v}`).join(', ')}`);
 const trainRoutes = [];
 for (const [route, line] of Object.entries(BRANCHES)) {
   const { data: [routeInfo] } = await get(`/routes?filter[id]=${route}`);
@@ -101,6 +118,31 @@ for (const [route, line] of Object.entries(BRANCHES)) {
     const times = [...trips.values()].flatMap((t) => t.filter((x) => x.station === middle).map((x) => x.time)).sort((a, b) => a - b);
     const gaps = times.slice(1).map((t, i) => (t - times[i]) / 60000).sort((a, b) => a - b);
     const every = Math.max(4, Math.round(gaps[Math.floor(gaps.length / 2)] || 10));
+    // When trains run there, and how often, through the day, on a weekday, a Saturday and a Sunday
+    const service = [];
+    for (const [dayType, date] of Object.entries(DATES)) {
+      const q = new URLSearchParams({ 'filter[route]': route, 'filter[direction_id]': direction, 'filter[stop]': middle, 'filter[date]': date });
+      const { data: day } = await get(`/schedules?${q}`);
+      // Minutes after that day's midnight, from the times' own Boston clock time ("2026-10-21T05:12:00-04:00");
+      // trains after midnight belong to the service day before, so count past 24:00
+      const leaves = day.map((r) => r.attributes.departure_time || r.attributes.arrival_time).filter(Boolean).map((t) => {
+        const [, d, h, m] = /^(\d{4}-\d\d-\d\d)T(\d\d):(\d\d)/.exec(t);
+        return Number(h) * 60 + Number(m) + (d > date ? 1440 : 0);
+      }).sort((a, b) => a - b);
+      if (leaves.length < 2) continue;
+      const days = { weekday: [1, 2, 3, 4, 5], saturday: [6], sunday: [0] }[dayType];
+      // Parts meet at their boundaries (no gap between, say, 6:58 and 7:05); the day starts with the first train
+      // and ends with the last
+      const first = leaves[0], last = leaves.at(-1) + 1;
+      for (const [from, to] of DAY_PARTS) {
+        const start = Math.max(from * 60, first), end = Math.min(to * 60, last);
+        if (start >= end) continue;
+        const inPart = leaves.filter((m) => m >= from * 60 && m < to * 60);
+        const partGaps = inPart.slice(1).map((m, i) => m - inPart[i]).sort((a, b) => a - b);
+        const partEvery = partGaps.length ? Math.round(partGaps[Math.floor(partGaps.length / 2)]) : every;
+        service.push({ days, from: hhmm(start), to: hhmm(end), every: Math.max(4, partEvery) });
+      }
+    }
     // The track's line, from one of these trips
     const tripId = [...trips.keys()].find((id) => trips.get(id) === longest);
     const { included: shapes = [] } = await get(`/trips/${tripId}?include=shape`);
@@ -117,10 +159,11 @@ for (const [route, line] of Object.entries(BRANCHES)) {
     const first = stops[0].at, last = stops.at(-1).at;
     trainRoutes.push({
       id: `${route}-${direction}`, name: line, mode: 'train', toward: routeInfo.attributes.direction_destinations[direction],
-      loop: false, service: [{ days: [0, 1, 2, 3, 4, 5, 6], ...TRAIN_HOURS, every }],
+      loop: false, service: service.length ? service : [{ days: [0, 1, 2, 3, 4, 5, 6], from: '05:00', to: '25:00', every }],
       stops: stops.map((st) => ({ ...st, at: st.at - first })), line: track.slice(first, last + 1),
     });
-    console.log(`  ${line} toward ${routeInfo.attributes.direction_destinations[direction]}: ${stops.map((st) => st.name).join(' → ')}, every ${every} min`);
+    console.log(`  ${line} toward ${routeInfo.attributes.direction_destinations[direction]}: ${stops.map((st) => st.name).join(' → ')}`);
+    for (const sv of service) console.log(`      ${sv.days.length === 5 ? 'weekdays' : sv.days[0] === 6 ? 'Saturday' : 'Sunday'} ${sv.from}–${sv.to}: every ${sv.every} min`);
   }
 }
 // A branch with no trains through here in the window that day (a diversion, buses replacing trains, a holiday) keeps
@@ -135,7 +178,7 @@ const expected = Object.keys(BRANCHES).length * 2;
 if (trainRoutes.length < expected) console.warn(`  Only ${trainRoutes.length} of ${expected} branch directions: check the MBTA's service changes, and run this again on a normal weekday`);
 fs.writeFileSync(TRAINS_OUT, JSON.stringify({
   source: `MBTA V3 API schedules, ${new Date().toISOString().slice(0, 10)}`,
-  note: 'Approximate: the Green Line runs about 5 a.m. to 1 a.m.; frequency measured from a late-morning schedule.',
+  note: 'From the MBTA schedule for a typical weekday, a Saturday and a Sunday: first and last trains, and how often they run in each part of the day.',
   routes: trainRoutes,
 }) + '\n');
 console.log(`Wrote ${path.relative(ROOT, TRAINS_OUT)}: ${trainRoutes.length} train routes`);

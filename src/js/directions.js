@@ -465,19 +465,39 @@ async function cityGraph() {
   // Once at a time: a route asked for while the background preparation is under way waits for it
   graphs.pending ||= {};
   graphs.pending[key] ||= (async () => {
-    try {
-      data.sidewalks ||= (await (await fetch(new URL('src/geojson/sidewalks.geojson', document.baseURI))).json()).features;
-    } catch {
-      return null;
-    }
-    const sidewalks = stairs ? data.sidewalks
-      : data.sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
-    graphs[key] = module.buildGraph({ ...data, footpaths: stairs ? data.footpaths : [], sidewalks });
+    // In a background thread (routing/city-worker.mjs), so the page stays responsive; on the page if that fails
+    graphs[key] = await cityGraphInWorker(stairs).catch(async () => {
+      try {
+        data.sidewalks ||= (await (await fetch(new URL('src/geojson/sidewalks.geojson', document.baseURI))).json()).features;
+      } catch {
+        return null;
+      }
+      const sidewalks = stairs ? data.sidewalks
+        : data.sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
+      return module.buildGraph({ ...data, footpaths: stairs ? data.footpaths : [], sidewalks });
+    });
     return graphs[key];
   })();
   const graph = await graphs.pending[key];
   if (!graph) delete graphs.pending[key]; // try again next time
   return graph;
+}
+
+// The city graph, built by a module worker from the same files (it fetches them itself, so only the graph comes back)
+function cityGraphInWorker(stairs) {
+  return new Promise((resolve, reject) => {
+    if (!window.Worker) return reject(new Error('no workers'));
+    const base = new URL('src/', document.baseURI).href;
+    let worker;
+    try {
+      worker = new Worker(`${base}js/routing/city-worker.mjs${ASSET_VERSION}`, { type: 'module' });
+    } catch (err) {
+      return reject(err);
+    }
+    worker.onmessage = ({ data }) => { worker.terminate(); data.graph ? resolve(data.graph) : reject(new Error(data.error)); };
+    worker.onerror = (err) => { worker.terminate(); reject(err); };
+    worker.postMessage({ base, stairs });
+  });
 }
 
 // The first trip off campus would otherwise wait a few seconds on a phone while the city sidewalks are prepared

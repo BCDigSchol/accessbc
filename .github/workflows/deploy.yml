@@ -29,12 +29,12 @@ jobs:
       - name: Assemble site
         run: |
           mkdir _site
-          cp -R index.html help.html sw.js src _site/
+          cp -R index.html help.html review.html sw.js src _site/
           # Browsers keep files for up to 10 minutes, so right after a deploy a returning visitor could get new
           # and old files mixed together. Stamp this deploy's version onto the page's scripts and styles, and onto
           # the routing modules' imports of each other (directions.js passes its own stamp to the ones it loads).
           v="${GITHUB_SHA::8}"
-          sed -i -E "s#(src|href)=\"(src/[^\"?]+\.(js|css))\"#\1=\"\2?v=$v\"#g" _site/index.html _site/help.html
+          sed -i -E "s#(src|href)=\"(src/[^\"?]+\.(js|css))\"#\1=\"\2?v=$v\"#g" _site/index.html _site/help.html _site/review.html
           sed -i -E "s#from '(\./[^'?]+\.mjs)'#from '\1?v=$v'#g" _site/src/js/routing/*.mjs
 
       - uses: actions/configure-pages@v6

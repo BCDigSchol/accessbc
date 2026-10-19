@@ -76,9 +76,10 @@ alerts (elevator closures, access problems, suspensions) and train times aren't 
 MBTA when they're shown.
 
 `mbta-trains.json` (from the same script) has each Green Line branch and direction through those stations, in
-order, with the scheduled ride time between them, how often trains run (measured from a late-morning schedule),
-and the track's line, in the same form as `shuttles.json`, so routes can include a train ride. Hours are
-approximate: 5 a.m. to 1 a.m. every day.
+order, with the scheduled ride time between them, the track's line, and when trains run: the first and last train
+and how often they come in each part of the day (early, morning rush, midday, evening rush, night), measured from
+the MBTA's schedule for a typical weekday, a Saturday, and a Sunday. Same form as `shuttles.json`, so routes can
+include a train ride.
 
 ## BC shuttles (`shuttles.json`)
 
