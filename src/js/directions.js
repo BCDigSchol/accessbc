@@ -50,6 +50,28 @@ async function setupDirections(map) {
   document.getElementById('set-slopeDir').addEventListener('change', (e) => setRouteOption('opt-slope-dir', e.target.value));
   // A new pace changes the times, and whether a shuttle is quicker
   document.getElementById('set-pace').addEventListener('change', () => { if (routing.current) routeAgain('New times, at your pace.'); });
+  // When: leave now, or at a time
+  document.getElementById('trip-when').addEventListener('change', (e) => {
+    if (e.target.value === 'later') {
+      const soon = new Date(Math.ceil((Date.now() + 3600e3) / 900e3) * 900e3);
+      setTripTime(soon);
+      document.getElementById('trip-time').focus();
+    } else setTripTime(null);
+    updateRoute(map);
+  });
+  document.getElementById('trip-time').addEventListener('change', (e) => {
+    const date = e.target.value ? new Date(e.target.value) : null;
+    if (date && !Number.isNaN(date.getTime())) { routing.departAt = date; updateRoute(map); }
+  });
+  // "Plan for later" on the route: straight to the time
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-edit-when]')) return;
+    document.getElementById('edit-trip').open = true;
+    if (!routing.departAt) {
+      document.getElementById('trip-when').value = 'later';
+      document.getElementById('trip-when').dispatchEvent(new Event('change'));
+    } else document.getElementById('trip-time').focus();
+  });
   document.addEventListener('click', async (e) => {
     if (e.target.id !== 'slope-toggle') return;
     await setRouteOption('opt-slope', document.getElementById('opt-slope').value ? '' : SLOPE_LIMIT_DEFAULT);
@@ -70,6 +92,7 @@ async function setupDirections(map) {
     from.value = '';
     routing.fromChosen = false;
     routing.fromPlace = null;
+    setTripTime(null);
     startFromMyLocation();
     updateRoute(map);
     document.getElementById('where-to').focus();
@@ -185,6 +208,7 @@ function saveTripToUrl() {
   if (to === MY_LOCATION) params.set('to', 'me');
   else if (to === PLACE && routing.place) params.set('to', placeParam(routing.place));
   else if (to) params.set('to', to);
+  if (routing.departAt) params.set('at', localInputValue(routing.departAt));
   if (guide.active) {
     params.set('step', String(guide.index + 1));
     if (guide.watch !== null) params.set('follow', '1');
@@ -216,6 +240,7 @@ function shareTripUrl() {
   for (const stop of routing.stops) if (stop.building || stop.lonlat) params.append('stop', stop.building || placeParam(stop));
   if (to === PLACE && routing.place) params.set('to', placeParam(routing.place));
   else if (to && to !== MY_LOCATION) params.set('to', to);
+  if (routing.departAt) params.set('at', localInputValue(routing.departAt));
   return `${location.origin}${location.pathname}?${params}`;
 }
 
@@ -298,6 +323,8 @@ async function restoreTripFromUrl(map) {
     .map((v) => (v.startsWith('place:') ? parsePlace(v, true) : listed(to, v) ? { label: v, building: v } : null))
     .filter(Boolean).slice(0, MAX_STOPS);
   renderStops();
+  const at = params.get('at') && new Date(params.get('at'));
+  if (at && !Number.isNaN(at.getTime())) setTripTime(at);
   const t = params.get('to');
   if (t === 'me' && listed(to, MY_LOCATION)) to.value = MY_LOCATION;
   else if (t?.startsWith('place:')) { const place = parsePlace(t, true); if (place) setPlaceDestination(place); }
@@ -437,6 +464,23 @@ async function cityGraph() {
   return graphs[key];
 }
 
+// When the trip starts: now, or a time chosen under When in Edit trip (for which shuttles are running)
+const tripTime = () => routing.departAt || new Date();
+
+// "Wed, Oct 21, 10:00 AM", for the route card
+const tripTimeWords = (date) => date.toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+
+// A datetime-local value ("2026-10-21T10:00") for a Date, in this device's time zone
+const localInputValue = (date) => new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+// Leave now, or at a time: shows or hides the time field, starting an hour from now (to the quarter hour)
+function setTripTime(date) {
+  routing.departAt = date;
+  document.getElementById('trip-when').value = date ? 'later' : 'now';
+  document.getElementById('trip-time-field').hidden = !date;
+  if (date) document.getElementById('trip-time').value = localInputValue(date);
+}
+
 // BC shuttle rides (shuttles.json), added to a walking graph: the routes running now, or with anytime, every
 // route at its most frequent. Loaded the first time a longer trip could use one.
 const SHUTTLE_MIN_WALK_M = 500;   // shorter walks aren't worth waiting for a shuttle
@@ -452,7 +496,7 @@ async function shuttleGraph(base, { anytime = false } = {}) {
   const { transit } = routing;
   if (!(await loadShuttles())) return null;
   const routes = shuttleData.routes
-    .map((route) => ({ route, service: anytime ? [...route.service].sort((a, b) => a.every - b.every)[0] : transit.runningService(route) }))
+    .map((route) => ({ route, service: anytime ? [...route.service].sort((a, b) => a.every - b.every)[0] : transit.runningService(route, tripTime()) }))
     .filter((r) => r.service)
     .map(({ route, service }) => ({ route, every: service.every }));
   if (!routes.length) return null;
@@ -567,6 +611,8 @@ async function startFromMyLocation() {
   } catch { /* the Permissions API isn't available: assume we can ask */ }
   if (state === 'denied' || routing.fromChosen || from.value) return;
   from.value = MY_LOCATION;
+  // A destination chosen while this was finding out (just after Back): route it now there's a start
+  if (document.getElementById('route-to').value && !routing.current) updateRoute(window.map);
 }
 
 function populateBuildingSelects() {
@@ -679,7 +725,7 @@ function clearRoute(map) {
 // the feature: curb cuts and entrances on the route itself, blue-light phones and shuttle stops a little
 // further. Each source's data is swapped for the nearby subset (the seating layer is clustered, so a
 // filter wouldn't work) and put back when the route is cleared or the option is turned off.
-const ROUTE_POINT_RADIUS_M = { entrances: 15, elevators: 15, curbcuts: 12, bluelights: 40, reststop: 30, shuttlestops: 60, bikeracks: 20 };
+const ROUTE_POINT_RADIUS_M = { entrances: 15, elevators: 15, curbcuts: 12, bluelights: 40, reststop: 30, shuttlestops: 60, bikeracks: 20, 'mbta-stations': 80 };
 const DIMMED_PATH_LAYERS = ['accessiblepaths-ext', 'accessiblepaths-int', 'paths'];
 const DIMMED_OPACITY = 0.25;
 let pathOpacity = null; // each path layer's own line-opacity, kept while dimmed
@@ -880,10 +926,10 @@ async function updateRoute(map) {
         // The next shuttle between the same two stops, on any route
         const ride = module.describeRoute(a.graph, a.route).steps.find((st) => st.shuttle)?.shuttle;
         const next = ride && shuttleData.routes.filter((r) => routing.transit.serves(r, ride.from, ride.to))
-          .map((r) => ({ r, next: routing.transit.nextService(r) })).filter((x) => x.next)
+          .map((r) => ({ r, next: routing.transit.nextService(r, tripTime()) })).filter((x) => x.next)
           .sort((x, y) => x.next.minutes - y.next.minutes)[0];
         if (next) {
-          shuttleNote = `<p class="route-note">A shuttle from ${escapeHtml(ride.from)} to ${escapeHtml(ride.to)} would be quicker, but none is running now. The next is the ${escapeHtml(next.r.name)}, starting ${routing.transit.nextServiceWords(next.next)}</p>`; // the time ends "a.m." or "p.m."
+          shuttleNote = `<p class="route-note">A shuttle from ${escapeHtml(ride.from)} to ${escapeHtml(ride.to)} would be quicker, but none is running ${routing.departAt ? 'at that time' : 'now'}. The next is the ${escapeHtml(next.r.name)}, starting ${routing.transit.nextServiceWords(next.next, tripTime())}</p>`; // the time ends "a.m." or "p.m."
         }
       }
     }
@@ -953,6 +999,7 @@ async function updateRoute(map) {
     ${toIsPlace && isBluelightTrip() ? emergencyCallLinks() : ''}
     ${unmet}
     ${broken.html}
+    <div id="station-notes" aria-live="polite"></div>
     ${shuttleInfo}
     ${cityNote}
     <p class="route-summary"><strong>About ${minutes} min</strong> · ${ride ? `${feet(description.walkLength)} walking${indoor} · plus a shuttle ride` : `${feet(description.length)}${indoor}`}${stepFree ? ' · <span class="badge">Step-free</span>' : ''}</p>
@@ -960,6 +1007,7 @@ async function updateRoute(map) {
       <button type="button" id="slope-toggle" class="option-toggle" aria-pressed="${!!slopeLimit}" aria-describedby="slope-toggle-note">Avoid steep slopes</button>
       <span id="slope-toggle-note" class="route-note">${slopeLimit ? `On: nothing steeper than ${slopeLimit}` : 'Off: the route may have steep parts'}</span>
     </div>
+    ${routing.departAt ? `<p class="route-note">Leaving ${escapeHtml(tripTimeWords(routing.departAt))}. <button type="button" class="link-button" data-edit-when>Change</button></p>` : ''}
     ${detour}
     ${walkOnlyNote}
     ${shuttleNote}
@@ -972,6 +1020,7 @@ async function updateRoute(map) {
     <div class="route-secondary">
       <button type="button" id="guidance-start">Preview the steps one by one</button>
       ${toMe ? '' : '<button type="button" class="share-trip">Share this trip</button><button type="button" class="save-place" aria-pressed="false">Save</button>'}
+      ${routing.departAt ? '' : '<button type="button" data-edit-when>Plan for later</button>'}
       <button type="button" class="copy-directions">Copy directions</button>
       <button type="button" class="email-directions">Email directions</button>
       ${!toIsPlace ? `<button type="button" data-building-info="${escapeHtml(toValue)}">About ${escapeHtml(toValue)}</button>` : ''}
@@ -985,6 +1034,7 @@ async function updateRoute(map) {
   routing.current = { graph, route, from: fromLabel, to: toLabel, toIsPlace, fromBuilding: fromIsBuilding };
   rememberDestination();
   syncSaveButton();
+  showStationNotes(); // to or from a T station: its accessibility and live MBTA alerts
   // Screen readers hear the summary (showResult announces it); nothing is read aloud until you Start
   if (routing.autoStart) {
     const { follow, step, intro, keepFocus, restored } = routing.autoStart;

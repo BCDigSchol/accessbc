@@ -31,6 +31,7 @@
 <script src="src/js/nearby.js"></script>
 <script src="src/js/orientation.js"></script>
 <script src="src/js/emergency.js"></script>
+<script src="src/js/mbta.js"></script>
 <script src="src/js/reports.js"></script>
 <script src="src/js/offline.js"></script>
 </head>
@@ -177,7 +178,7 @@
       </div>
       <div id="route-result"></div>
       <details id="edit-trip" class="route-options">
-        <summary>Edit trip: start, stops, and route options</summary>
+        <summary>Edit trip: start, stops, time, and route options</summary>
         <div class="route-field">
           <label for="route-from">From</label>
           <select id="route-from"></select>
@@ -191,6 +192,18 @@
         <div class="route-field">
           <label for="route-to">To</label>
           <select id="route-to"></select>
+        </div>
+        <div class="route-field">
+          <label for="trip-when">When</label>
+          <select id="trip-when" aria-describedby="trip-when-help">
+            <option value="now">Leave now</option>
+            <option value="later">Leave at a time…</option>
+          </select>
+          <p id="trip-when-help" class="route-note">For which BC shuttles are running. Walking directions are the same at any time.</p>
+        </div>
+        <div class="route-field" id="trip-time-field" hidden>
+          <label for="trip-time">Leaving at</label>
+          <input type="datetime-local" id="trip-time">
         </div>
         <h3>Route options</h3>
         <div class="route-check">

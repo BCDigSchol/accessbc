@@ -14,6 +14,7 @@ const NEARBY_KINDS = {
   benches: { label: 'Outdoor seating', source: 'reststop', name: 'Outdoor seating' },
   bluelights: { label: 'Blue-light emergency phones', source: 'bluelights', name: 'Blue-light phone' },
   shuttle: { label: 'Shuttle stops', source: 'shuttlestops', name: 'Shuttle stop' },
+  tstation: { label: 'T stations (Green Line)', source: 'mbta-stations', name: 'T station', city: true }, // off campus: on city sidewalks
   elevators: { label: 'Elevators', source: 'elevators', name: 'Elevator' },
 };
 const SNAP_TO_PATH_M = 40; // a point feature counts if it's this close to a mapped path
@@ -45,7 +46,8 @@ function nearbyCandidates(graph, kind) {
       if (near.d > SNAP_TO_PATH_M) continue;
       const building = module.nearestBuilding(graph.buildings, module.proj(lonlat));
       const where = kind === 'elevators' && (f.properties.Building || '').trim() ? `in ${f.properties.Building.trim()}` : `near ${building.name}`;
-      const label = kind === 'shuttle' && f.properties.Name ? `${f.properties.Name} shuttle stop` : `${config.name} ${where}`;
+      const label = kind === 'shuttle' && f.properties.Name ? `${f.properties.Name} shuttle stop`
+        : kind === 'tstation' ? `${f.properties.Name} T station` : `${config.name} ${where}`;
       // How it reads mid-sentence ("Arrive at the outdoor seating near Gasson Hall")
       const phrase = placePhrase(label);
       candidates.push({ label, phrase, lonlat, nodes: [near.node], offset: near.d, feature: f });
@@ -64,9 +66,10 @@ async function findNearby(map) {
   const { module } = routing;
   const kind = document.getElementById('nearby-kind').value;
   const near = document.getElementById('nearby-from').value;
-  let graph = currentGraph();
   const options = routeOptions();
   const out = document.getElementById('nearby-results');
+  // Things off campus (T stations) are measured on city sidewalks too
+  let graph = (NEARBY_KINDS[kind].city && await cityGraph()) || currentGraph();
   out.innerHTML = '<p>Searching…</p>';
 
   // Where to measure from: your location, your route, or a building chosen under Near
@@ -148,7 +151,8 @@ async function findNearby(map) {
   const items = nearbyResults.map((r, i) => {
     const end = r.building && ends[r.building];
     const how = end || (along ? (r.distance < 15 ? 'on your route' : `${feet(r.distance)} off your route`) : `${feet(r.distance)} walk`);
-    const broken = r.feature && isReportedBroken(r.feature) ? ' <span class="nearby-broken">(reported not working)</span>' : '';
+    const broken = r.feature && isReportedBroken(r.feature) ? ' <span class="nearby-broken">(reported not working)</span>'
+      : r.feature?.properties.Wheelchair === 'no' ? ' <span class="nearby-broken">(not wheelchair accessible)</span>' : '';
     return `<li>
       <span class="nearby-name">${escapeHtml(r.label)}</span>${broken} <span class="nearby-distance">${how}</span>
       <span class="nearby-actions">

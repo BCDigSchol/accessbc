@@ -213,6 +213,13 @@ async function main() {
     expect(await page.evaluate(() => /Newton Eagle Direct/.test(document.getElementById('route-result').textContent) && /lift or ramp isn’t confirmed/.test(document.getElementById('route-result').textContent)),
       'between campuses', 'with the Newton shuttle running, the route uses it, and says its accessibility isn’t confirmed');
     await axe(page, 'between campuses: shuttle route');
+    // A T station: in Where to?, and its accessibility on the route
+    await page.click('#route-back');
+    await findRoute(page, 'Gasson Hall', 'Reservoir T station');
+    await page.waitForFunction(() => /wheelchair accessible/.test(document.getElementById('station-notes').textContent));
+    expect(true, 'T station', 'a route to a T station says whether it is wheelchair accessible');
+    await axe(page, 'T station route');
+    await findRoute(page, 'Gasson Hall', 'Kenny Cottle Library');
     await page.click('#guidance-start-audio');
     await page.waitForFunction(() => currentView() === 'walk');
     expect(await page.evaluate(() => guide.steps.some((st) => st.kind === 'board' && /take the Newton Eagle Direct shuttle/.test(st.text))), 'between campuses', 'walking directions include a step to take the shuttle');

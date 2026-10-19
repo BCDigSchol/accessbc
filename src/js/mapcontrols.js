@@ -76,6 +76,7 @@ class ThreeDControl {
 const legendData = [
     { id: 'shuttlestop', name: 'Shuttle Stops', icon: 'src/icons/shuttle.png', category: 'Transportation' },
     { id: 'bikerack', name: 'Bike Racks', icon: 'src/icons/bike.png', category: 'Transportation' },
+    { id: 'mbta', name: 'T Stations (Green Line)', color: '#00843D', category: 'Transportation' },
     { id: 'bluelight', name: 'Bluelights', color: '#0000ff', category: 'Campus Resources' },
     { id: 'reststop', name: 'Outdoor Seating', color: '#73AF48', category: 'Campus Resources' },
     { id: 'elevators', name: 'Elevators', color: '#94346E', category: 'Navigating Campus' },

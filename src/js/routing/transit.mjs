@@ -53,10 +53,13 @@ export function serves(route, from, to) {
   return i >= 0 && j >= 0 && i !== j;
 }
 
-// When a route next runs, in words: "today at 5 p.m.", "tomorrow at 7 a.m.", "on Sunday at 11 a.m."
+// When a route next runs (from nextService(route, date)), in words: "today at 5 p.m.", "tomorrow at 7 a.m.",
+// "on Sunday at 11 a.m.". Today and tomorrow are the real ones, also for a trip planned for another day.
 export function nextServiceWords(next, date = new Date()) {
-  const day = next.dayOffset === 0 ? 'today' : next.dayOffset === 1 ? 'tomorrow'
-    : `on ${new Date(date.getTime() + next.dayOffset * 864e5).toLocaleDateString('en-US', { weekday: 'long', timeZone: TIME_ZONE })}`;
+  const dayOf = (d) => d.toLocaleDateString('en-US', { timeZone: TIME_ZONE });
+  const when = new Date(date.getTime() + next.dayOffset * 864e5), now = new Date();
+  const day = dayOf(when) === dayOf(now) ? 'today' : dayOf(when) === dayOf(new Date(now.getTime() + 864e5)) ? 'tomorrow'
+    : `on ${when.toLocaleDateString('en-US', { weekday: 'long', timeZone: TIME_ZONE })}`;
   return `${day} at ${clockTime(next.from)}`;
 }
 

@@ -27,6 +27,11 @@ data, run `node scripts/osm-sidewalks.mjs` (Node 18 or later, no packages needed
 public Overpass API, and retries if the servers are busy). See [src/geojson/README.md](src/geojson/README.md) for
 the fields and the licence.
 
+## MBTA stations
+
+[src/geojson/mbta-stations.geojson](src/geojson/mbta-stations.geojson) lists the Green Line stations near campus. If
+the MBTA adds, closes, or makes a station accessible, run `node scripts/mbta.mjs`. Live alerts need no updating.
+
 ## BC shuttles
 
 [src/geojson/shuttles.json](src/geojson/shuttles.json) is a snapshot of BC's shuttle routes. Each semester, or when

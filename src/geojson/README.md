@@ -67,6 +67,14 @@ unpaved ways, ways inside a BC campus boundary, and bridges and tunnels. None of
 accessibility, and the app says so on every route that uses it. Many curb ramps aren't tagged in OpenStreetMap
 yet; adding them there (`kerb=lowered` on the crossing's end nodes) improves the routes after the next refresh.
 
+## MBTA stations (`mbta-stations.geojson`)
+
+The Green Line stations near the campuses (B, C and D branches), from the MBTA's public
+[V3 API](https://www.mbta.com/developers/v3-api), built by [scripts/mbta.mjs](../../scripts/mbta.mjs): name, branch,
+and whether the station and each platform are wheelchair accessible (`Wheelchair`: `yes`, `no`, or `unknown`). Live
+alerts (elevator closures, access problems, suspensions) aren't stored: the app fetches them from the MBTA when they're
+shown.
+
 ## BC shuttles (`shuttles.json`)
 
 BC's regular shuttle routes, built by [scripts/shuttles.mjs](../../scripts/shuttles.mjs) from a snapshot of BC's

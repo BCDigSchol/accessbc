@@ -1,6 +1,6 @@
 // Handles popups for bluelight, elevators, entrances, and shuttle stops features to display information and provide issue reporting options.
 function addPopupHandlers(map) {
-   const layers = ['bluelight', 'elevators', 'entrances', 'shuttlestop'];
+   const layers = ['bluelight', 'elevators', 'entrances', 'shuttlestop', 'mbta'];
 
     layers.forEach(layer => {
         // Add click event for each layer to display attributes
@@ -29,6 +29,9 @@ function addPopupHandlers(map) {
                   <button type="button" data-report-layer="${source}" data-report-id="${escapeText(String(id))}">Report a problem</button>`;
             }
             switch (layer) {
+                case 'mbta':
+                    popupContent = stationPopupHtml(feature);
+                    break;
                 case 'shuttlestop': {
                     // The stop, its routes (filled in below: running now, or when next), and Directions here
                     const p = feature.properties, name = p.Name || 'Shuttle stop';
@@ -49,6 +52,7 @@ function addPopupHandlers(map) {
                 .setHTML(popupContent)
                 .addTo(map);
             if (layer === 'shuttlestop') fillShuttleTimes(popup.getElement());
+            if (layer === 'mbta') fillStationAlerts(popup.getElement());
         });
         // Mouse cursor styling
         map.on('mouseenter', layer, () => {

@@ -32,8 +32,8 @@ What's planned next, and what each item needs. Roughly in priority order within 
 ## Getting around
 
 - **Shuttles:** live arrival times (see BC Transportation above); routes that change by day (holidays, football).
-- **MBTA Green Line:** Boston College, Chestnut Hill Ave, Reservoir and Newton Centre stations, with elevator
-  outages from the MBTA's public feeds.
+- **MBTA Green Line:** stations and live access alerts are in. Next: train times (the MBTA's predictions API), and
+  routes that include a train ride.
 - **City sidewalks:** 1,432 crossings around campus have no curb information in OpenStreetMap. Tagging curb ramps
   there (`kerb=lowered` on a crossing's end nodes) improves routes after `node scripts/osm-sidewalks.mjs`.
 - The Brookline campus has entrances mapped but no paths, in BC's data or OpenStreetMap. Volunteers can map them in

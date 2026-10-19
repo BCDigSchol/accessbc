@@ -40,8 +40,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (resource && !excludedStrings.includes(resource) && !resources.has(resource)) resources.set(resource, name);
       });
     });
+    // T stations, by name ("Reservoir T station")
+    const stations = (typeof routePoints !== 'undefined' && routePoints?.['mbta-stations']?.features || [])
+      .map((f) => ({ label: stationLabel(f), kind: `T station, ${f.properties.Lines}`, station: f }));
     return [
       ...kindOptions(),
+      ...stations,
       ...[...names].sort((a, b) => a.localeCompare(b)).map((label) => ({ label, kind: 'Building', value: label })),
       ...[...resources].map(([label, building]) => ({ label, kind: `In ${building}`, value: building })),
     ];
@@ -115,6 +119,7 @@ document.addEventListener('DOMContentLoaded', function () {
     setOpen(false);
     if (!routing) return;
     if (option.dest) return goToPlace(option.dest);
+    if (option.station) return goToPlace({ label: option.label, lonlat: option.station.geometry.coordinates });
     if (option.kind === 'Find the nearest') {
       input.value = option.label;
       clearButton.hidden = false;
