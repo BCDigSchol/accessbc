@@ -14,6 +14,12 @@ The layers are GeoJSON files in [src/geojson/](src/geojson/), one feature per li
 4. Preview locally with `python3 scripts/serve.py` and open http://localhost:8000.
 5. Commit and push. GitHub Pages publishes the change.
 
+## Entrance links
+
+After adding or moving paths or entrances, run `node scripts/link-entrances.mjs` to redraw the automatic links to
+entrances that aren't connected to a path (it downloads street lines from OpenStreetMap), then
+`node scripts/make-data-collection-sheets.mjs` to update the list of links to check.
+
 ## City sidewalks
 
 [src/geojson/sidewalks.geojson](src/geojson/sidewalks.geojson) comes from OpenStreetMap. To refresh it with newer

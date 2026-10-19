@@ -14,6 +14,9 @@
 // stairs. Footpaths are treated like outdoor paths but aren't checked for accessibility; steps never
 // get junctions where they cross something, since they're often above or below it.
 //
+// Entrance links (entrance-links.geojson, see scripts/link-entrances.mjs) are passed in with the paths, as Type
+// 'Connector': drawn automatically from entrances that weren't connected to any path, and not checked either.
+//
 // For routes between campuses or from off campus, city sidewalks and crossings from OpenStreetMap
 // (sidewalks.geojson, see scripts/osm-sidewalks.mjs) can be added too. They're joined to BC's outdoor
 // paths where one ends within CITY_LINK_M of the other, and aren't checked for accessibility either.
@@ -275,7 +278,7 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
     const p = proj(e.geometry.coordinates);
     const building = (e.properties.Building || '').trim() || nearestBuilding(projectedBuildings, p).name;
     const links = [];
-    const outdoor = nearestSegment(net, p, footpaths.length ? ['Exterior', 'Footpath'] : 'Exterior', ENTRANCE_LINK_M);
+    const outdoor = nearestSegment(net, p, footpaths.length ? ['Exterior', 'Connector', 'Footpath'] : ['Exterior', 'Connector'], ENTRANCE_LINK_M);
     if (outdoor.d <= ENTRANCE_LINK_M) links.push(outdoor);
     const indoor = nearestSegment(net, p, 'Interior', ENTRANCE_LINK_M);
     if (indoor.d <= ENTRANCE_LINK_M && nearestBuilding(projectedBuildings, indoor.point).name === building) links.push(indoor);
@@ -359,7 +362,7 @@ export function describeRoute(graph, route) {
       if (edge.type === 'Ride') { ride.stops++; ride.seconds += edge.seconds; ride.to = edge.shuttle.to; }
     }
     step.length += edge.length;
-    if (edge.type === 'Footpath' || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
+    if (edge.type === 'Footpath' || edge.type === 'Connector' || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
     if (CITY_TYPES.has(edge.type)) step.cityLength = (step.cityLength || 0) + edge.length;
     if (edge.coords) step.coordinates.push(...edge.coords.slice(1)); // a shuttle ride follows the route line
     else step.coordinates.push(graph.nodes[b]);

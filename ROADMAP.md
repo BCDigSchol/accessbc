@@ -21,6 +21,14 @@ What's planned next, and what each item needs. Roughly in priority order within 
 - Reports show as unconfirmed ("reported 2 h ago") and expire after a day or two unless staff confirm them in the Sheet.
 - The same Sheet-and-script approach for other data staff keep up to date: building hours, closures, entrance details.
 
+## Data to check
+
+- **Entrance links:** 53 links drawn automatically to 49 buildings' entrances
+  ([list](docs/data-collection/entrance-links-to-check.csv), longest first). Check each on the ground, and redraw
+  checked ones as real paths. Seven entrance points are drawn well inside their building: where are the doors?
+- **Buildings still unreachable:** 9 (Brookline campus buildings, Claver Hall, 214 Beacon Street, 19 Mayflower Rd,
+  Haley House), in [buildings-without-accessible-entrance.csv](docs/data-collection/buildings-without-accessible-entrance.csv).
+
 ## Getting around
 
 - **Shuttles:** live arrival times (see BC Transportation above); routes that change by day (holidays, football).
@@ -28,7 +36,7 @@ What's planned next, and what each item needs. Roughly in priority order within 
   outages from the MBTA's public feeds.
 - **City sidewalks:** 1,432 crossings around campus have no curb information in OpenStreetMap. Tagging curb ramps
   there (`kerb=lowered` on a crossing's end nodes) improves routes after `node scripts/osm-sidewalks.mjs`.
-- The Brookline campus has no BC entrances mapped yet.
+- The Brookline campus has entrances mapped but no paths: drawing its paths would make it routable.
 
 ## Inside buildings
 

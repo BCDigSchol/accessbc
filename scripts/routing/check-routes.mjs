@@ -7,7 +7,7 @@ import { terrainTileLoader } from '../terrain.mjs';
 import { createTerrain, segmentGrades } from '../../src/js/routing/elevation.mjs';
 
 const t0 = performance.now();
-const graph = buildGraph({ paths: load('accessiblepaths.geojson'), entrances: load('entrances.geojson'), buildings: load('buildings.geojson') });
+const graph = buildGraph({ paths: [...load('accessiblepaths.geojson'), ...load('entrance-links.geojson')], entrances: load('entrances.geojson'), buildings: load('buildings.geojson') });
 const buildMs = performance.now() - t0;
 const edgeCount = graph.adjacency.reduce((s, a) => s + a.length, 0) / 2;
 console.log(`Graph: ${graph.nodes.length} nodes, ${edgeCount} edges, ${graph.entrances.length} linked entrances, built in ${buildMs.toFixed(0)} ms\n`);

@@ -15,6 +15,12 @@ those with listed resources). *What is missing* says which kind of gap it is: **
 needs to look at the building), or **entrance mapped, not connected to a path** (the entrance is on the map, but
 more than 15 m from any path: drawing the path to it in `accessiblepaths.geojson` is enough).
 
+`entrance-links-to-check.csv` lists the links drawn automatically from entrances that weren't connected to any
+path (by `scripts/link-entrances.mjs`), longest first. They let directions reach those buildings, but nobody has
+checked them: is the way from the door to the path paved, level, and free of steps? *Check first* marks entrances
+drawn well inside their building, where the door may be somewhere else. A checked link can be redrawn as a real
+path in `src/geojson/accessiblepaths.geojson`; re-running the script then drops the automatic one.
+
 Once returned, the answers are merged into `src/geojson/entrances.geojson` and `elevators.geojson` as new
 properties, and the app can then show them (automatic doors, intercom-only entrances, audible elevator
 announcements, and so on) and use them in routing.

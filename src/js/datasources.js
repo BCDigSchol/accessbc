@@ -2,7 +2,7 @@ function addMapData(map) {
   return new Promise((resolve) => {
    // Load data sources from the GeoJSON files in src/geojson
     ['bikeracks', 'bluelights', 'elevators', 'entrances', 'curbcuts', 'shuttlestops',
-     'paths', 'buildings', 'accessiblepaths'].forEach(name => {
+     'paths', 'buildings', 'accessiblepaths', 'entrance-links'].forEach(name => {
       map.addSource(name, {
           'type': 'geojson',
           'data': `src/geojson/${name}.geojson`
@@ -71,6 +71,14 @@ function addMapData(map) {
       }
     });
     
+    // Links drawn automatically to entrances that weren't connected to a path (not checked): thin and dashed
+    map.addLayer({
+      id: 'entrance-links',
+      type: 'line',
+      source: 'entrance-links',
+      paint: { 'line-color': '#0F8554', 'line-width': 2, 'line-dasharray': [1, 1.5] },
+    });
+
     map.addLayer({
       id: 'accessiblepaths-ext',
       type: 'line',

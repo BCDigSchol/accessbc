@@ -31,7 +31,8 @@ load('elevators.geojson'));
 const AMENITIES = { Single_res: 'single-stall restroom', Lactation: 'lactation room', Food_dinin: 'dining hall', Food_cafe: 'café',
   Food_vend: 'vending', Printing: 'printing', Seating_in: 'indoor seating', Seating_gr: 'group seating' };
 const raw = load('buildings.geojson');
-const graph = buildGraph({ paths: load('accessiblepaths.geojson'), entrances: load('entrances.geojson'), buildings: raw, elevators: load('elevators.geojson') });
+const links = load('entrance-links.geojson'); // drawn by scripts/link-entrances.mjs: these buildings can be routed to
+const graph = buildGraph({ paths: [...load('accessiblepaths.geojson'), ...links], entrances: load('entrances.geojson'), buildings: raw, elevators: load('elevators.geojson') });
 const linked = new Set(graph.entrances.map((e) => e.building));
 const withEntrance = new Set(load('entrances.geojson').map(nameOf)); // on the map, but maybe not near a path
 const centre = (f) => {
@@ -55,3 +56,12 @@ const header = ['priority (1 = most needed)', 'building', 'campus', 'why it matt
 fs.writeFileSync(path.join(OUT, 'buildings-without-accessible-entrance.csv'),
   [header, ...rows.map((r) => [r.priority, r.name, r.campus, r.why, r.onMap ? 'entrance mapped, not connected to a path' : 'no accessible entrance mapped', r.lat.toFixed(6), r.lon.toFixed(6), '', '', '', '', ''])].map((r) => r.map(cell).join(',')).join('\n') + '\n');
 console.log(`buildings-without-accessible-entrance.csv: ${rows.length} rows, ${rows.filter((r) => r.onMap).length} with an entrance mapped but not connected (${rows.filter((r) => r.priority === 1).length} with restrooms, food or other amenities; ${rows.filter((r) => r.priority === 2).length} with listed resources)`);
+
+// The links drawn automatically to entrances that weren't connected to a path: to check on the ground, longest first
+// (or replace with real paths in accessiblepaths.geojson, then re-run scripts/link-entrances.mjs)
+const linkHeader = ['building', 'campus', 'entrance OBJECTID', 'link length (m)', 'goes to', 'check first', 'entrance latitude', 'entrance longitude',
+  'link_is_accessible (yes/no)', 'surface (paved/brick/grass/…)', 'obstacles (steps, curb, narrow, …)', 'notes'];
+const linkRows = [...links].sort((a, b) => b.properties.Length_m - a.properties.Length_m).map(({ properties: p, geometry: g }) =>
+  [p.Building, p.Campus, p.Entrance, p.Length_m, p.To, p.Check || '', g.coordinates[0][1].toFixed(6), g.coordinates[0][0].toFixed(6), '', '', '', '']);
+fs.writeFileSync(path.join(OUT, 'entrance-links-to-check.csv'), [linkHeader, ...linkRows].map((r) => r.map(cell).join(',')).join('\n') + '\n');
+console.log(`entrance-links-to-check.csv: ${linkRows.length} rows`);

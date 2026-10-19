@@ -40,6 +40,16 @@ It's the main roof height, so towers and spires aren't included. 258 of 298 buil
 small garages and sheds with too few lidar points, so they're `null` (the 3D view shows them at 3 m). Re-run
 the script after adding or reshaping buildings.
 
+## Entrance links (`entrance-links.geojson`)
+
+Short links from accessible entrances that weren't connected to any path, to the nearest BC path or city sidewalk,
+drawn by [scripts/link-entrances.mjs](../../scripts/link-entrances.mjs): straight, or round the building by its
+corners, at most 60 m (90 m going round), never through a building, across stairs, or across a public street.
+`Type` is `Connector`. They haven't been checked on the ground: routes say so, prefer checked paths, and apply the
+slope limit to them; the map shows them as thin dashed lines. The ones to check are listed in
+[docs/data-collection/entrance-links-to-check.csv](../../docs/data-collection/entrance-links-to-check.csv). Re-run the
+script after adding paths or entrances: buildings that become connected no longer get a link.
+
 ## City sidewalks (`sidewalks.geojson`)
 
 City sidewalks, street crossings and footways around the campuses, from OpenStreetMap, built by

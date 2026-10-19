@@ -26,8 +26,9 @@ async function setupDirections(map) {
   const base = new URL('src/', document.baseURI).href;
   const [module, elevation, guidance, transit] = await Promise.all(['network', 'elevation', 'guidance', 'transit'].map((m) => import(`${base}js/routing/${m}.mjs${ASSET_VERSION}`)));
   const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
-  const names = ['accessiblepaths', 'entrances', 'buildings', 'elevators', 'paths'];
-  const [paths, entrances, buildings, elevators, footpaths] = await Promise.all(names.map(load));
+  const names = ['accessiblepaths', 'entrances', 'buildings', 'elevators', 'paths', 'entrance-links'];
+  const [bcPaths, entrances, buildings, elevators, footpaths, entranceLinks] = await Promise.all(names.map(load));
+  const paths = [...bcPaths, ...entranceLinks]; // links drawn to entrances that weren't connected (not checked)
   const data = { paths, entrances, buildings, elevators, footpaths };
   const accessible = module.buildGraph({ paths, entrances, buildings, elevators });
   const terrain = elevation.createTerrain(terrainTileLoader(base + 'basemap/terrain.pmtiles'), accessible.buildings);
@@ -496,7 +497,7 @@ function edgeCost(graph, options) {
     let cost = e.length;
     const c = city && e.seg >= 0 && city[e.seg];
     if (c) cost = cost * c.factor + (c.extra && e.length ? c.extra * (e.length / graph.lines[c.line].length || 0) : 0);
-    else if (e.type === 'Link') cost *= 1.15;
+    else if (e.type === 'Link' || e.type === 'Connector') cost *= 1.15; // joins and entrance links: not checked
     if (e.type === 'Interior') {
       if (options.indoor === 'avoid') return Infinity;
       if (options.indoor === 'prefer') cost = e.length * preferIndoor;
@@ -908,7 +909,7 @@ async function updateRoute(map) {
     }
     const unverified = step.unverifiedLength >= 10 && step.length - step.unverifiedLength >= 10
       ? ` (${feet(step.unverifiedLength)} of it on paths or sidewalks not checked for accessibility)`
-      : step.unverifiedLength >= 10 ? ` (${step.cityLength >= 10 ? 'city sidewalks' : 'a footpath'} not checked for accessibility)` : '';
+      : step.unverifiedLength >= 10 ? ` (${step.cityLength >= 10 ? 'city sidewalks' : 'a path'} not checked for accessibility)` : '';
     const text = i === 0 ? 'Follow the outdoor path' : 'Continue on the outdoor path';
     return `<li>${text}${unverified}: ${feet(step.length)}${stepSlope(step)}</li>`;
   });
