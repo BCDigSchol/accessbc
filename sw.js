@@ -5,7 +5,10 @@
 // - The basemap and terrain (.pmtiles): the map reads small byte ranges of these large files. Once a whole file has
 //   been saved (offline.js asks for this after the page loads), every range is served from it, so the whole map
 //   works offline; until then, ranges come from the network. Once per launch, a saved file is compared with the
-//   server's (ETag or Last-Modified), and downloaded again when it has changed.
+//   server's (ETag or Last-Modified), and downloaded again when it has changed; the new copy is used from the next
+//   launch, so a map never mixes the old file's index with the new file's tiles.
+// - One copy of each file is kept: a page under its address without the query (?from=…&to=…), and a script or
+//   style under its latest ?v= version (each deploy's replaces the last), so the saved copies don't pile up.
 //
 // It has to be at the site root to cover the whole site. Changing CACHE_VERSION clears the saved copies.
 const CACHE_VERSION = 1;
@@ -29,14 +32,24 @@ self.addEventListener('fetch', (event) => {
   else event.respondWith(networkFirst(request));
 });
 
+// Where a file is saved: a page under its address without the query; anything else under its full address, after
+// removing older versions of it (the same path with another ?v=)
+async function saveLatest(cache, request, response) {
+  const url = new URL(request.url);
+  if (request.mode === 'navigate') return cache.put(url.origin + url.pathname, response);
+  if (url.search) await cache.delete(url.origin + url.pathname, { ignoreSearch: true });
+  return cache.put(request, response);
+}
+
 // The network if it answers in time (saving what it sends); otherwise the saved copy, of this version of the file
 // or, failing that, any version (a script saved as app.js?v=old serves app.js?v=new offline)
 async function networkFirst(request) {
   const cache = await caches.open(APP_CACHE);
   const network = fetch(request).then((response) => {
-    if (response.ok && response.type === 'basic') cache.put(request, response.clone());
+    if (response.ok && response.type === 'basic') saveLatest(cache, request, response.clone());
     return response;
   });
+  network.catch(() => { /* offline: handled below */ });
   const timeout = new Promise((resolve) => setTimeout(() => resolve(null), NETWORK_WAIT_MS));
   try {
     const response = await Promise.race([network, timeout]);
@@ -50,7 +63,7 @@ async function networkFirst(request) {
 
 // ---- The basemap and terrain ----
 
-const savedMaps = new Map(); // url -> {blob, headers}, read from the cache once
+const savedMaps = new Map(); // url -> {blob, headers}, read from the cache once and used for this whole launch
 const checked = new Set();   // files compared with the server's this launch
 
 async function savedMap(url) {
@@ -86,7 +99,8 @@ async function saveMap(file) {
   const response = await fetch(file, { cache: 'no-store' });
   if (!response.ok || response.status !== 200) return false;
   await (await caches.open(MAP_CACHE)).put(file, response);
-  savedMaps.delete(file); // read the new copy next time (the page uses the old one until it reloads)
+  // Not read into savedMaps now: an open map has read the old file's index, so it keeps the old file's tiles.
+  // The new copy is read when the worker next starts.
   return true;
 }
 
@@ -108,8 +122,9 @@ self.addEventListener('message', (event) => {
     event.waitUntil((async () => {
       const cache = await caches.open(APP_CACHE);
       await Promise.all(urls.map(async (u) => {
-        if (await cache.match(u)) return;
-        try { const r = await fetch(u); if (r.ok) await cache.put(u, r); } catch { /* try again next time */ }
+        const request = new Request(u);
+        if (await cache.match(request)) return;
+        try { const r = await fetch(request); if (r.ok) await saveLatest(cache, request, r); } catch { /* try again next time */ }
       }));
       reply({ type: 'files-saved' });
     })());

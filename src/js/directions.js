@@ -459,7 +459,16 @@ async function shuttleGraph(base, { anytime = false } = {}) {
   // Per-segment slopes and city costs are the same in the copy: work them out once, on the walking graph
   if (Number.isFinite(routeOptions().maxGrade)) await ensureGrades(base);
   if (base.lines.some((l) => l.city)) cityCosts(base);
-  return transit.addShuttles(base, routes);
+  // Built once for each walking graph and set of routes (and how often they run), and kept until that changes
+  const key = routes.map((r) => `${r.route.id}:${r.every}`).join(',');
+  base.shuttleGraphs ||= new Map();
+  let graph = base.shuttleGraphs.get(key);
+  if (!graph) {
+    graph = transit.addShuttles(base, routes);
+    base.shuttleGraphs.set(key, graph);
+  }
+  graph.grades ||= base.grades; // slopes measured on the walking graph after the copy was made
+  return graph;
 }
 
 // How much more a metre of city sidewalk costs than one of BC's checked paths, per segment: a little more on
@@ -819,7 +828,7 @@ async function updateRoute(map) {
     }
     // Avoiding steep slopes can mean a long way round (off campus especially): say so when it's much longer
     let detour = '';
-    if (route && !unmet && Number.isFinite(options.maxGrade)) {
+    if (route && !unmet && Number.isFinite(options.maxGrade) && !routing.autoStart) { // not shown mid-walk
       const shortest = findRoute(edgeCost(graph, { ...options, maxGrade: Infinity }));
       if (shortest && shortest.length < route.length * 0.8 && route.length - shortest.length > 100) {
         detour = `<p class="route-note">This route avoids steep slopes. A shorter route, ${feet(shortest.length)}, has parts steeper than ${slopeLimitLabel()}: turn off Avoid steep slopes to see it.</p>`;
@@ -853,7 +862,8 @@ async function updateRoute(map) {
   // help isn't running, say when it does.
   let walkOnly = null, shuttleNote = '';
   if (options.shuttle && (!p.route || p.route.length > SHUTTLE_MIN_WALK_M)) {
-    const usesShuttle = (q) => q?.route && q.route.nodes.some((n) => n >= q.graph.base.nodes.length);
+    // A shuttle route counts only if it meets the slope and indoor settings at least as well as the walking route
+    const usesShuttle = (q) => q?.route && (!q.unmet || p.unmet || !p.route) && q.route.nodes.some((n) => n >= q.graph.base.nodes.length);
     const walkCost = p.route ? p.route.cost : Infinity;
     const running = await shuttleGraph(p.graph);
     if (request !== routeRequest) return;
@@ -862,7 +872,7 @@ async function updateRoute(map) {
     if (usesShuttle(t) && t.route.cost < walkCost * SHUTTLE_MUST_SAVE) {
       if (p.route) walkOnly = p.route.length;
       p = t;
-    } else {
+    } else if (!routing.autoStart) { // the note isn't shown mid-walk
       const anytime = await shuttleGraph(p.graph, { anytime: true });
       const a = anytime && await plan(anytime);
       if (request !== routeRequest) return;
@@ -873,9 +883,7 @@ async function updateRoute(map) {
           .map((r) => ({ r, next: routing.transit.nextService(r) })).filter((x) => x.next)
           .sort((x, y) => x.next.minutes - y.next.minutes)[0];
         if (next) {
-          const { dayOffset, from } = next.next;
-          const when = dayOffset === 0 ? 'today' : dayOffset === 1 ? 'tomorrow' : `on ${new Date(Date.now() + dayOffset * 864e5).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })}`;
-          shuttleNote = `<p class="route-note">A shuttle from ${escapeHtml(ride.from)} to ${escapeHtml(ride.to)} would be quicker, but none is running now. The next is the ${escapeHtml(next.r.name)}, starting ${when} at ${routing.transit.clockTime(from)}</p>`; // the time ends "a.m." or "p.m."
+          shuttleNote = `<p class="route-note">A shuttle from ${escapeHtml(ride.from)} to ${escapeHtml(ride.to)} would be quicker, but none is running now. The next is the ${escapeHtml(next.r.name)}, starting ${routing.transit.nextServiceWords(next.next)}</p>`; // the time ends "a.m." or "p.m."
         }
       }
     }

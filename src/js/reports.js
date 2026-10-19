@@ -229,7 +229,7 @@ function reportStatus(text) {
   document.getElementById('report-status').textContent = text;
 }
 
-// Copies the report, then opens where it goes. (A pre-filled Google Form, once REPORT_FORM is set.)
+// Opens where the report goes, and copies it to paste there. (A pre-filled Google Form, once REPORT_FORM is set.)
 async function sendReport(where) {
   const text = reportText();
   if (where === 'form' && REPORT_FORM) {
@@ -243,15 +243,21 @@ async function sendReport(where) {
     window.open(`${REPORT_FORM.url}?${params}`, '_blank', 'noopener');
     return reportStatus('The report form has opened in a new tab, filled in. Check it, then press Submit there.');
   }
+  // Open the form during the tap itself, with the copy started at the same moment: waiting for the copy before
+  // opening a tab can get the tab blocked (on iPhones especially). If it is blocked anyway, offer a link.
+  const url = where === 'facilities' ? UPKEEP_URL : FEEDBACK_FORM, name = where === 'facilities' ? 'BC Facilities' : 'The Access BC feedback form';
+  const copying = navigator.clipboard ? navigator.clipboard.writeText(text) : Promise.reject(new Error('no clipboard'));
+  const tab = window.open(url, '_blank');
+  if (tab) tab.opener = null;
   let copied = false;
-  try { await navigator.clipboard.writeText(text); copied = true; } catch { /* not allowed: show the text instead */ }
+  try { await copying; copied = true; } catch { /* not allowed: show the text instead */ }
   const textBox = document.getElementById('report-text');
   textBox.value = text;
   textBox.hidden = copied;
-  window.open(where === 'facilities' ? UPKEEP_URL : FEEDBACK_FORM, '_blank', 'noopener');
-  reportStatus(copied
-    ? `Your report is copied. ${where === 'facilities' ? 'BC Facilities' : 'The Access BC feedback form'} has opened in a new tab: paste the report there.`
-    : `${where === 'facilities' ? 'BC Facilities' : 'The Access BC feedback form'} has opened in a new tab. Copy the report below and paste it there.`);
+  const pasteHint = copied ? 'Your report is copied: paste it there.' : 'Copy the report below and paste it there.';
+  if (tab) return reportStatus(`${name} has opened in a new tab. ${pasteHint}`);
+  const status = document.getElementById('report-status');
+  status.innerHTML = `<a href="${url}" target="_blank" rel="noopener">Open ${escapeHtml(name.replace(/^The /, 'the '))}</a>. ${pasteHint}`;
 }
 
 function closeReport() {
@@ -301,12 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('report-done').addEventListener('click', closeReport);
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') { e.stopPropagation(); closeReport(); }
-    if (e.key === 'Tab') { // keep keyboard focus inside the dialog while it's open
-      const focusable = [...dialog.querySelectorAll('button, input, textarea, a[href]')].filter((el) => !el.hidden && el.offsetParent !== null);
-      const first = focusable[0], last = focusable.at(-1);
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
+    trapFocus(dialog, e);
   });
 
   // "Report a problem" buttons: on map features, in building information, in the menu, and while walking

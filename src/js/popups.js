@@ -64,13 +64,12 @@ function addPopupHandlers(map) {
 async function fillShuttleTimes(element) {
   const data = await loadShuttles();
   if (!data || !routing?.transit) return;
-  const { runningService, nextService, clockTime } = routing.transit;
+  const { runningService, nextService, nextServiceWords } = routing.transit;
   element.querySelectorAll('[data-shuttle-route]').forEach((li) => {
     const route = data.routes.find((r) => r.name === li.dataset.shuttleRoute);
     if (!route) return;
     const now = runningService(route), next = !now && nextService(route);
-    const when = next && (next.dayOffset === 0 ? 'today' : next.dayOffset === 1 ? 'tomorrow' : `on ${new Date(Date.now() + next.dayOffset * 864e5).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })}`);
-    li.append(now ? `: running now, about every ${now.every} min` : next ? `: next runs ${when} from ${clockTime(next.from)}` : ': not running this week');
+    li.append(now ? `: running now, about every ${now.every} min` : next ? `: next runs ${nextServiceWords(next)}` : ': not running this week');
   });
 }
 

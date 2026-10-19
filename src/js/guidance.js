@@ -385,10 +385,7 @@ function confirmLiveDirections(start) {
   cancel.onclick = () => close(false);
   dialog.onkeydown = (e) => {
     if (e.key === 'Escape') close(false);
-    if (e.key === 'Tab') { // two buttons: keep focus on them
-      e.preventDefault();
-      (document.activeElement === ok ? cancel : ok).focus();
-    }
+    trapFocus(dialog, e);
   };
   dialog.hidden = false;
   ok.focus();

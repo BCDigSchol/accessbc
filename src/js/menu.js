@@ -62,13 +62,7 @@ function handleAboutClick() {
 
   popup.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();
-    if (e.key === 'Tab') {
-      // keep keyboard focus inside the dialog while it's open
-      const focusable = popup.querySelectorAll('a[href], button');
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
+    trapFocus(popup, e);
   });
 
   document.body.appendChild(popup);

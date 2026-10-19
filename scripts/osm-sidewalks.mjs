@@ -19,41 +19,17 @@
 //   osm      the way's id
 import fs from 'node:fs';
 import path from 'node:path';
+import { overpass } from './overpass.mjs';
 
 const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
 const OUT = path.join(ROOT, 'src/geojson/sidewalks.geojson');
 // The campuses and the streets between them, with a margin for arriving from nearby (south, west, north, east)
 const BBOX = [42.312, -71.207, 42.355, -71.145];
-const ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
 
 const WALKABLE = new Set(['footway', 'pedestrian', 'path', 'steps', 'living_street', 'cycleway', 'track']);
 const ROADS = new Set(['residential', 'tertiary', 'secondary', 'primary', 'unclassified', 'trunk', 'service', 'primary_link', 'secondary_link', 'tertiary_link']);
 const ROUGH = new Set(['dirt', 'gravel', 'fine_gravel', 'grass', 'sand', 'ground', 'earth', 'mud', 'unpaved', 'woodchips', 'pebblestone', 'rock', 'compacted', 'grass_paver']);
 const KERB_RANK = { raised: 3, rolled: 2, yes: 2, unknown: 1, lowered: 0, flush: 0, no: 0 };
-
-// The public Overpass servers are often busy: try each in turn, waiting longer each round
-async function overpass(query) {
-  let wait = 5;
-  for (let round = 1; round <= 5; round++) {
-    for (const endpoint of ENDPOINTS) {
-      try {
-        const res = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'User-Agent': 'AccessBC/1.0 (Boston College accessibility map)', 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: `data=${encodeURIComponent(query)}`,
-        });
-        if (res.ok) return (await res.json()).elements;
-        console.log(`  ${new URL(endpoint).host}: ${res.status}`);
-      } catch (err) {
-        console.log(`  ${new URL(endpoint).host}: ${err.message}`);
-      }
-    }
-    console.log(`  busy; trying again in ${wait} s`);
-    await new Promise((r) => setTimeout(r, wait * 1000));
-    wait *= 2;
-  }
-  throw new Error('Overpass servers are busy. Try again later.');
-}
 
 // ---- Geometry (flat metres around the campus, as in src/js/routing/network.mjs) ----
 const LON0 = -71.175, LAT0 = 42.335;

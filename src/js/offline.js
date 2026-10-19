@@ -8,6 +8,10 @@
 const OFFLINE_DATA = ['src/geojson/sidewalks.geojson', 'src/geojson/shuttles.json', 'help.html'];
 const OFFLINE_MAPS = ['src/basemap/basemap.pmtiles', 'src/basemap/terrain.pmtiles'];
 
+// The browser records loaded files in a buffer of 250 by default, which the map's tile requests soon fill; make room,
+// so the list of files to save is complete. (Map tiles aren't on the list: the whole map files are saved instead.)
+try { performance.setResourceTimingBufferSize(5000); } catch { /* not supported: some files are saved on a later visit */ }
+
 function showOfflineNote() {
   const note = document.getElementById('offline-note');
   if (!note) return;
@@ -28,7 +32,8 @@ async function saveForOffline() {
   const sameSite = (u) => { try { const url = new URL(u, location.href); return url.origin === location.origin && !url.pathname.endsWith('.pmtiles'); } catch { return false; } };
   const loaded = performance.getEntriesByType('resource').map((e) => e.name).filter(sameSite);
   const saveData = navigator.connection?.saveData;
-  worker.postMessage({ type: 'save-files', urls: [location.href, ...loaded, ...(saveData ? [] : OFFLINE_DATA.map((u) => new URL(u, location.href).href))] });
+  // The page itself under its address without the query (?from=…&to=…), as the service worker saves pages
+  worker.postMessage({ type: 'save-files', urls: [location.origin + location.pathname, ...loaded, ...(saveData ? [] : OFFLINE_DATA.map((u) => new URL(u, location.href).href))] });
   if (!saveData) worker.postMessage({ type: 'save-maps', urls: OFFLINE_MAPS.map((u) => new URL(u, location.href).href) });
 }
 

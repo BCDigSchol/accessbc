@@ -98,6 +98,18 @@ for (const query of ['(prefers-color-scheme: dark)', '(prefers-contrast: more)',
   window.matchMedia?.(query).addEventListener?.('change', applySettings);
 }
 
+// Keeps keyboard focus inside an open dialog: Tab from the last control goes to the first, Shift+Tab from the
+// first to the last. Call from the dialog's keydown handler. Only visible, enabled controls count.
+function trapFocus(container, e) {
+  if (e.key !== 'Tab') return;
+  const focusable = [...container.querySelectorAll('a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])')]
+    .filter((el) => !el.disabled && !el.hidden && el.offsetParent !== null);
+  if (!focusable.length) return;
+  const first = focusable[0], last = focusable.at(-1);
+  if (e.shiftKey && (document.activeElement === first || !container.contains(document.activeElement))) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && (document.activeElement === last || !container.contains(document.activeElement))) { e.preventDefault(); first.focus(); }
+}
+
 // ---- Settings dialog --------------------------------------------------------------------------------
 
 // Opens the settings dialog (from the menu, or More in walk mode). Closing it returns focus to whatever opened it.
@@ -152,13 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('settings-close').addEventListener('click', close);
   dialog.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') close();
-    if (e.key === 'Tab') {
-      // keep keyboard focus inside the dialog while it's open
-      const focusable = [...dialog.querySelectorAll('button, input, select, a[href]')];
-      const first = focusable[0], last = focusable[focusable.length - 1];
-      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
-      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
-    }
+    trapFocus(dialog, e);
   });
   if (!speech) document.getElementById('set-testVoice').disabled = true;
 });

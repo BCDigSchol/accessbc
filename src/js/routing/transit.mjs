@@ -53,6 +53,13 @@ export function serves(route, from, to) {
   return i >= 0 && j >= 0 && i !== j;
 }
 
+// When a route next runs, in words: "today at 5 p.m.", "tomorrow at 7 a.m.", "on Sunday at 11 a.m."
+export function nextServiceWords(next, date = new Date()) {
+  const day = next.dayOffset === 0 ? 'today' : next.dayOffset === 1 ? 'tomorrow'
+    : `on ${new Date(date.getTime() + next.dayOffset * 864e5).toLocaleDateString('en-US', { weekday: 'long', timeZone: TIME_ZONE })}`;
+  return `${day} at ${clockTime(next.from)}`;
+}
+
 // "8:15 a.m." from "08:15" (or "26:00")
 export function clockTime(hhmm) {
   const m = minutesOf(hhmm) % 1440, h = Math.floor(m / 60), min = m % 60;

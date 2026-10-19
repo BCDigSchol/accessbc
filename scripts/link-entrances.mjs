@@ -17,6 +17,7 @@
 // real paths in accessiblepaths.geojson as they're surveyed; then re-run this, and they're dropped.
 import fs from 'node:fs';
 import path from 'node:path';
+import { overpass } from './overpass.mjs';
 import { ROOT, load, buildGraph, projectBuildings, proj, unproj, dist, nearestOnSegment, nearestBuilding, campusOf } from './routing/lib.mjs';
 
 const OUT = path.join(ROOT, 'src/geojson/entrance-links.geojson');
@@ -26,20 +27,10 @@ const CORNER_OFFSET_M = 2.5; // how far outside a corner a link passes
 const LEAVE_WALL_M = 2;   // the first stretch from the entrance may run along a wall
 const OWN_BUILDING_M = 5; // entrances are often drawn just inside their own building: the link may leave it within this
 
-// Public streets from OpenStreetMap (Overpass), which links mustn't cross. The servers are often busy: retry.
+// Public streets from OpenStreetMap, which links mustn't cross
 async function streets() {
-  const query = `[out:json][timeout:120];way["highway"~"^(residential|tertiary|secondary|primary|unclassified|trunk|primary_link|secondary_link|tertiary_link|living_street)$"](42.312,-71.207,42.355,-71.145);out geom;`;
-  for (let wait = 5; wait <= 80; wait *= 2) {
-    for (const endpoint of ['https://overpass-api.de/api/interpreter', 'https://overpass.private.coffee/api/interpreter']) {
-      try {
-        const res = await fetch(endpoint, { method: 'POST', headers: { 'User-Agent': 'AccessBC/1.0 (Boston College accessibility map)', 'Content-Type': 'application/x-www-form-urlencoded' }, body: `data=${encodeURIComponent(query)}` });
-        if (res.ok) return (await res.json()).elements.map((w) => ({ type: 'Feature', properties: { Type: 'Street', name: w.tags.name }, geometry: { type: 'LineString', coordinates: w.geometry.map((g) => [g.lon, g.lat]) } }));
-      } catch { /* try the next server */ }
-    }
-    console.log(`  Overpass busy; trying again in ${wait} s`);
-    await new Promise((r) => setTimeout(r, wait * 1000));
-  }
-  throw new Error('Overpass servers are busy. Try again later.');
+  const elements = await overpass(`[out:json][timeout:120];way["highway"~"^(residential|tertiary|secondary|primary|unclassified|trunk|primary_link|secondary_link|tertiary_link|living_street)$"](42.312,-71.207,42.355,-71.145);out geom;`);
+  return elements.map((w) => ({ type: 'Feature', properties: { Type: 'Street', name: w.tags.name }, geometry: { type: 'LineString', coordinates: w.geometry.map((g) => [g.lon, g.lat]) } }));
 }
 console.log('Downloading streets from OpenStreetMap…');
 const streetLines = await streets();
