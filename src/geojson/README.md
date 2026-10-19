@@ -75,6 +75,11 @@ and whether the station and each platform are wheelchair accessible (`Wheelchair
 alerts (elevator closures, access problems, suspensions) and train times aren't stored: the app fetches them from the
 MBTA when they're shown.
 
+`mbta-trains.json` (from the same script) has each Green Line branch and direction through those stations, in
+order, with the scheduled ride time between them, how often trains run (measured from a late-morning schedule),
+and the track's line, in the same form as `shuttles.json`, so routes can include a train ride. Hours are
+approximate: 5 a.m. to 1 a.m. every day.
+
 ## BC shuttles (`shuttles.json`)
 
 BC's regular shuttle routes, built by [scripts/shuttles.mjs](../../scripts/shuttles.mjs) from a snapshot of BC's

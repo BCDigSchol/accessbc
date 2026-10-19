@@ -357,7 +357,7 @@ export function describeRoute(graph, route) {
     }
     // A shuttle ride: which route, from and to which stop, how many stops, the ride time and the average wait
     if (type === 'shuttle') {
-      const ride = (step.shuttle ||= { route: edge.shuttle.route, every: edge.shuttle.every, stops: 0, seconds: 0, wait: 0 });
+      const ride = (step.shuttle ||= { route: edge.shuttle.route, every: edge.shuttle.every, mode: edge.shuttle.mode || 'shuttle', toward: edge.shuttle.toward, stops: 0, seconds: 0, wait: 0 });
       if (edge.type === 'Board') { ride.from = edge.shuttle.stop; ride.wait = edge.wait; }
       if (edge.type === 'Ride') { ride.stops++; ride.seconds += edge.seconds; ride.to = edge.shuttle.to; }
     }

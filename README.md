@@ -25,7 +25,9 @@ This project is a collaborative project between the [BC Digital Scholarship Grou
 - **Between campuses** (Chestnut Hill, Brighton, Newton) and from off campus, on city sidewalks from OpenStreetMap, with every street crossing as a step and whether its curb ramps are confirmed
 - **BC shuttles** in routes when they're running and quicker: "take the Newton Eagle Direct to Stuart", with BC's schedules and the next shuttle when none is running
 - **MBTA Green Line stations**, with wheelchair accessibility, live elevator and access alerts, and live next-train times
-- **Plan for later**: shuttles are chosen for the time you're leaving
+- **Green Line trains in routes** when quicker (walk, train, maybe a shuttle, walk), boarding only at wheelchair-accessible stations when you avoid stairs
+- **Plan for later, or arrive by a time**: shuttles and trains are chosen for when you'll travel, and the route says when to leave
+- **Avoid crossings without confirmed curb ramps**, an option for wheelchair users off campus
 
 **Finding things**
 - One **Where to?** box for buildings, offices and resources inside them, T stations, and kinds of thing
@@ -102,6 +104,10 @@ On computers it's a column down the left; on phones a search bar at the top and 
   read each section (or the whole guide) aloud. Keep it up to date when
   features change.
 
+**Routing tests** ([tests/routing/](tests/routing/)) cover the graph builder, routes on the real campus data, step
+wording, shuttle schedules and rides, and slopes: `node --test tests/routing/*.test.mjs` (no packages needed). They
+run in CI too ([.github/workflows/routing-tests.yml](.github/workflows/routing-tests.yml)).
+
 **Testing.** Automated accessibility checks run on every push to `dev` and every pull request into `main`
 ([.github/workflows/accessibility.yml](.github/workflows/accessibility.yml); run them locally with
 `cd tests/accessibility && npm ci && npx playwright install chromium && npm run check`). Testing with
@@ -124,6 +130,7 @@ students and an orientation and mobility instructor is planned in
 | `src/js/routing/` | Routing graph, route finder, slopes, shuttle rides, and step-by-step instructions, shared with `scripts/routing/` ([README](scripts/routing/README.md)) |
 | `scripts/` | Local preview server and data/basemap tooling. Not deployed. |
 | `tests/accessibility/` | Automated accessibility checks (axe-core and Playwright, used by CI only). Not deployed. |
+| `tests/routing/` | Routing tests (Node's built-in test runner). Not deployed. |
 | `docs/` | Data collection sheets and the usability testing plan |
 
 See [updatingdata.md](updatingdata.md) for editing map data. See [ROADMAP.md](ROADMAP.md) for what's planned next.

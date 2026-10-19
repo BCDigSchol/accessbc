@@ -5,7 +5,7 @@
 //
 // While offline, a note says what still works.
 
-const OFFLINE_DATA = ['src/geojson/sidewalks.geojson', 'src/geojson/shuttles.json', 'help.html'];
+const OFFLINE_DATA = ['src/geojson/sidewalks.geojson', 'src/geojson/shuttles.json', 'src/geojson/mbta-trains.json', 'help.html'];
 const OFFLINE_MAPS = ['src/basemap/basemap.pmtiles', 'src/basemap/terrain.pmtiles'];
 
 // The browser records loaded files in a buffer of 250 by default, which the map's tile requests soon fill; make room,

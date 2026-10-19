@@ -22,6 +22,7 @@ const SCHEDULE_PAGE = 'https://www.bc.edu/bc-web/offices/aux-services/sites/tran
 // When each route runs, from BC's shuttle page (checked 2026-10-16). Keyed by tracker route id.
 // days: 0 = Sunday … 6 = Saturday. Times are 24-hour "HH:MM"; past midnight continues the day ("26:00" = 2 a.m.).
 // every: minutes between shuttles (the middle of a range like "8–10 minutes"). loop: the last stop runs on to the first.
+// endAt: the last stop riders can get off at, when the tracker lists the bus's empty run back too.
 // Event routes (football, holidays) aren't included.
 const WEEKDAYS = [1, 2, 3, 4, 5], WEEKEND = [0, 6];
 const SERVICE = {
@@ -51,7 +52,8 @@ const SERVICE = {
   21: { name: 'Law School Express (afternoon)', loop: false, service: [{ days: WEEKDAYS, from: '15:05', to: '17:05', every: 110 }] },
   9: { name: 'Mall and Grocery Shuttle (Saturday)', loop: false, service: [{ days: [6], from: '11:00', to: '15:05', every: 60 }] },
   25: { name: 'Mall and Grocery Shuttle (Sunday)', loop: false, service: [{ days: [0], from: '11:00', to: '16:05', every: 60 }] },
-  24: { name: 'Early Morning Shuttle (Newton)', loop: false, service: [
+  // BC's page: "Direct service from Stuart stop to Conte Forum"; the tracker's last stop is the bus going back
+  24: { name: 'Early Morning Shuttle (Newton)', loop: false, endAt: 'Conte Forum', service: [
     { days: WEEKDAYS, from: '05:55', to: '06:35', every: 30 },
     { days: WEEKEND, from: '06:55', to: '07:35', every: 30 },
   ] },
@@ -115,6 +117,7 @@ async function main() {
       rideToNext: s.SecondsToNextStop,
       dwell: s.SecondsAtStop,
     }));
+    if (info.endAt) stops = stops.slice(0, stops.findIndex((st) => st.name === info.endAt) + 1 || stops.length);
     // A loop listed with its first stop again at the end: keep it once
     if (stops.length > 1 && metres(stops[0].lonlat, stops.at(-1).lonlat) < 30 && stops[0].name === stops.at(-1).name) stops = stops.slice(0, -1);
     const at = stopIndexes(line, stops);

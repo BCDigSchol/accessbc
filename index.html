@@ -66,6 +66,7 @@
       <label for="set-slopeDir">Apply the slope limit to</label>
       <select id="set-slopeDir"><option value="both">Uphill and downhill</option><option value="up">Uphill only</option><option value="down">Downhill only</option></select>
     </div>
+    <div class="setting"><input type="checkbox" id="set-curbs"><label for="set-curbs">Avoid street crossings without confirmed curb ramps</label></div>
     <div class="setting">
       <label for="set-pace">My pace</label>
       <select id="set-pace" aria-describedby="set-pace-help"><option value="slower">Slower (about 1.8 mph)</option><option value="gentle">Gentle (about 2.7 mph)</option><option value="brisk">Brisk (about 3.1 mph)</option></select>
@@ -198,11 +199,12 @@
           <select id="trip-when" aria-describedby="trip-when-help">
             <option value="now">Leave now</option>
             <option value="later">Leave at a time…</option>
+            <option value="arrive">Arrive by a time…</option>
           </select>
           <p id="trip-when-help" class="route-note">For which BC shuttles are running. Walking directions are the same at any time.</p>
         </div>
         <div class="route-field" id="trip-time-field" hidden>
-          <label for="trip-time">Leaving at</label>
+          <label for="trip-time" id="trip-time-label">Leaving at</label>
           <input type="datetime-local" id="trip-time">
         </div>
         <h3>Route options</h3>
@@ -236,9 +238,14 @@
           </select>
         </div>
         <div class="route-check">
+          <input type="checkbox" id="opt-curbs" aria-describedby="opt-curbs-help">
+          <label for="opt-curbs">Avoid street crossings without confirmed curb ramps</label>
+          <p id="opt-curbs-help" class="route-note">Off campus. Many curb ramps aren't recorded yet, so routes may be longer; if there's no way round, the route says so.</p>
+        </div>
+        <div class="route-check">
           <input type="checkbox" id="opt-shuttle" checked aria-describedby="opt-shuttle-help">
-          <label for="opt-shuttle">Use BC shuttles when quicker</label>
-          <p id="opt-shuttle-help" class="route-note">Only shuttles running at the time. Whether they have a wheelchair lift or ramp isn't confirmed yet.</p>
+          <label for="opt-shuttle">Use BC shuttles and the Green Line when quicker</label>
+          <p id="opt-shuttle-help" class="route-note">Only those running at the time. Avoiding stairs, trains are used only between wheelchair-accessible stations. Whether BC shuttles have a wheelchair lift or ramp isn't confirmed yet.</p>
         </div>
         <div class="route-check"><input type="checkbox" id="route-focus" checked><label for="route-focus">Only show map features along the route</label></div>
         <h3>Route line colours</h3>

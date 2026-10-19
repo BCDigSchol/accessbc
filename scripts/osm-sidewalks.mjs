@@ -70,17 +70,25 @@ async function main() {
   const namedRoads = ways.filter((w) => ROADS.has(w.tags.highway) && w.tags.name)
     .map((w) => ({ name: w.tags.name, xy: w.geometry.map((g) => proj([g.lon, g.lat])) }));
 
-  const nearestRoadName = (xy) => {
-    // The road nearest the middle of the way, within 30 m
-    const mid = xy[Math.floor(xy.length / 2)];
+  // The road nearest a point, within 30 m
+  const roadAt = (p) => {
     let best = { d: 30, name: '' };
     for (const r of namedRoads) {
       for (let i = 1; i < r.xy.length; i++) {
-        const d = distToSegment(mid, r.xy[i - 1], r.xy[i]);
+        const d = distToSegment(p, r.xy[i - 1], r.xy[i]);
         if (d < best.d) best = { d, name: r.name };
       }
     }
     return best.name;
+  };
+  // A crossing is named after the road at its middle (the one it crosses). A sidewalk is named after the road
+  // nearest most of it: at its middle alone, a long sidewalk can pick up a side street it passes.
+  const nearestRoadName = (xy, crossing = false) => {
+    if (crossing) return roadAt(xy[Math.floor(xy.length / 2)]);
+    const samples = xy.length <= 7 ? xy : Array.from({ length: 7 }, (_, k) => xy[Math.round((k * (xy.length - 1)) / 6)]);
+    const votes = {};
+    for (const p of samples) { const name = roadAt(p); if (name) votes[name] = (votes[name] || 0) + 1; }
+    return Object.entries(votes).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
   };
 
   const features = [];
@@ -100,7 +108,7 @@ async function main() {
     const xy = coordinates.map(proj);
     const props = { Type, osm: w.id };
     // Sidewalks are named after the street beside them, crossings after the street they cross
-    const name = Type === 'Street' ? t.name : t.name || ((Type === 'Sidewalk' && t.footway === 'sidewalk') || Type === 'Crossing' ? nearestRoadName(xy) : '');
+    const name = Type === 'Street' ? t.name : t.name || (Type === 'Crossing' ? nearestRoadName(xy, true) : Type === 'Sidewalk' && t.footway === 'sidewalk' ? nearestRoadName(xy) : '');
     if (name) props.name = name;
     for (const k of ['surface', 'width', 'incline', 'wheelchair']) if (t[k]) props[k] = t[k];
     if (t.tactile_paving) props.tactile = t.tactile_paving;

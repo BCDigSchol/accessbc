@@ -134,10 +134,15 @@ async function fillStationAlerts(element) {
 async function showStationNotes() {
   const box = document.getElementById('station-notes');
   if (!box) return;
-  const ends = [
+  // The trip's start and end, if they're stations, and any station a train is boarded or left at on the way
+  const byName = (name) => stationFeatures().find((f) => f.properties.Name === name);
+  const trainStations = routing.current ? routing.module.describeRoute(routing.current.graph, routing.current.route).steps
+    .filter((st) => st.shuttle?.mode === 'train').flatMap((st) => [byName(st.shuttle.from), byName(st.shuttle.to)]) : [];
+  const ends = [...new Set([
     document.getElementById('route-from').value === HERE && routing.fromPlace && stationByLabel(routing.fromPlace.label),
+    ...trainStations,
     document.getElementById('route-to').value === PLACE && routing.place && stationByLabel(routing.place.label),
-  ].filter(Boolean);
+  ].filter(Boolean))];
   if (!ends.length) return;
   const parts = await Promise.all(ends.map(async (f) => {
     const [alerts, trains] = await Promise.all([mbtaAlerts(f.properties.Id), mbtaTrains(f.properties.Id)]);

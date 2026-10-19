@@ -8,6 +8,10 @@ const TURN_MIN_DEG = 35;     // smaller changes of direction are just bends in t
 const HEADING_WINDOW_M = 8;  // direction is measured over this distance, smoothing digitizing zigzags
 const MERGE_UNDER_M = 6;     // turns closer together than this are one manoeuvre
 const LANDMARK_MAX_M = 30;   // only name buildings this close to where a step starts
+const JOG_M = 25;            // on city sidewalks, two turns this close that cancel out are a jog, not a turn
+const JOG_NET_DEG = 30;      // ... cancelling out to within this
+const CROSSINGS_JOIN_M = 10; // crossings this close together are one step ("Cross A, then B")
+const CROSS_APPROACH_M = 12; // on city sidewalks, a slight turn this close before a crossing is part of it
 
 const bearing = (a, b) => (Math.atan2(b[0] - a[0], b[1] - a[1]) * 180) / Math.PI; // clockwise from north
 const normalise = (deg) => ((((deg + 180) % 360) + 360) % 360) - 180;
@@ -139,6 +143,31 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
     kept = kept.filter((b) => b !== turn);
   }
 
+  // City sidewalks jink round driveways, trees and corners: a turn and a turn back within JOG_M is no turn at all.
+  // (Not on campus paths, where a zigzag can be a ramp's switchbacks.)
+  const onCity = (s) => !!line.info[Math.max(0, line.at.findIndex((a) => a > s) - 1)]?.Type;
+  for (let k = 0; k + 1 < kept.length; k++) {
+    const a = kept[k], b = kept[k + 1];
+    if (a.kind === 'turn' && b.kind === 'turn' && b.s - a.s < JOG_M && Math.abs(normalise(a.turn + b.turn)) < JOG_NET_DEG && onCity(a.s) && onCity(b.s)) {
+      kept.splice(k, 2);
+      k = Math.max(-1, k - 2);
+    }
+  }
+
+  // On city sidewalks, a slight turn shortly before a crossing is the sidewalk curving into the crosswalk
+  kept = kept.filter((b) => !(b.kind === 'turn' && Math.abs(b.turn) < 60 && onCity(b.s)
+    && kept.some((c) => c.kind === 'cross' && c.s - b.s > 0 && c.s - b.s < CROSS_APPROACH_M)));
+
+  // Crossings right after one another (a crossing, a few steps, the next crossing) are one step
+  for (let k = 0; k + 2 < kept.length; k++) {
+    const cross = kept[k], gap = kept[k + 1], next = kept[k + 2];
+    if (cross.kind === 'cross' && gap.afterCrossing && next.kind === 'cross' && next.s - gap.s < CROSSINGS_JOIN_M) {
+      cross.also = [...(cross.also || []), next.crossing, ...(next.also || [])];
+      kept.splice(k + 1, 2);
+      k--;
+    }
+  }
+
   // Stops: a step of their own, which also stands in for any turn right at the stop (e.g. back out of a door).
   for (const stop of route.stops || []) {
     const s = line.nodeAt.get(stop.index);
@@ -156,13 +185,13 @@ export function buildSteps(graph, route, { from, to, fromBuilding = true, toIsPl
     const segIndex = Math.max(0, line.at.findIndex((a) => a > b.s) - 1);
     const type = kindOf(line.types[Math.min(segIndex, line.types.length - 1)]);
     const step = { kind: b.kind, turn: b.turn, label: b.label, length: end - b.s, heading, start: unproj(startPt), coordinates, type };
-    if (b.kind === 'cross') step.crossing = b.crossing;
+    if (b.kind === 'cross') step.crossing = b.also ? { ...b.crossing, also: b.also } : b.crossing;
     // Boarding a shuttle: the route, the stop to get off at, how many stops, and the ride time
     if (b.kind === 'board') {
       const rides = [];
       for (let i = segIndex; i < line.types.length && kindOf(line.types[i]) === 'shuttle'; i++) if (line.info[i] && !rides.includes(line.info[i])) rides.push(line.info[i]);
       const first = rides[0] || {};
-      step.shuttle = { route: first.route, every: first.every, from: first.from, to: rides.at(-1)?.to, stops: rides.length };
+      step.shuttle = { route: first.route, every: first.every, mode: first.mode || 'shuttle', toward: first.toward, from: first.from, to: rides.at(-1)?.to, stops: rides.length };
     }
     if (b.kind === 'alight') step.stop = line.info[Math.max(0, segIndex - 1)]?.to;
     // Off campus there are no BC buildings to steer by: the street you're walking along instead
@@ -212,6 +241,15 @@ export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
       const where = c.crossing === 'traffic_signals' ? ' at the traffic lights'
         : ['marked', 'zebra', 'uncontrolled'].includes(c.crossing) ? ' at the crosswalk'
         : c.crossing === 'unmarked' ? ', where there’s no marked crosswalk' : '';
+      if (c.also?.length) {
+        // Two or more crossings in a row: name them all; curb ramps confirmed only if they are at every one
+        const all = [c, ...c.also];
+        const names = all.map((x) => x.name || 'the next street').filter((n, i, ns) => i === 0 || n !== ns[i - 1]);
+        const ramps = all.every((x) => ['lowered', 'flush'].includes(x.kerb)) ? ' There are curb ramps or level curbs at each.'
+          : all.some((x) => x.kerb === 'raised') ? ' Careful: there’s a raised curb on the way, so this isn’t step-free.'
+          : ' Curb ramps aren’t confirmed at all of them.';
+        return `Cross ${names.join(', then ')}${where}.${ramps}`;
+      }
       const curbs = { lowered: ' There are curb ramps on both sides.', flush: ' The curbs are level with the street.', raised: ' Careful: there’s a raised curb, so this crossing isn’t step-free.' }[c.kerb]
         || ' Curb ramps aren’t confirmed here.';
       return `Cross ${c.name || 'the street'}${where}.${curbs}`;
@@ -221,7 +259,11 @@ export function stepText(step, index, { from, to, fromBuilding, toIsPlace }) {
     case 'board': {
       const ride = step.shuttle || {};
       const stops = ride.stops ? ` (${ride.stops} ${ride.stops === 1 ? 'stop' : 'stops'})` : '';
-      return `At the ${ride.from || 'shuttle'} stop, take the ${ride.route || 'BC'} shuttle to ${ride.to || 'your stop'}${stops}. Shuttles come about every ${ride.every || 15} minutes.`;
+      if (ride.mode === 'train') {
+        return `At ${ride.from || 'the'} station, take a ${ride.route} train${ride.toward ? ` toward ${ride.toward}` : ''} to ${ride.to || 'your station'}${stops}. Trains come about every ${ride.every || 10} minutes.`;
+      }
+      const stopName = !ride.from ? 'the shuttle stop' : /\bstop$/i.test(ride.from) ? `the ${ride.from}` : `the ${ride.from} stop`; // "Reservoir MBTA stop"
+      return `At ${stopName}, take the ${ride.route || 'BC'} shuttle to ${ride.to || 'your stop'}${stops}. Shuttles come about every ${ride.every || 15} minutes.`;
     }
     case 'alight':
       return `Get off at ${step.stop || 'your stop'} and continue${distance}${landmark}.`;
