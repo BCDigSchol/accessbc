@@ -24,7 +24,7 @@ This project is a collaborative project between the [BC Digital Scholarship Grou
 **Beyond campus**
 - **Between campuses** (Chestnut Hill, Brighton, Newton) and from off campus, on city sidewalks from OpenStreetMap, with every street crossing as a step and whether its curb ramps are confirmed
 - **BC shuttles** in routes when they're running and quicker: "take the Newton Eagle Direct to Stuart", with BC's schedules and the next shuttle when none is running
-- **MBTA Green Line stations**, with wheelchair accessibility and live elevator and access alerts
+- **MBTA Green Line stations**, with wheelchair accessibility, live elevator and access alerts, and live next-train times
 - **Plan for later**: shuttles are chosen for the time you're leaving
 
 **Finding things**

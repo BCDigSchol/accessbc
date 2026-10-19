@@ -2357,3 +2357,13 @@ html.dark .offline-note {
 html.dark .link-button {
   color: #9cc3ff;
 }
+
+.mbta-heading {
+  margin: 0.5rem 0 0.2rem;
+  font-size: 1rem;
+}
+
+.mbta-trains {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+}

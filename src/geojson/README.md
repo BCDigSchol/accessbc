@@ -72,8 +72,8 @@ yet; adding them there (`kerb=lowered` on the crossing's end nodes) improves the
 The Green Line stations near the campuses (B, C and D branches), from the MBTA's public
 [V3 API](https://www.mbta.com/developers/v3-api), built by [scripts/mbta.mjs](../../scripts/mbta.mjs): name, branch,
 and whether the station and each platform are wheelchair accessible (`Wheelchair`: `yes`, `no`, or `unknown`). Live
-alerts (elevator closures, access problems, suspensions) aren't stored: the app fetches them from the MBTA when they're
-shown.
+alerts (elevator closures, access problems, suspensions) and train times aren't stored: the app fetches them from the
+MBTA when they're shown.
 
 ## BC shuttles (`shuttles.json`)
 
