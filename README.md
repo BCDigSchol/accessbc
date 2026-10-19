@@ -4,6 +4,56 @@ This repository contains the script for the [AccessBC](https://bcdigschol.github
 
 This project is a collaborative project between the [BC Digital Scholarship Group](https://ds.bc.edu/), colleagues in Facilities, and feedback from BC's Council for Students with Disabilites. The purpose of this webmap is to make resources around the BC campuses more visible and findable as well as try to help users navigate campus.
 
+## Features at a glance
+
+**Accessible directions**
+- Step-free routes on BC's mapped accessible paths, using accessible entrances, indoor routes and elevators
+- **Avoid steep slopes** on by default (1:12, the ADA ramp limit), with one tap to turn it off, and an option to limit only uphill or only downhill
+- Avoids stairs and footpaths not checked for accessibility (unless you allow them)
+- Routes avoid elevators and entrances reported not working, and say so
+- Up to five stops on the way, such as a restroom or a lactation room
+- Time estimates at your pace (slower, gentle or brisk)
+
+**Walking directions, hands-free**
+- One tap to **Start**: follows your location, reads each step aloud, and finds a new route if you go off it
+- Clock-face directions from the phone's compass ("at your 2 o'clock"), and **Face the right way** with a tone
+- Sounds and vibration for each step, turns and arrival; the screen stays on
+- **Where am I?**: the nearest building, your progress, and what's around you
+- Works with VoiceOver, TalkBack, NVDA and JAWS, and doesn't talk over your screen reader
+
+**Beyond campus**
+- **Between campuses** (Chestnut Hill, Brighton, Newton) and from off campus, on city sidewalks from OpenStreetMap, with every street crossing as a step and whether its curb ramps are confirmed
+- **BC shuttles** in routes when they're running and quicker: "take the Newton Eagle Direct to Stuart", with BC's schedules and the next shuttle when none is running
+- **MBTA Green Line stations**, with wheelchair accessibility and live elevator and access alerts
+- **Plan for later**: shuttles are chosen for the time you're leaving
+
+**Finding things**
+- One **Where to?** box for buildings, offices and resources inside them, T stations, and kinds of thing
+- **Find nearby**: single-stall restrooms, lactation rooms, food, printing, seating, elevators, shuttle stops, T stations and blue-light phones, by walking distance
+- **Your places**: saved and recent destinations, one tap away
+- Building information: accessible entrances (which side), elevators, and what's nearby
+
+**Safety**
+- **Blue light**: one button, always on screen, gives walking directions to the nearest working blue-light emergency phone
+- Call BC Police (617-552-4444) and 911 buttons wherever blue lights appear
+- A clear in-development notice: live directions aren't yet an assistive device to rely on
+
+**Seeing it your way**
+- Dark mode, high contrast, larger text, bigger map symbols, and a large step-by-step view
+- Works at 400% zoom, with reduce motion, and fully by keyboard
+- Everything on the map is also available as text
+
+**Reliable and shareable**
+- **Works offline** after the first visit: the whole map, directions and your places, with no signal
+- Add to your home screen like an app
+- Share a trip by link, or copy or email the directions as text
+- Report a problem (elevator out, door broken, path blocked) from the map, a building, or while walking
+
+**Built to improve**
+- Automated accessibility checks (WCAG 2.2 AA) on every change
+- Spreadsheets and a volunteer mapping guide to fill the data gaps ([docs/data-collection/](docs/data-collection/))
+- A [roadmap](ROADMAP.md) of what's next
+
 ## Running locally
 
 The site is plain static files with no build step and no external services. From the repository root, run:
@@ -15,7 +65,7 @@ python3 scripts/serve.py
 Then open http://localhost:8000. Use this script rather than `python3 -m http.server`, which can't serve the
 `.pmtiles` basemap and terrain files (they need HTTP Range requests).
 
-## Accessibility features
+## Accessibility features in detail
 
 **The interface** works like other map apps: one **Where to?** box (buildings, things in them, or kinds of
 thing like single-stall restrooms, with quick buttons and a **More…** list under it), a route preview from your
