@@ -2302,3 +2302,32 @@ html.dark .places-edit button {
     overflow-y: auto;
   }
 }
+
+/* Offline: what still works */
+.offline-note {
+  margin: 0.5rem 0 0;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.9rem;
+  color: #000;
+  background: #fff4cc;
+  border-left: 4px solid #b38600;
+  border-radius: 0.3rem;
+}
+
+.offline-note[hidden] {
+  display: none;
+}
+
+html.dark .offline-note {
+  color: #f0f0f0;
+  background: #3a3220;
+}
+
+@media screen and (max-width: 870px) {
+  .offline-note {
+    grid-column: 1 / -1;
+    order: 2;
+    margin: 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}

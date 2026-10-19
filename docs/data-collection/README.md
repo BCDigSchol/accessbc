@@ -1,5 +1,8 @@
 # Data collection templates
 
+To map walkways where none are mapped yet (the Brookline campus), see the volunteer
+[OpenStreetMap mapping guide](openstreetmap-mapping-guide.md).
+
 Spreadsheets for BC Facilities and Disability Services to fill in. Each row is an entrance or elevator already on
 the map (by `OBJECTID`, building, and coordinates); only the blank columns need answers. They open in Excel or
 Google Sheets. Regenerate them after entrances or elevators change (this overwrites any answers, so copy those

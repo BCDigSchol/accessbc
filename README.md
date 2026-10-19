@@ -67,6 +67,7 @@ students and an orientation and mobility instructor is planned in
 |---|---|
 | `index.html`, `src/js/`, `src/input.css` | The app |
 | `help.html`, `src/help.css` | The user guide |
+| `sw.js`, `src/js/offline.js`, `src/manifest.webmanifest` | Working offline (the service worker, at the site root to cover it all) and the home screen app |
 | `src/geojson/` | Campus data layers ([README](src/geojson/README.md)) |
 | `src/basemap/` | Self-hosted basemap, terrain, fonts, and icons |
 | `src/vendor/` | MapLibre GL JS and PMTiles ([README](src/vendor/README.md)) |

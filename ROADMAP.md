@@ -36,7 +36,9 @@ What's planned next, and what each item needs. Roughly in priority order within 
   outages from the MBTA's public feeds.
 - **City sidewalks:** 1,432 crossings around campus have no curb information in OpenStreetMap. Tagging curb ramps
   there (`kerb=lowered` on a crossing's end nodes) improves routes after `node scripts/osm-sidewalks.mjs`.
-- The Brookline campus has entrances mapped but no paths: drawing its paths would make it routable.
+- The Brookline campus has entrances mapped but no paths, in BC's data or OpenStreetMap. Volunteers can map them in
+  OpenStreetMap ([guide](docs/data-collection/openstreetmap-mapping-guide.md)), or Facilities may have a site plan
+  (it was Pine Manor College) that can be converted.
 
 ## Inside buildings
 

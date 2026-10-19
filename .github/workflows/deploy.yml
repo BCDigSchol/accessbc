@@ -29,7 +29,7 @@ jobs:
       - name: Assemble site
         run: |
           mkdir _site
-          cp -R index.html help.html src _site/
+          cp -R index.html help.html sw.js src _site/
           # Browsers keep files for up to 10 minutes, so right after a deploy a returning visitor could get new
           # and old files mixed together. Stamp this deploy's version onto the page's scripts and styles, and onto
           # the routing modules' imports of each other (directions.js passes its own stamp to the ones it loads).
