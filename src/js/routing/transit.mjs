@@ -117,10 +117,10 @@ export function addShuttles(base, routes) {
   return { ...base, nodes, adjacency, base: base.base || base };
 }
 
-// The cost of a shuttle edge in metres of walking, or null for other edges
-export function shuttleCost(e) {
-  if (e.type === 'Board') return e.wait * WALK_SPEED;
-  if (e.type === 'Ride') return e.seconds * WALK_SPEED;
+// The cost of a shuttle edge in metres of walking at a speed (metres a second), or null for other edges
+export function shuttleCost(e, speed = WALK_SPEED) {
+  if (e.type === 'Board') return e.wait * speed;
+  if (e.type === 'Ride') return e.seconds * speed;
   if (e.type === 'Alight') return 0;
   return null;
 }

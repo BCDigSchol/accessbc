@@ -167,8 +167,11 @@ export async function profile(terrain, coordinates) {
 // Steepest reliable grade (absolute) of every outdoor segment in a routing graph, for slope-limited
 // routing. Each path line is profiled as a whole so grades near segment ends have context. Returns a
 // Float32Array indexed like graph.segments, NaN where unknown (indoors, stairs, no data, unreliable).
+// grades.up and grades.down hold the steepest climb and descent going the way the path was drawn (from a to b).
 export async function segmentGrades(terrain, graph) {
   const grades = new Float32Array(graph.segments.length).fill(NaN);
+  grades.up = new Float32Array(graph.segments.length).fill(NaN);
+  grades.down = new Float32Array(graph.segments.length).fill(NaN);
   const byLine = new Map();
   graph.segments.forEach((seg, i) => {
     if (!byLine.has(seg.line)) byLine.set(seg.line, []);
@@ -186,7 +189,11 @@ export async function segmentGrades(terrain, graph) {
       let inside = p.points.filter((pt) => pt.at >= from - SAMPLE_M / 2 && pt.at <= to + SAMPLE_M / 2);
       if (!inside.length) inside = [p.points.reduce((b, pt) => (Math.abs(pt.at - mid) < Math.abs(b.at - mid) ? pt : b))];
       const reliable = inside.filter((pt) => pt.reliable);
-      if (reliable.length) grades[i] = Math.max(...reliable.map((pt) => Math.abs(pt.grade)));
+      if (reliable.length) {
+        grades[i] = Math.max(...reliable.map((pt) => Math.abs(pt.grade)));
+        grades.up[i] = Math.max(0, ...reliable.map((pt) => pt.grade));
+        grades.down[i] = Math.max(0, ...reliable.map((pt) => -pt.grade));
+      }
     }
   }
   return grades;

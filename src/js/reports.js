@@ -169,6 +169,9 @@ async function openReport(target) {
     reportTarget = { about: 'Where I am' };
     avoidRow.hidden = true;
   }
+  // Started from a specific question ("Tell us where its accessible entrance is"): the answer is half filled in
+  if (target.problem) document.getElementById(`report-problem-${target.problem}`).checked = true;
+  if (target.details) document.getElementById('report-details').value = target.details;
   document.getElementById('report-about').textContent = reportTarget.about;
   document.getElementById('report-where').textContent = reportTarget.lonlat ? `Location: ${formatLonlat(reportTarget.lonlat)}` : target.here ? 'Finding your location…' : '';
   dialog.hidden = false;
@@ -311,12 +314,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const button = e.target.closest('[data-report-layer], [data-report-building], [data-report-here]');
     if (!button || !routing) return;
     if (button.closest('#app-menu')) setMenuOpen(false); // like the menu's other items
-    const { reportLayer, reportId, reportBuilding } = button.dataset;
+    const { reportLayer, reportId, reportBuilding, reportProblem, reportDetails } = button.dataset;
+    const preset = { problem: reportProblem, details: reportDetails };
     if (reportLayer) {
       const features = routePoints?.[reportLayer]?.features || [];
       const feature = features.find((f) => String(f.properties[REPORTABLE[reportLayer]]) === reportId);
-      if (feature) openReport({ layer: reportLayer, feature });
-    } else if (reportBuilding) openReport({ building: reportBuilding });
-    else openReport({ here: true });
+      if (feature) openReport({ layer: reportLayer, feature, ...preset });
+    } else if (reportBuilding) openReport({ building: reportBuilding, ...preset });
+    else openReport({ here: true, ...preset });
   });
 });

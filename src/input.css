@@ -2181,3 +2181,124 @@ html.dark .report-link {
 html.dark .nearby-broken {
   color: #ff9c94;
 }
+
+/* Your places: saved and recent destinations, under Where to? */
+.my-places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  padding-top: 0.6rem;
+}
+
+.my-places[hidden],
+.places-edit[hidden],
+.panel:not([data-view="home"]) .my-places,
+.panel:not([data-view="home"]) .places-edit {
+  display: none;
+}
+
+.place-chip {
+  font-weight: bold;
+}
+
+.places-edit {
+  padding: 0.5rem 0.75rem 0.75rem;
+  margin-top: 0.4rem;
+  background: #f4f6fa;
+  border-radius: 0.6rem;
+}
+
+.places-heading {
+  margin: 0.4rem 0 0.2rem;
+  font-size: 1rem;
+}
+
+.places-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.places-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+}
+
+.places-list input {
+  flex: 1 1 8rem;
+  min-height: 40px;
+  padding: 0 0.5rem;
+  font: inherit;
+  border: 1px solid #767676;
+  border-radius: 0.3rem;
+}
+
+.places-list span {
+  flex: 1 1 auto;
+}
+
+.places-where {
+  font-size: 0.85rem;
+  color: #555;
+}
+
+.places-edit button {
+  min-height: 40px;
+  padding: 0 0.75rem;
+  font: inherit;
+  color: var(--accent);
+  background: #fff;
+  border: 2px solid var(--accent);
+  border-radius: 0.4rem;
+  cursor: pointer;
+}
+
+#places-edit-done {
+  margin-top: 0.5rem;
+}
+
+.save-place[aria-pressed="true"] {
+  font-weight: bold;
+}
+
+html.dark .places-edit {
+  background: #262a31;
+}
+
+html.dark .places-list input {
+  color: #f0f0f0;
+  background: #2a2a2a;
+  border-color: #8a8a8a;
+}
+
+html.dark .places-where {
+  color: #c8c8c8;
+}
+
+html.dark .places-edit button {
+  color: #9cc3ff;
+  background: #1c1c1c;
+  border-color: #6ea8ff;
+}
+
+@media screen and (max-width: 870px) {
+  .my-places,
+  .places-edit {
+    grid-column: 1 / -1;
+    order: 2;
+    padding-top: 0.2rem;
+  }
+
+  .my-places .chip {
+    border-color: transparent;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+
+  .places-edit {
+    max-height: 50vh;
+    overflow-y: auto;
+  }
+}

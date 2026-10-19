@@ -25,23 +25,21 @@ function addPopupHandlers(map) {
                 const id = feature.properties[REPORTABLE[source]];
                 popupContent = `<h2>${escapeText(name)}</h2>
                   ${isReportedBroken(feature) ? '<p><strong>Reported not working.</strong></p>' : ''}
-                  ${source === 'bluelights' ? `${emergencyCallLinks()}<button type="button" data-bluelight-directions="${feature.geometry.coordinates.join(',')}" data-label="${escapeText(name.replace('Blue-light emergency phone', 'Blue-light phone'))}">Directions here</button>` : ''}
+                  ${source === 'bluelights' ? `${emergencyCallLinks()}<button type="button" data-place-directions="${feature.geometry.coordinates.join(',')}" data-label="${escapeText(name.replace('Blue-light emergency phone', 'Blue-light phone'))}">Directions here</button>` : ''}
                   <button type="button" data-report-layer="${source}" data-report-id="${escapeText(String(id))}">Report a problem</button>`;
             }
             switch (layer) {
-                case 'shuttlestop':
-                    let listItems = '';
-                    if (feature.properties.Express === 'Yes') {
-                        listItems += `<li>Express</li>`;
-                    }
-                    if (feature.properties.All_Stop === 'Yes') {
-                        listItems += `<li>All Stop</li>`;
-                    }
-                    if (feature.properties.Commonwealth === 'Yes') {
-                        listItems += `<li>Commonwealth</li>`;
-                    }
-                    popupContent = `<h2>Shuttle Routes:</h2><p>${listItems}</p><button onclick="window.location.href='https://bostoncollege.transloc.com/routes'">Live Shuttle Tracker</button>`;
+                case 'shuttlestop': {
+                    // The stop, its routes (filled in below: running now, or when next), and Directions here
+                    const p = feature.properties, name = p.Name || 'Shuttle stop';
+                    popupContent = `<h2>${escapeText(name)} shuttle stop</h2>
+                      <ul class="popup-routes">${(p.Routes || '').split('; ').filter(Boolean).map((r) => `<li data-shuttle-route="${escapeText(r)}"><strong>${escapeText(r)}</strong></li>`).join('')}</ul>
+                      ${p.Sheltered === 'Yes' ? `<p>Sheltered${p.Heater === 'Yes' ? ', heated' : ''}.</p>` : ''}
+                      <p>Shuttle lift or ramp access isn’t confirmed.</p>
+                      <button type="button" data-place-directions="${feature.geometry.coordinates.join(',')}" data-label="${escapeText(`${name} shuttle stop`)}">Directions here</button>
+                      <a href="https://bostoncollege.transloc.com/" target="_blank" rel="noopener">Live shuttle tracker</a>`;
                     break;
+                }
                 default:
                     if (!popupContent) popupContent = `<p>${escapeText(JSON.stringify(feature.properties))}</p>`;
             }
@@ -50,6 +48,7 @@ function addPopupHandlers(map) {
                 .setLngLat(feature.geometry.coordinates)
                 .setHTML(popupContent)
                 .addTo(map);
+            if (layer === 'shuttlestop') fillShuttleTimes(popup.getElement());
         });
         // Mouse cursor styling
         map.on('mouseenter', layer, () => {
@@ -59,6 +58,31 @@ function addPopupHandlers(map) {
             map.getCanvas().style.cursor = '';
         });
     });
+}
+
+// Each route at a shuttle stop popup: running now (and how often), or when it next runs
+async function fillShuttleTimes(element) {
+  const data = await loadShuttles();
+  if (!data || !routing?.transit) return;
+  const { runningService, nextService, clockTime } = routing.transit;
+  element.querySelectorAll('[data-shuttle-route]').forEach((li) => {
+    const route = data.routes.find((r) => r.name === li.dataset.shuttleRoute);
+    if (!route) return;
+    const now = runningService(route), next = !now && nextService(route);
+    const when = next && (next.dayOffset === 0 ? 'today' : next.dayOffset === 1 ? 'tomorrow' : `on ${new Date(Date.now() + next.dayOffset * 864e5).toLocaleDateString('en-US', { weekday: 'long', timeZone: 'America/New_York' })}`);
+    li.append(now ? `: running now, about every ${now.every} min` : next ? `: next runs ${when} from ${clockTime(next.from)}` : ': not running this week');
+  });
+}
+
+// A building directions can't go to: either no accessible entrance is mapped, or its entrance isn't connected to the
+// mapped paths. Either way, students can say where it is or how to reach it.
+function missingEntranceHtml(buildingName) {
+  const onMap = typeof buildingOf === 'function' && (routePoints?.entrances?.features || []).some((f) => buildingOf(f) === buildingName);
+  const [note, ask, details] = onMap
+    ? ["Its accessible entrance isn't connected to the mapped paths yet, so directions can't go here.", 'Tell us how to reach its accessible entrance', 'How to reach its accessible entrance from the nearest path: ']
+    : ["No accessible entrance is mapped for this building yet, so directions can't go here.", 'Tell us where its accessible entrance is', 'Where its accessible entrance is: '];
+  return `<p class="route-note">${note}</p>
+    <p><button type="button" class="report-link" data-report-building="${escapeText(buildingName)}" data-report-problem="map" data-report-details="${escapeText(details)}">${ask}</button></p>`;
 }
 
 // Building information dialog. Opened by clicking a building on the map, or by picking a building in the
@@ -82,7 +106,7 @@ function openBuildingInfo(properties) {
     <div class="popup-directions">
       <button type="button" data-route-from="${escapeText(buildingName)}">Directions from here</button>
       <button type="button" data-route-to="${escapeText(buildingName)}">Directions to here</button>
-    </div>` : '';
+    </div>` : missingEntranceHtml(buildingName);
 
   document.getElementById('building-info').innerHTML = `
     <button type="button" class="close" id="building-popup-close" aria-label="Close building information">×</button>

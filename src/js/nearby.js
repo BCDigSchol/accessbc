@@ -45,9 +45,9 @@ function nearbyCandidates(graph, kind) {
       if (near.d > SNAP_TO_PATH_M) continue;
       const building = module.nearestBuilding(graph.buildings, module.proj(lonlat));
       const where = kind === 'elevators' && (f.properties.Building || '').trim() ? `in ${f.properties.Building.trim()}` : `near ${building.name}`;
-      const label = `${config.name} ${where}`;
+      const label = kind === 'shuttle' && f.properties.Name ? `${f.properties.Name} shuttle stop` : `${config.name} ${where}`;
       // How it reads mid-sentence ("Arrive at the outdoor seating near Gasson Hall")
-      const phrase = `the ${label[0].toLowerCase()}${label.slice(1)}`;
+      const phrase = placePhrase(label);
       candidates.push({ label, phrase, lonlat, nodes: [near.node], offset: near.d, feature: f });
     }
   }
@@ -64,32 +64,28 @@ async function findNearby(map) {
   const { module } = routing;
   const kind = document.getElementById('nearby-kind').value;
   const near = document.getElementById('nearby-from').value;
-  const graph = currentGraph();
+  let graph = currentGraph();
   const options = routeOptions();
   const out = document.getElementById('nearby-results');
   out.innerHTML = '<p>Searching…</p>';
 
   // Where to measure from: your location, your route, or a building chosen under Near
-  let sources, startOffset = 0, fromWhat;
+  let sources, startOffset = 0, fromWhat, here = null, start = null;
   if (near === 'route') {
     if (!routing.current) return nearbyMessage(out, '<p>There’s no route yet. Choose My location or a building under Near.</p>');
     sources = routing.current.route.nodes;
     fromWhat = 'route';
   } else if (near === 'me') {
     out.innerHTML = '<p>Finding your location…</p>';
-    let problem = null, start;
     try {
-      start = module.nearestNode(graph, await getPosition());
-      if (start.d > MAX_START_DISTANCE_M) problem = `You’re ${feet(start.d)} from the nearest mapped campus path, so walking distances from you can’t be measured.`;
+      here = await getPosition();
     } catch {
-      problem = 'Your location isn’t available (check that location access is allowed for this site).';
-    }
-    if (problem) {
       // Straight to the Near list, to pick a building to search from instead
-      nearbyMessage(out, `<p>${problem} Choose a building under <strong>Near</strong> to search from there.</p>`);
+      nearbyMessage(out, '<p>Your location isn’t available (check that location access is allowed for this site). Choose a building under <strong>Near</strong> to search from there.</p>');
       document.getElementById('nearby-from').focus();
       return;
     }
+    start = module.nearestNode(graph, here);
     sources = [start.node];
     startOffset = start.d;
     fromWhat = 'you';
@@ -99,12 +95,44 @@ async function findNearby(map) {
     fromWhat = near;
   }
   if (Number.isFinite(options.maxGrade)) await ensureGrades(graph);
-  const distances = module.walkingDistances(graph, sources, edgeCost(graph, options));
-  nearbyResults = nearbyCandidates(graph, kind)
-    .map((c) => ({ ...c, distance: Math.min(...c.nodes.map((n) => distances[n])) + c.offset + startOffset }))
-    .filter((c) => Number.isFinite(c.distance))
-    .sort((a, b) => a.distance - b.distance)
-    .slice(0, NEARBY_RESULTS);
+  // Within the route options; if nothing is, without the slope and indoor limits (and say so)
+  let relaxed = false;
+  const search = (opts) => {
+    const distances = module.walkingDistances(graph, sources, edgeCost(graph, opts));
+    return nearbyCandidates(graph, kind)
+      .map((c) => ({ ...c, distance: Math.min(...c.nodes.map((n) => distances[n])) + c.offset + startOffset }))
+      .filter((c) => Number.isFinite(c.distance))
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, NEARBY_RESULTS);
+  };
+  const searchRelaxing = () => {
+    relaxed = false;
+    if (start && start.d > MAX_START_DISTANCE_M) return []; // too far from these paths to measure from
+    let results = search(options);
+    if (!results.length && (Number.isFinite(options.maxGrade) || options.indoor === 'avoid')) {
+      results = search({ ...options, maxGrade: Infinity, indoor: 'auto' });
+      relaxed = results.length > 0;
+    }
+    return results;
+  };
+  nearbyResults = searchRelaxing();
+  // From your location, off campus or on a stretch of path cut off from the rest: city sidewalks too (as directions do)
+  if (fromWhat === 'you' && !nearbyResults.length) {
+    const city = await cityGraph();
+    if (city) {
+      graph = city;
+      start = module.nearestNode(graph, here);
+      sources = [start.node];
+      startOffset = start.d;
+      if (Number.isFinite(options.maxGrade)) await ensureGrades(graph);
+      nearbyResults = searchRelaxing();
+    }
+  }
+  if (fromWhat === 'you' && start.d > MAX_START_DISTANCE_M) {
+    nearbyMessage(out, `<p>You’re ${feet(start.d)} from the nearest mapped path, so walking distances from you can’t be measured. Choose a building under <strong>Near</strong> to search from there.</p>`);
+    document.getElementById('nearby-from').focus();
+    return;
+  }
   nearbyFromYou = fromWhat === 'you';
   nearbyFromBuilding = fromWhat !== 'you' && fromWhat !== 'route' ? fromWhat : null;
 
@@ -131,7 +159,8 @@ async function findNearby(map) {
     </li>`;
   });
   // Looking for a blue-light phone: the numbers to call come first
-  out.innerHTML = `${kind === 'bluelights' ? emergencyCallLinks() : ''}<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
+  const relaxedNote = relaxed ? '<p class="route-warning">None can be reached within your slope and indoor settings, so these may involve steeper slopes.</p>' : '';
+  out.innerHTML = `${kind === 'bluelights' ? emergencyCallLinks() : ''}${relaxedNote}<ol class="nearby-list" aria-label="Nearest ${label}${along ? ' along your route' : ''}">${items.join('')}</ol>`;
   const first = nearbyResults[0];
   const said = `The nearest is ${first.label}${first.feature && isReportedBroken(first.feature) ? ' (reported not working)' : ''}, ${along ? (first.distance < 15 ? 'on your route' : `${feet(first.distance)} off your route`) : `${feet(first.distance)} away`}.`;
   announce(`${nearbyResults.length} ${nearbyResults.length === 1 ? 'result' : 'results'} found. ${said}`);

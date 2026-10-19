@@ -18,7 +18,12 @@ const SETTINGS_DEFAULTS = {
   largeSymbols: false,   // bigger map symbols and thicker paths and routes
   bigSteps: false,       // step-by-step directions fill the screen, with big text and buttons
   reduceMotion: 'auto',
+  pace: 'gentle',        // walking or wheeling pace, for time estimates and whether a shuttle is worth it
 };
+
+// Metres a second for each pace (a gentle walk is about 2.7 mph; wheelchair and cane users vary widely)
+const PACES = { slower: 0.8, gentle: 1.2, brisk: 1.4 };
+const walkSpeed = () => PACES[settings.pace] || PACES.gentle;
 
 // Saved settings carry a version, so a changed default can be applied once to settings saved before it.
 // Version 2: reading aloud became on by default (with Mute while walking), after being off by default.
@@ -102,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('settings-dialog');
   let returnFocus = null;
   const checkboxes = ['screenReader', 'readAloud', 'autoReroute', 'soundCues', 'clockFace', 'headingUp', 'guidance3D', 'vibrate', 'largerText', 'largeSymbols', 'bigSteps'];
-  const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion'];
+  const selects = ['speechRate', 'highContrast', 'darkMode', 'reduceMotion', 'pace'];
   const toSetting = (v) => (v === 'true' ? true : v === 'false' ? false : v);
 
   const speech = 'speechSynthesis' in window;

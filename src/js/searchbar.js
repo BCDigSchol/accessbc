@@ -26,7 +26,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   fetch('src/geojson/buildings.geojson').then((r) => r.json()).then((data) => { whereToBuildings = data.features; });
 
-  const kindOptions = () => Object.entries(NEARBY_KINDS).map(([key, kind]) => ({ label: kind.label, kind: 'Find the nearest', value: key }));
+  // Your saved and recent places first, then the kinds of thing
+  const placeOptions = () => placeList().map((p) => ({ label: p.name, kind: p.kind === 'Saved' ? 'Saved place' : 'Recent', dest: p.dest }));
+  const kindOptions = () => [...placeOptions(), ...Object.entries(NEARBY_KINDS).map(([key, kind]) => ({ label: kind.label, kind: 'Find the nearest', value: key }))];
   function allOptions() {
     const names = new Set(), resources = new Map();
     whereToBuildings.forEach((feature) => {
@@ -112,6 +114,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function choose(option) {
     setOpen(false);
     if (!routing) return;
+    if (option.dest) return goToPlace(option.dest);
     if (option.kind === 'Find the nearest') {
       input.value = option.label;
       clearButton.hidden = false;

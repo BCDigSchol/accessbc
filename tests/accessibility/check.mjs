@@ -133,8 +133,16 @@ async function main() {
     await axe(page, 'building info');
     await page.keyboard.press('Escape');
 
+    // Your places: the route just found is recent; Save keeps it; both show under Where to?, with Edit
+    await page.click('.save-place');
+    expect(await page.evaluate(() => document.querySelector('.save-place').getAttribute('aria-pressed') === 'true'), 'places', 'Save marks the destination as saved');
+    expect(await page.evaluate(() => !!document.querySelector('#route-result .copy-directions')), 'route', 'the route has Copy directions');
     // Quick search: the nearest single-stall restrooms
     await page.click('#route-back');
+    expect(await page.evaluate(() => /McElroy Commons/.test(document.getElementById('my-places').textContent)), 'places', 'the saved place is a button under Where to?');
+    await page.click('#places-edit-toggle');
+    await axe(page, 'your places, editing');
+    await page.click('#places-edit-done');
     await page.click('.chip[data-find="restroom"]');
     await page.waitForSelector('.nearby-list');
     expect(await page.evaluate(() => document.activeElement.id === 'results-title'), 'results', 'a quick search moves focus to its results');

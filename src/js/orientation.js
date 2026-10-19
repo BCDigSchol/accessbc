@@ -191,10 +191,11 @@ function buildingOf(feature) {
 
 const working = (feature) => !isReportedBroken(feature);
 
+// "Conte Forum: Comm Ave Direct, Newton All Stops and 3 more routes; sheltered"
 function shuttleDetails(p) {
-  const routes = [['Express', 'Express'], ['All_Stop', 'All Stop'], ['Commonwealth', 'Commonwealth'], ['Newton', 'Newton']]
-    .filter(([k]) => p[k] === 'Yes').map(([, name]) => name);
-  return [routes.length ? `${routes.join(', ')} routes` : '', p.Sheltered === 'Yes' ? 'sheltered' : ''].filter(Boolean).join('; ');
+  const routes = (p.Routes || '').split('; ').filter(Boolean);
+  const said = routes.length > 2 ? `${routes.slice(0, 2).join(', ')} and ${routes.length - 2} more ${routes.length === 3 ? 'route' : 'routes'}` : routes.join(' and ');
+  return [p.Name, [said, p.Sheltered === 'Yes' ? 'sheltered' : ''].filter(Boolean).join('; ')].filter(Boolean).join(': ');
 }
 
 // The nearest of each kind of thing around a point: [{label, lonlat, metres, bearing}], nearest first.

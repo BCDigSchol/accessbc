@@ -308,7 +308,7 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
 
   return {
     nodes: xy.map(unproj), adjacency, entrances: linkedEntrances, buildings: projectedBuildings, elevatorBuildings,
-    segments: segments.map(({ line, type, from, to }) => ({ line, type, from, to })),
+    segments: segments.map(({ a, b, line, type, from, to }) => ({ a, b, line, type, from, to })),
     lines: net.lines.map(({ type, coordinates, city, length }) => ({ type, coordinates, city, length })),
   };
 }

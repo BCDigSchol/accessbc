@@ -107,18 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (settings.clockFace) startCompass();
     goToNearestBluelight();
   });
-  // "Directions here" on a blue-light phone on the map: walking directions to it, from your location
-  document.addEventListener('click', (e) => {
-    const button = e.target.closest('[data-bluelight-directions]');
-    if (!button || !routing) return;
-    const lonlat = button.dataset.bluelightDirections.split(',').map(Number);
-    const label = button.dataset.label;
-    document.querySelectorAll('.maplibregl-popup').forEach((p) => p.remove());
-    document.getElementById('route-from').value = MY_LOCATION;
-    setPlaceDestination({ label, phrase: `the ${label[0].toLowerCase()}${label.slice(1)}`, lonlat });
-    updateRoute(window.map);
-    document.getElementById('route-title').focus();
-  });
   const box = document.getElementById('emergency-message');
   document.getElementById('emergency-message-close').addEventListener('click', () => hideEmergencyMessage({ returnFocus: true }));
   box.addEventListener('keydown', (e) => { if (e.key === 'Escape') hideEmergencyMessage({ returnFocus: true }); });

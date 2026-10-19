@@ -184,4 +184,21 @@ document.addEventListener('DOMContentLoaded', () => {
   item('brighton', handleBrightonClick);
   item('newton', handleNewtonClick);
   item('brookline', handleBrooklineClick);
+
+  // "Add Access BC to your home screen": offered in the menu when the browser can install it (Android and desktop
+  // Chrome and Edge). On an iPhone it's Share, then Add to Home Screen (the help page says so).
+  let installPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    installPrompt = e;
+    document.getElementById('menu-install-item').hidden = false;
+  });
+  window.addEventListener('appinstalled', () => { document.getElementById('menu-install-item').hidden = true; });
+  item('menu-install', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null;
+    document.getElementById('menu-install-item').hidden = true;
+  });
 });
