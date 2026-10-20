@@ -43,8 +43,11 @@ document.addEventListener('DOMContentLoaded', function () {
     // T stations, by name ("Reservoir T station")
     const stations = (typeof routePoints !== 'undefined' && routePoints?.['mbta-stations']?.features || [])
       .map((f) => ({ label: stationLabel(f), kind: `T station, ${f.properties.Lines}`, station: f }));
+    // Messina College, on the Brookline campus: no paths there yet, so it shows the campus and says so
+    const campuses = [{ label: 'Messina College', kind: 'Brookline campus, 400 Heath Street', campus: 'brookline' }];
     return [
       ...kindOptions(),
+      ...campuses,
       ...stations,
       ...[...names].sort((a, b) => a.localeCompare(b)).map((label) => ({ label, kind: 'Building', value: label })),
       ...[...resources].map(([label, building]) => ({ label, kind: `In ${building}`, value: building })),
@@ -120,6 +123,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!routing) return;
     if (option.dest) return goToPlace(option.dest);
     if (option.station) return goToPlace({ label: option.label, lonlat: option.station.geometry.coordinates });
+    if (option.campus === 'brookline') {
+      handleBrooklineClick();
+      input.value = option.label;
+      clearButton.hidden = false;
+      setView('route');
+      document.getElementById('route-title').textContent = 'Messina College';
+      showResult(`<p>Messina College is on BC’s Brookline campus, 400 Heath Street. Its buildings are on the map; select one for its information.</p>
+        <p class="route-warning">Walking directions to and around the Brookline campus aren’t available yet: its paths haven’t been mapped. The BC shuttle (Brookline Campus route) runs between Conte Forum and the campus.</p>`);
+      document.getElementById('route-title').focus();
+      return;
+    }
     if (option.kind === 'Find the nearest') {
       input.value = option.label;
       clearButton.hidden = false;

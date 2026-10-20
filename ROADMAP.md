@@ -40,6 +40,23 @@ What's planned next, and what each item needs. Roughly in priority order within 
   OpenStreetMap ([guide](docs/data-collection/openstreetmap-mapping-guide.md)), or Facilities may have a site plan
   (it was Pine Manor College) that can be converted.
 
+## Messina College (Brookline campus)
+
+Messina College, BC's two-year college, is on the Brookline campus (400 Heath Street, the former Pine Manor
+College). Its 32 buildings and 8 entrances are in Access BC's data, so it's on the map, but:
+
+- **No paths:** walking directions can't go there, or from the shuttle stops to its buildings. Map them in
+  OpenStreetMap ([volunteer guide](docs/data-collection/openstreetmap-mapping-guide.md)), or ask Facilities for the
+  Pine Manor site plan; then `node scripts/osm-sidewalks.mjs` and `node scripts/link-entrances.mjs`. Once the paths
+  are in, shuttle routes (Brookline Campus route) to Messina buildings work automatically.
+- **Building names and uses** date from Pine Manor (Administration Building, Library, the Villages…). Update them to
+  BC's current names, and add what's in each (Messina offices, classrooms, dining, residence halls) so Where to? and
+  Find nearby can find them.
+- **Entrances:** check the 8 accessible entrances, and add any that are missing (the [data review page](review.html)
+  lists the Brookline buildings with no way to their entrances).
+- Messina students may need different things first: residence halls, dining, the shuttle to Chestnut Hill, and
+  their advising and academic support offices. Worth asking Messina's staff and students.
+
 ## Inside buildings
 
 - Floor levels on indoor paths, and elevators as links between floors ("take the elevator to floor 3").
