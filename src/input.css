@@ -1163,6 +1163,46 @@ html.dark .maplibregl-ctrl-attrib a {
   gap: 0.5rem;
 }
 
+/* Adding a stop: typing a building instead of finding a kind of thing */
+.stop-building {
+  margin-top: 0.6rem;
+}
+
+.route-field input[type="search"] {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 0.1rem solid #888;
+  border-radius: 0.4rem;
+  box-sizing: border-box;
+}
+
+.stop-building-matches {
+  display: grid;
+  list-style: none;
+  padding-left: 0;
+  margin: 0.4rem 0 0;
+  gap: 0.35rem;
+}
+
+.stop-building-matches:empty {
+  display: none;
+}
+
+.stop-building-matches li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+html.dark .route-field input[type="search"] {
+  background: #2a2a2a;
+  color: #f0f0f0;
+  border-color: #8a8a8a;
+}
+
 /* Route preview */
 .route-summary {
   font-size: 1.1rem;

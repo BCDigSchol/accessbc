@@ -16,6 +16,7 @@
 //
 // Entrance links (entrance-links.geojson, see scripts/link-entrances.mjs) are passed in with the paths, as Type
 // 'Connector': drawn automatically from entrances that weren't connected to any path, and not checked either.
+// Volunteers' paths not yet verified (contributions.mjs) come in as Type 'Contributed': outdoor paths, not checked.
 //
 // For routes between campuses or from off campus, city sidewalks and crossings from OpenStreetMap
 // (sidewalks.geojson, see scripts/osm-sidewalks.mjs) can be added too. They're joined to BC's outdoor
@@ -205,7 +206,7 @@ export function nearestSegment({ nodes, segments, near }, p, type, maxDistance =
 
 // Edge types: 'Exterior' and 'Interior' (accessible paths), 'Entrance' (door links), and with footpaths,
 // 'Footpath' and 'Stairs'.
-const GROUND_LEVEL = new Set(['Exterior', 'Footpath', 'Sidewalk', 'Crossing', 'Street']);
+const GROUND_LEVEL = new Set(['Exterior', 'Contributed', 'Footpath', 'Sidewalk', 'Crossing', 'Street']);
 
 // Returns {nodes: [[lon, lat]], adjacency: [[{to, length, type, seg}]], entrances: [{id, building, node, linkMeters}],
 // segments, lines, buildings, elevatorBuildings}. Pass footpaths (paths.geojson features) to include them.
@@ -255,12 +256,12 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
   // City sidewalks and BC's outdoor paths: a dangling end of either, within CITY_LINK_M of the other, is joined to it
   if (city.length) {
     const isCityLine = (l) => !!net.lines[l].city;
-    const outdoorBC = new Set(['Exterior', 'Footpath']), outdoorCity = new Set(['Sidewalk', 'Crossing', 'Street']);
+    const outdoorBC = new Set(['Exterior', 'Contributed', 'Footpath']), outdoorCity = new Set(['Sidewalk', 'Crossing', 'Street']);
     for (let i = 0; i < nodes.length; i++) {
       if (net.degree[i] !== 1) continue;
       const [line] = nodes[i].lines;
       const fromCity = isCityLine(line);
-      if (!fromCity && net.lines[line].type !== 'Exterior') continue;
+      if (!fromCity && !['Exterior', 'Contributed'].includes(net.lines[line].type)) continue;
       let best = { d: CITY_LINK_M };
       for (const s of net.near(nodes[i].xy, CITY_LINK_M)) {
         if (isCityLine(s.line) === fromCity || !(fromCity ? outdoorBC : outdoorCity).has(s.type) || net.lines[s.line].city?.level) continue;
@@ -278,14 +279,15 @@ export function buildGraph({ paths, entrances, buildings, elevators = [], footpa
     const p = proj(e.geometry.coordinates);
     const building = (e.properties.Building || '').trim() || nearestBuilding(projectedBuildings, p).name;
     const links = [];
-    const outdoor = nearestSegment(net, p, footpaths.length ? ['Exterior', 'Connector', 'Footpath'] : ['Exterior', 'Connector'], ENTRANCE_LINK_M);
+    const outdoor = nearestSegment(net, p, footpaths.length ? ['Exterior', 'Connector', 'Contributed', 'Footpath'] : ['Exterior', 'Connector', 'Contributed'], ENTRANCE_LINK_M);
     if (outdoor.d <= ENTRANCE_LINK_M) links.push(outdoor);
     const indoor = nearestSegment(net, p, 'Interior', ENTRANCE_LINK_M);
     if (indoor.d <= ENTRANCE_LINK_M && nearestBuilding(projectedBuildings, indoor.point).name === building) links.push(indoor);
     if (!links.length) continue;
     const node = xy.push(p) - 1;
     for (const link of links) extraEdges.push([node, nodeOnSegment(link.seg, link.t, link.point), 'Entrance']);
-    linkedEntrances.push({ id: e.properties.OBJECTID, building, node, linkMeters: +Math.min(...links.map((l) => l.d)).toFixed(1) });
+    linkedEntrances.push({ id: e.properties.OBJECTID, building, node, linkMeters: +Math.min(...links.map((l) => l.d)).toFixed(1),
+      ...(e.properties.Contribution && !e.properties.Verified && { unverified: true }) }); // a volunteer's, not yet checked
   }
 
   // seg is the index of the path segment an edge lies on (-1 for joins and door links), so per-segment
@@ -362,7 +364,7 @@ export function describeRoute(graph, route) {
       if (edge.type === 'Ride') { ride.stops++; ride.seconds += edge.seconds; ride.to = edge.shuttle.to; }
     }
     step.length += edge.length;
-    if (edge.type === 'Footpath' || edge.type === 'Connector' || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
+    if (['Footpath', 'Connector', 'Contributed'].includes(edge.type) || CITY_TYPES.has(edge.type)) step.unverifiedLength += edge.length;
     if (CITY_TYPES.has(edge.type)) step.cityLength = (step.cityLength || 0) + edge.length;
     if (edge.coords) step.coordinates.push(...edge.coords.slice(1)); // a shuttle ride follows the route line
     else step.coordinates.push(graph.nodes[b]);

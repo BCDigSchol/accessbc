@@ -7,6 +7,17 @@
 
 let whereToBuildings = []; // all building features, from the GeoJSON rather than the currently loaded map tiles
 
+// How names are compared when searching: without apostrophes, accents, punctuation or spaces, so "oneill" finds
+// O'Neill Library, "mc elroy" McElroy Commons, and "st mary" St. Mary's Hall
+const searchKey = (s) => String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+// Names matching what's typed, those starting with it first (the rest keep their order)
+function searchMatches(items, query, label = (item) => item.label) {
+  const q = searchKey(query);
+  if (!q) return [];
+  const keyed = items.map((item) => ({ item, key: searchKey(label(item)) })).filter((x) => x.key.includes(q));
+  return [...keyed.filter((x) => x.key.startsWith(q)), ...keyed.filter((x) => !x.key.startsWith(q))].map((x) => x.item);
+}
+
 function clearWhereTo() {
   document.getElementById('where-to').value = '';
   document.getElementById('where-to-clear').hidden = true;
@@ -65,8 +76,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // With nothing typed, suggest the kinds of thing; otherwise everything that matches, kinds and buildings first
   function update(query) {
-    const q = query.trim().toLowerCase();
-    options = q ? allOptions().filter((option) => option.label.toLowerCase().includes(q)).slice(0, 40) : kindOptions();
+    options = query.trim() ? searchMatches(allOptions(), query).slice(0, 40) : kindOptions();
     list.innerHTML = '';
     active = -1;
     input.removeAttribute('aria-activedescendant');

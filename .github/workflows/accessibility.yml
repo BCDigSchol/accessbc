@@ -42,3 +42,7 @@ jobs:
       # a shuttle ride). See tests/accessibility/walks.mjs.
       - name: Simulated walks
         run: npm run walks
+
+      # Volunteers' contributions end to end, with the real Sheet script in a stand-in for Google
+      - name: Contributions
+        run: npm run contribute

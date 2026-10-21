@@ -3,7 +3,7 @@
 // sent back. Used by cityGraph() in src/js/directions.js, which builds it on the page instead if this fails.
 import { buildGraph } from './network.mjs';
 
-self.onmessage = async ({ data: { base, stairs } }) => {
+self.onmessage = async ({ data: { base, stairs, contrib = { paths: [], entrances: [] } } }) => {
   try {
     const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
     const names = ['accessiblepaths', 'entrance-links', 'entrances', 'buildings', 'elevators', 'paths', 'sidewalks'];
@@ -11,7 +11,8 @@ self.onmessage = async ({ data: { base, stairs } }) => {
     // Avoiding stairs: no steps, rough surfaces, raised curbs, or ways tagged as not wheelchair accessible
     const usable = stairs ? sidewalks
       : sidewalks.filter(({ properties: p }) => p.Type !== 'Stairs' && !p.rough && p.kerb !== 'raised' && p.wheelchair !== 'no');
-    const graph = buildGraph({ paths: [...paths, ...links], entrances, buildings, elevators, footpaths: stairs ? footpaths : [], sidewalks: usable });
+    // With volunteers' paths and entrances (sent by the page, which has read them from the contributions Sheet)
+    const graph = buildGraph({ paths: [...paths, ...links, ...contrib.paths], entrances: [...entrances, ...contrib.entrances], buildings, elevators, footpaths: stairs ? footpaths : [], sidewalks: usable });
     self.postMessage({ graph });
   } catch (err) {
     self.postMessage({ error: String(err) });

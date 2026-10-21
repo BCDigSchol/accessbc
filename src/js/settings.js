@@ -73,6 +73,7 @@ function announce(text) {
 function moveMap(map, method, options) {
   if (reducedMotion()) {
     if (method === 'fitBounds') return map.fitBounds(options.bounds, { ...options, animate: false });
+    if (options.offset) return map.easeTo({ ...options, duration: 0 }); // jumpTo has no offset
     return map.jumpTo(options);
   }
   if (method === 'fitBounds') return map.fitBounds(options.bounds, options);

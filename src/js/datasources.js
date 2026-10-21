@@ -71,6 +71,8 @@ function addMapData(map) {
       }
     });
     
+    addContributionLayers(map); // volunteers' paths and entrances (contributions.js)
+
     // Links drawn automatically to entrances that weren't connected to a path (not checked): thin and dashed
     map.addLayer({
       id: 'entrance-links',

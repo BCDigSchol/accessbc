@@ -177,7 +177,7 @@ export async function segmentGrades(terrain, graph) {
     if (!byLine.has(seg.line)) byLine.set(seg.line, []);
     byLine.get(seg.line).push(i);
   });
-  const outdoorLines = [...byLine.keys()].filter((l) => ['Exterior', 'Connector', 'Footpath', 'Sidewalk', 'Crossing', 'Street'].includes(graph.lines[l].type));
+  const outdoorLines = [...byLine.keys()].filter((l) => ['Exterior', 'Connector', 'Contributed', 'Footpath', 'Sidewalk', 'Crossing', 'Street'].includes(graph.lines[l].type));
   await terrain.ensureTiles(outdoorLines.flatMap((l) => graph.lines[l].coordinates));
   for (const [n, line] of outdoorLines.entries()) {
     // Every hundred lines, let the page respond (the city sidewalks have thousands)

@@ -6,7 +6,8 @@
   "scripts": {
     "check": "node check.mjs",
     "walks": "node walks.mjs",
-    "perf": "node perf.mjs"
+    "perf": "node perf.mjs",
+    "contribute": "node contribute.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",

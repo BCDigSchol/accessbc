@@ -182,3 +182,94 @@ textarea {
     z-index: 1;
   }
 }
+
+/* The contribute page (contribute.html) */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tabs button[aria-pressed="true"],
+button[aria-pressed="true"],
+button.primary {
+  color: #fff;
+  background: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.notice {
+  padding: 0.5rem 0.75rem;
+  background: #fff4cc;
+  border-left: 4px solid #b38600;
+}
+
+.field {
+  margin: 0.75rem 0;
+}
+
+.field > label:first-child {
+  display: block;
+  font-weight: bold;
+}
+
+.field input[type="text"],
+.field input[type="password"],
+.field select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 0.5rem;
+  font: inherit;
+  border: 1px solid #767676;
+  border-radius: 0.3rem;
+}
+
+label.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 36px;
+  font-weight: normal;
+}
+
+#add fieldset,
+#review fieldset {
+  margin: 0.75rem 0;
+  padding: 0.5rem 0.9rem 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 0.5rem;
+}
+
+#add fieldset[hidden] {
+  display: none;
+}
+
+#add legend {
+  font-weight: bold;
+}
+
+#add fieldset button,
+#review fieldset button {
+  margin: 0.25rem 0.25rem 0.25rem 0;
+}
+
+.status:empty {
+  display: none;
+}
+
+.status {
+  font-weight: bold;
+}
+
+.plain-list {
+  padding-left: 1.2rem;
+}
+
+.route-note {
+  font-size: 0.9rem;
+  color: #555;
+}

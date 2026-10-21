@@ -54,6 +54,7 @@ This project is a collaborative project between the [BC Digital Scholarship Grou
 **Built to improve**
 - Automated accessibility checks (WCAG 2.2 AA) on every change
 - Spreadsheets and a volunteer mapping guide to fill the data gaps ([docs/data-collection/](docs/data-collection/))
+- **Volunteers can add to the map** (entrances, paths, building notes) on the contribute page; additions show at once as not verified, until the team verifies them and makes them permanent
 - A [roadmap](ROADMAP.md) of what's next
 
 ## Running locally
@@ -130,6 +131,7 @@ students and an orientation and mobility instructor is planned in
 | `index.html`, `src/js/`, `src/input.css` | The app |
 | `help.html`, `src/help.css` | The user guide |
 | `review.html`, `src/js/review.js`, `src/review.css` | The data review page: entrance links and gaps to check, with answers downloaded as a spreadsheet |
+| `contribute.html`, `src/js/contribute.js`, `src/js/contributions.js`, `src/js/config.js` | Volunteers adding to the map, and verifying, through the contributions Sheet ([setup](docs/data-collection/contributions-setup.md); its script is `scripts/contributions/Code.gs`) |
 | `sw.js`, `src/js/offline.js`, `src/manifest.webmanifest` | Working offline (the service worker, at the site root to cover it all) and the home screen app |
 | `src/geojson/` | Campus data layers ([README](src/geojson/README.md)) |
 | `src/basemap/` | Self-hosted basemap, terrain, fonts, and icons |

@@ -1,5 +1,10 @@
 # Data collection templates
 
+**Volunteers adding to the map:** the [contribute page](https://bcdigschol.github.io/accessbc/contribute.html)
+(`contribute.html`), with the volunteer passcode: entrances (with "use my location" at the door), paths (drawn, or
+recorded by walking them), and notes about buildings. They show in Access BC straight away, marked not verified, until
+the team verifies them. Setup and verifying: [contributions-setup.md](contributions-setup.md).
+
 **The easiest way to check the data:** the [data review page](https://bcdigschol.github.io/accessbc/review.html)
 (`review.html`) lists everything that needs checking (the entrance links, entrance points to check, and buildings
 directions can't reach) on a map, each with "looks right / wrong" and a note, and downloads the answers as a
