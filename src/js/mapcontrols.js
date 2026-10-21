@@ -84,6 +84,7 @@ const legendData = [
     { id: 'paths', name: 'Stairs', color: '#F2B701', category: 'Navigating Campus' },
     { id: 'curbcuts', name: 'Curb Cuts', color: '#3969AC', category: 'Navigating Campus' },
     { id: 'entrance-links', name: 'Links to Entrances (not checked)', color: '#0F8554', category: 'Navigating Campus' },
+    { id: 'contrib-paths', name: 'Added by Volunteers', color: '#c05a00', category: 'Navigating Campus' },
     { id: 'accessiblepaths-int', name: 'Exterior Accessible Paths', color: '#0F8554', category: 'Navigating Campus' },
     { id: 'accessiblepaths-ext', name: 'Interior Accessible Paths', color: '#5F4690', category: 'Navigating Campus' }
 ];
@@ -246,6 +247,7 @@ function createLegend(containerId, legendData, map) {
 //Set layers to be initially visible
 function setLayerVisibility(map, layers, visibility) {
     layers.forEach(layerId => {
-        map.setLayoutProperty(layerId, 'visibility', visibility);
+        // Some layers exist only with their data (volunteers' additions)
+        if (map.getLayer(layerId)) map.setLayoutProperty(layerId, 'visibility', visibility);
     });
 }

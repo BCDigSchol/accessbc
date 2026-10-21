@@ -143,6 +143,7 @@ function stopGuidance(map) {
   map.getSource('route-step').setData({ type: 'FeatureCollection', features: [] });
   setRouteDimmed(map, false);
   moveMap(map, 'easeTo', { pitch: 0, bearing: 0 });
+  seeThroughBuildings(map, false);
   saveTripToUrl();
 }
 
@@ -208,15 +209,39 @@ async function showStep(map, index, intro = '') {
   buzz(vibrationFor(step));
 }
 
+// On a phone the map is small and mostly covered by the directions, so the camera is zoomed out a step and tilted
+// further, to show more of the way ahead.
+const smallScreen = (map) => map.getContainer().clientWidth < 600;
+const guidancePitch = (map) => (settings.guidance3D ? (smallScreen(map) ? 58 : 50) : 0);
+// Tilted that far, buildings stand in front of the route: see through them more (back to normal after the trip)
+function seeThroughBuildings(map, on) {
+  if (map.getLayer('buildings-3d')) map.setPaintProperty('buildings-3d', 'fill-extrusion-opacity', on && smallScreen(map) ? 0.45 : 0.75);
+}
+
 // Camera for a step: fit it, facing the direction of travel if heading-up is on, tilted if 3D is on.
 function frameStep(map, step) {
   const bearing = settings.headingUp ? step.heading : 0;
-  const pitch = settings.guidance3D ? 50 : 0;
+  const pitch = guidancePitch(map);
+  seeThroughBuildings(map, true);
   const coords = step.coordinates.length > 1 ? step.coordinates : [step.start, step.start];
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
-  const camera = map.cameraForBounds(bounds, { bearing, padding: unobstructedPadding(map), maxZoom: 19 });
-  const zoom = Math.max(16.5, Math.min(19, camera ? camera.zoom : 18.5));
+  const camera = map.cameraForBounds(bounds, { bearing, padding: unobstructedPadding(map), maxZoom: smallScreen(map) ? 18 : 19 });
+  const zoom = Math.max(16.5, Math.min(smallScreen(map) ? 18 : 19, camera ? camera.zoom : 18));
   moveMap(map, 'easeTo', { center: camera ? camera.center : step.start, zoom, bearing, pitch, duration: 800 });
+}
+
+// Camera while following you: you in the part of the visible map behind you, so most of it shows the way ahead
+// (low on the screen with heading-up; otherwise opposite the direction you're heading).
+function followCamera(map, here, step) {
+  const bearing = settings.headingUp ? step.heading : 0;
+  const pad = unobstructedPadding(map), box = map.getContainer();
+  const visibleW = box.clientWidth - pad.left - pad.right, visibleH = box.clientHeight - pad.top - pad.bottom;
+  // The middle of the visible area, from the middle of the map
+  const middle = [(pad.left - pad.right) / 2, (pad.top - pad.bottom) / 2];
+  const ahead = ((step.heading || 0) - bearing) * Math.PI / 180; // on screen: 0 is up
+  const back = 0.3; // how far you sit from the middle, as a share of the visible map
+  const offset = [middle[0] - Math.sin(ahead) * visibleW * back, middle[1] + Math.cos(ahead) * visibleH * back];
+  return { center: here, offset, zoom: smallScreen(map) ? 17.5 : 18.5, bearing, pitch: guidancePitch(map) };
 }
 
 // ---- Following the student's location -------------------------------------------------------------
@@ -286,7 +311,7 @@ function onPosition(map, position) {
 
   const { off, along } = locateOnRoute(routing.module.proj(here));
   const step = guide.steps[guide.index];
-  moveMap(map, 'easeTo', { center: here, zoom: 18.5, bearing: settings.headingUp ? step.heading : 0, pitch: settings.guidance3D ? 50 : 0, duration: 600 });
+  moveMap(map, 'easeTo', { ...followCamera(map, here, step), duration: 600 });
 
   // Off the route for several fixes in a row: find a new route from here (like other map apps), or if that's
   // off or not possible, say which way the route is and offer to re-route.

@@ -17,6 +17,7 @@
 <script src="src/vendor/maplibre-gl/maplibre-gl.js"></script>
 <script src="src/vendor/pmtiles/pmtiles.js"></script>
 <script src="src/basemap/style.js"></script>
+<script src="src/js/config.js"></script>
 <script src="src/js/settings.js"></script>
 <script src="src/js/map.js"></script>
 <script src="src/js/mapcontrols.js"></script>
@@ -33,6 +34,7 @@
 <script src="src/js/emergency.js"></script>
 <script src="src/js/mbta.js"></script>
 <script src="src/js/reports.js"></script>
+<script src="src/js/contributions.js"></script>
 <script src="src/js/offline.js"></script>
 </head>
 <body>
@@ -167,6 +169,12 @@
             <option value="me">My location</option>
           </select>
         </div>
+      </div>
+      <div class="stop-building route-field" id="stop-building" hidden>
+        <label for="stop-building-search">Or a building as a stop</label>
+        <input type="search" id="stop-building-search" autocomplete="off" spellcheck="false" placeholder="Type a building, like O’Neill">
+        <ul id="stop-building-matches" class="stop-building-matches" aria-label="Matching buildings"></ul>
+        <p id="stop-building-status" class="visually-hidden" role="status"></p>
       </div>
       <div id="nearby-results"></div>
       <p class="route-note">Walking distances on mapped paths, using your route options.</p>

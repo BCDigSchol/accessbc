@@ -12,14 +12,14 @@ What's planned next, and what each item needs. Roughly in priority order within 
 | Disability Services | Which data and features matter most to students; usability testing with students ([docs/usability-testing/](docs/usability-testing/)). |
 | Building managers, Auxiliary Services | Building hours, and card-access hours for each entrance. |
 
-## Live problem reports
+## Contributions and live problem reports
 
-- A Google Form for reports (bc.edu accounts only), feeding a Google Sheet. Set `REPORT_FORM` in
-  [src/js/reports.js](src/js/reports.js) and the report form opens filled in.
-- A small Apps Script on the Sheet serving recent reports as JSON. The site fetches it when it loads, so everyone's
-  routes avoid what's reported (today, your own reports affect only your device). No rebuild needed.
-- Reports show as unconfirmed ("reported 2 h ago") and expire after a day or two unless staff confirm them in the Sheet.
-- The same Sheet-and-script approach for other data staff keep up to date: building hours, closures, entrance details.
+- **Built; needs setting up:** the contributions Sheet and its script, the contribute page for volunteers, review and
+  verification, and importing verified entries into the data files
+  ([setup guide](docs/data-collection/contributions-setup.md)). Public reports go to the Sheet as suggestions.
+- Next: "not working" reports (an elevator out, a door broken) through the same Sheet, so everyone's routes avoid what
+  others report (today, your own reports affect only your device), expiring after a day or two unless confirmed.
+- The same Sheet for other data staff keep up to date: building hours, closures.
 
 ## Data to check
 

@@ -163,7 +163,7 @@ async function openReport(target) {
       ? `You reported this ${timeAgo(mine.at)}. Uncheck this if it’s working again.`
       : feature.properties.Status && feature.properties.Status !== 'Working' ? 'It’s already reported not working in the map data, so routes avoid it.' : '';
   } else if (target.building) {
-    reportTarget = { about: target.building };
+    reportTarget = { about: target.building, building: target.building };
     avoidRow.hidden = true;
   } else {
     reportTarget = { about: 'Where I am' };
@@ -232,6 +232,17 @@ function reportStatus(text) {
 // Opens where the report goes, and copies it to paste there. (A pre-filled Google Form, once REPORT_FORM is set.)
 async function sendReport(where) {
   const text = reportText();
+  // With the contributions Sheet set up (config.js), a report to Access BC goes straight there, as a suggestion
+  // for the admin to review; if that fails, it's copied and the feedback form opened, as without it
+  if (where === 'feedback' && CONTRIBUTIONS_URL) {
+    reportStatus('Sending…');
+    const problem = document.querySelector('input[name="report-problem"]:checked')?.value;
+    const sent = await sendReportToSheet({
+      about: reportTarget.about, building: reportTarget.building, lonlat: reportTarget.lonlat, text,
+      problem: problem ? REPORT_PROBLEMS[problem] : '', details: document.getElementById('report-details').value.trim(),
+    });
+    if (sent) return reportStatus('Sent to Access BC. Thank you: it will be checked before it changes the map.');
+  }
   if (where === 'form' && REPORT_FORM) {
     const problem = document.querySelector('input[name="report-problem"]:checked')?.value;
     const params = new URLSearchParams({ usp: 'pp_url' });
@@ -280,6 +291,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const dialog = document.getElementById('report-dialog');
   document.getElementById('report-problems').innerHTML = Object.entries(REPORT_PROBLEMS).map(([value, label]) =>
     `<div class="setting"><input type="radio" name="report-problem" id="report-problem-${value}" value="${value}"><label for="report-problem-${value}">${label}</label></div>`).join('');
+  if (CONTRIBUTIONS_URL) {
+    document.getElementById('report-send-feedback').textContent = 'To Access BC (sends it now)';
+    document.getElementById('report-send-help').textContent = 'To Access BC sends your report straight to the team, to check before it changes the map. To BC Facilities copies it and opens their form (they may ask you to sign in).';
+  }
   if (REPORT_FORM) {
     document.getElementById('report-send-facilities').hidden = true;
     document.getElementById('report-send-feedback').hidden = true;

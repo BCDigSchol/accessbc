@@ -197,6 +197,10 @@ function openNearby(kind, { near } = {}) {
   document.getElementById('nearby-from').value = near || (routing.current ? 'route' : listed(nearbyChosenBuilding) ? nearbyChosenBuilding : 'me');
   nearbyReturn = guide.active ? 'walk' : routing.current ? 'route' : 'home';
   document.getElementById('nearby-results').innerHTML = '';
+  // Along a route, a stop can also be a building, typed in
+  document.getElementById('stop-building').hidden = !routing.current;
+  document.getElementById('stop-building-search').value = '';
+  showStopBuildings('');
   setView('results');
   setResultsTitle();
   if (!kind) return kindSelect.focus();
@@ -210,7 +214,51 @@ function showNearbyOnMap(map, result) {
   moveMap(map, 'flyTo', { center: result.lonlat, zoom: Math.max(map.getZoom(), 17.5) });
 }
 
+// Buildings that can be a stop on the current route, matching what's typed (also by what's in them: "Career Center")
+function stopBuildingMatches(query) {
+  const graph = currentGraph();
+  const routable = new Set(graph.entrances.map((e) => e.building));
+  const ends = new Set([document.getElementById('route-from').value, routing.current?.to]);
+  const names = [...routable].filter((b) => !ends.has(b)).sort((a, b) => a.localeCompare(b)).map((b) => ({ label: b, building: b }));
+  const inside = whereToBuildings.flatMap((f) => {
+    const b = (f.properties.NAME || '').trim();
+    if (!routable.has(b) || ends.has(b)) return [];
+    return (f.properties.Descriptio || '').split('\n').map((l) => l.trim()).filter((l) => l && !l.endsWith(':')).map((l) => ({ label: l, building: b }));
+  });
+  const seen = new Set();
+  return searchMatches([...names, ...inside], query).filter((m) => !seen.has(m.building) && seen.add(m.building)).slice(0, 8);
+}
+
+let stopBuildings = [];
+function showStopBuildings(query) {
+  const list = document.getElementById('stop-building-matches');
+  stopBuildings = query.trim() ? stopBuildingMatches(query) : [];
+  list.innerHTML = stopBuildings.map((m, i) => {
+    const name = m.label === m.building ? escapeHtml(m.building) : `${escapeHtml(m.label)} <span class="nearby-distance">in ${escapeHtml(m.building)}</span>`;
+    return `<li><span class="nearby-name">${name}</span><span class="nearby-actions"><button type="button" data-stop-building="${i}" aria-label="Add ${escapeHtml(m.building)} as a stop">Add as a stop</button></span></li>`;
+  }).join('');
+  document.getElementById('stop-building-status').textContent = !query.trim() ? ''
+    : stopBuildings.length ? `${stopBuildings.length} ${stopBuildings.length === 1 ? 'building matches' : 'buildings match'}.` : 'No building with an accessible entrance matches.';
+}
+
+// A new stop on the current route; partway through a trip, re-routed from where you are
+function addStopAndRoute(newStop) {
+  insertStop(newStop);
+  if (guide.active) prepareRerouteFromHere(newStop);
+  renderStops();
+  updateRoute(window.map);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('stop-building-search').addEventListener('input', (e) => showStopBuildings(e.target.value));
+  document.getElementById('stop-building-matches').addEventListener('click', (e) => {
+    const m = stopBuildings[Number(e.target.closest('[data-stop-building]')?.dataset.stopBuilding)];
+    if (!m) return;
+    const graph = currentGraph();
+    const door = graph.entrances.find((en) => en.building === m.building);
+    if (nearbyMarker) { nearbyMarker.remove(); nearbyMarker = null; }
+    addStopAndRoute({ label: m.building, building: m.building, lonlat: graph.nodes[door.node] });
+  });
   const select = document.getElementById('nearby-kind');
   select.innerHTML = Object.entries(NEARBY_KINDS).map(([k, c]) => `<option value="${k}">${c.label}</option>`).join('');
   // Changing what to find, or where from, searches again
@@ -260,25 +308,19 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nearbyMarker) { nearbyMarker.remove(); nearbyMarker = null; }
     const from = document.getElementById('route-from');
     const midTrip = guide.active; // in step-by-step mode: re-route from where you are now
-    if (stop !== undefined) {
-      const newStop = { label: result.label, phrase: result.phrase, building: result.building, lonlat: result.lonlat };
-      insertStop(newStop);
-      if (midTrip) prepareRerouteFromHere(newStop);
-      renderStops();
+    if (stop !== undefined) return addStopAndRoute({ label: result.label, phrase: result.phrase, building: result.building, lonlat: result.lonlat });
+    // Directions there: from wherever the search was measured, or from here mid-trip
+    if (midTrip) prepareRerouteFromHere();
+    else if (nearbyFromYou) from.value = MY_LOCATION;
+    else if (nearbyFromBuilding) {
+      from.value = nearbyFromBuilding;
+      routing.fromChosen = true;
+    }
+    if (result.building) {
+      routing.place = null;
+      document.getElementById('route-to').value = result.building;
     } else {
-      // Directions there: from wherever the search was measured, or from here mid-trip
-      if (midTrip) prepareRerouteFromHere();
-      else if (nearbyFromYou) from.value = MY_LOCATION;
-      else if (nearbyFromBuilding) {
-        from.value = nearbyFromBuilding;
-        routing.fromChosen = true;
-      }
-      if (result.building) {
-        routing.place = null;
-        document.getElementById('route-to').value = result.building;
-      } else {
-        setPlaceDestination({ label: result.label, phrase: result.phrase, lonlat: result.lonlat });
-      }
+      setPlaceDestination({ label: result.label, phrase: result.phrase, lonlat: result.lonlat });
     }
     updateRoute(map);
   });

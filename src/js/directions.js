@@ -24,16 +24,23 @@ const escapeHtml = (s) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&l
 
 async function setupDirections(map) {
   const base = new URL('src/', document.baseURI).href;
-  const [module, elevation, guidance, transit] = await Promise.all(['network', 'elevation', 'guidance', 'transit'].map((m) => import(`${base}js/routing/${m}.mjs${ASSET_VERSION}`)));
+  const [module, elevation, guidance, transit, contributions] = await Promise.all(['network', 'elevation', 'guidance', 'transit', 'contributions'].map((m) => import(`${base}js/routing/${m}.mjs${ASSET_VERSION}`)));
   const load = async (name) => (await (await fetch(`${base}geojson/${name}.geojson`)).json()).features;
   const names = ['accessiblepaths', 'entrances', 'buildings', 'elevators', 'paths', 'entrance-links'];
-  const [bcPaths, entrances, buildings, elevators, footpaths, entranceLinks] = await Promise.all(names.map(load));
-  const paths = [...bcPaths, ...entranceLinks]; // links drawn to entrances that weren't connected (not checked)
+  const permanentNotes = fetch(`${base}geojson/building-notes.json`).then((r) => r.json()).catch(() => ({ notes: [] }));
+  const [[bcPaths, bcEntrances, buildings, elevators, footpaths, entranceLinks], entries, { notes: imported }] = await Promise.all([Promise.all(names.map(load)), loadContributions(), permanentNotes]);
+  // Volunteers' paths and entrances (contributions.js), alongside BC's and the automatic entrance links (not checked);
+  // their notes about buildings, verified ones already imported first
+  const contrib = contributions.contributionData(entries);
+  contrib.notes = [...imported.map((n) => ({ building: n.building, note: n.note, verified: true })), ...contrib.notes];
+  const paths = [...bcPaths, ...entranceLinks, ...contrib.paths];
+  const entrances = [...bcEntrances, ...contrib.entrances];
   const data = { paths, entrances, buildings, elevators, footpaths };
   const accessible = module.buildGraph({ paths, entrances, buildings, elevators });
   const terrain = elevation.createTerrain(terrainTileLoader(base + 'basemap/terrain.pmtiles'), accessible.buildings);
   // stops: [{label, phrase?, building?, lonlat?}] in visiting order; an unchosen stop has neither building nor lonlat
-  routing = { module, elevation, guidance, transit, terrain, data, graphs: { accessible }, current: null, stops: [] };
+  routing = { module, elevation, guidance, transit, terrain, data, contrib, graphs: { accessible }, current: null, stops: [] };
+  showContributionsOnMap(map, contrib);
 
   addRouteLayers(map);
   routing.pointsLoaded = loadRoutePoints().then(markReported); // full copies of the point layers, for showing only those near a route
@@ -496,7 +503,7 @@ function cityGraphInWorker(stairs) {
     }
     worker.onmessage = ({ data }) => { worker.terminate(); data.graph ? resolve(data.graph) : reject(new Error(data.error)); };
     worker.onerror = (err) => { worker.terminate(); reject(err); };
-    worker.postMessage({ base, stairs });
+    worker.postMessage({ base, stairs, contrib: { paths: routing.contrib.paths, entrances: routing.contrib.entrances } });
   });
 }
 
@@ -629,7 +636,7 @@ function edgeCost(graph, options) {
       const extra = c.extra + (options.curbs && c.unconfirmed ? UNCONFIRMED_CURB_PENALTY_M : 0);
       cost = cost * c.factor + (extra && e.length ? extra * (e.length / graph.lines[c.line].length || 0) : 0);
     }
-    else if (e.type === 'Link' || e.type === 'Connector') cost *= 1.15; // joins and entrance links: not checked
+    else if (e.type === 'Link' || e.type === 'Connector' || e.type === 'Contributed') cost *= 1.15; // joins, entrance links, volunteers' paths: not checked
     if (e.type === 'Interior') {
       if (options.indoor === 'avoid') return Infinity;
       if (options.indoor === 'prefer') cost = e.length * preferIndoor;
@@ -1102,6 +1109,11 @@ async function updateRoute(map) {
     ? `<p class="route-warning">About ${feet(cityLength)} of this route is on city sidewalks from OpenStreetMap, which haven’t been checked for accessibility.${crossingsSaid}</p>`
     : '';
   const stepFree = !stairs && !ride && rampsConfirmed === crossings.length;
+  // Volunteers' additions not yet verified: say so when the route uses one
+  const unverifiedDoors = new Set(graph.entrances.filter((d) => d.unverified).map((d) => d.node));
+  const usesContributed = route.nodes.some((n, i) => unverifiedDoors.has(n)
+    || (i > 0 && graph.adjacency[route.nodes[i - 1]].find((x) => x.to === n)?.type === 'Contributed'));
+  const contribNote = usesContributed ? '<p class="route-warning">Part of this route was added by a volunteer and hasn’t been verified yet.</p>' : '';
   const slopeLimit = Number.isFinite(options.maxGrade) ? slopeLimitLabel() : '';
   const slopeSaid = slopeLimit && !unmet ? `, nothing steeper than ${slopeLimit}` : '';
   const message = `Route found: about ${minutes} ${minutes === 1 ? 'minute' : 'minutes'}, ${ride ? `including ${rides.map((r) => (r.mode === 'train' ? `the ${r.route}` : `the ${r.route} shuttle`)).join(' and ')}` : feet(description.length)}${stairs ? ', using stairs' : ''}${slopeSaid}${stopsSaid}.${cityNote ? ` ${feet(cityLength)} of it is on city sidewalks not checked for accessibility.${crossingsSaid}` : ''}${broken.text ? ` ${broken.text}` : ''}${routing.autoStart ? '' : ' Press Start to begin.'}`;
@@ -1113,6 +1125,7 @@ async function updateRoute(map) {
     <div id="station-notes" aria-live="polite"></div>
     ${shuttleInfo}
     ${curbsWarning}
+    ${contribNote}
     ${cityNote}
     <p class="route-summary"><strong>About ${minutes} min</strong> · ${ride ? `${feet(description.walkLength)} walking${indoor} · plus ${ridesSaid}` : `${feet(description.length)}${indoor}`}${stepFree ? ' · <span class="badge">Step-free</span>' : ''}</p>
     <div class="quick-option">

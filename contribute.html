@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Access BC: add to the map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="src/icons/app/icon.svg" type="image/svg+xml">
+<link href="src/vendor/maplibre-gl/maplibre-gl.css" rel="stylesheet">
+<link href="src/review.css" rel="stylesheet">
+<script src="src/vendor/maplibre-gl/maplibre-gl.js"></script>
+<script src="src/vendor/pmtiles/pmtiles.js"></script>
+<script src="src/basemap/style.js"></script>
+<script src="src/js/config.js"></script>
+</head>
+<body>
+<a class="skip-link" href="#panel">Skip to the form</a>
+<header class="review-header">
+  <h1>Access BC: add to the map</h1>
+  <p>For Access BC's volunteers: add accessible entrances, paths, and notes about buildings where the map is missing
+    them. What you add appears in Access BC straight away, marked <strong>not verified yet</strong>, until the Access BC
+    team checks it. See the <a href="https://github.com/BCDigSchol/accessbc/blob/main/docs/data-collection/openstreetmap-mapping-guide.md">mapping guide</a> for what to
+    look for. <a href="review.html">Checking existing data</a> is on another page.</p>
+  <p id="not-set-up" class="notice" hidden><strong>Contributions aren't set up yet</strong> on this copy of Access BC
+    (see docs/data-collection/contributions-setup.md).</p>
+  <div class="tabs" role="group" aria-label="Choose">
+    <button type="button" id="tab-add" aria-pressed="true" aria-controls="add">Add to the map</button>
+    <button type="button" id="tab-review" aria-pressed="false" aria-controls="review">Review entries (admin)</button>
+  </div>
+</header>
+<main class="review-main">
+  <div id="panel" class="review-list" tabindex="-1">
+    <section id="add" aria-labelledby="add-title">
+      <h2 id="add-title">Add to the map</h2>
+      <div class="field">
+        <label for="passcode">Volunteer passcode</label>
+        <input type="password" id="passcode" autocomplete="off">
+        <label class="inline"><input type="checkbox" id="remember"> Remember on this device</label>
+      </div>
+      <div class="field">
+        <label for="email">Your email</label>
+        <input type="email" id="email" autocomplete="email" required aria-describedby="who-note">
+        <label for="contributor">Your name (optional)</label>
+        <input type="text" id="contributor" autocomplete="name" aria-describedby="who-note">
+        <p id="who-note" class="route-note">Only the Access BC team sees these, to know who added what and to ask you about it. They’re remembered on this device.</p>
+      </div>
+      <fieldset>
+        <legend>What are you adding?</legend>
+        <label class="inline"><input type="radio" name="kind" value="entrance" checked> An accessible entrance</label>
+        <label class="inline"><input type="radio" name="kind" value="path"> A path</label>
+        <label class="inline"><input type="radio" name="kind" value="building"> A note about a building</label>
+      </fieldset>
+      <div class="field" id="building-field">
+        <label for="building">Building</label>
+        <select id="building"><option value="">Choose a building</option></select>
+      </div>
+
+      <fieldset id="entrance-where" class="kind-entrance">
+        <legend>Where is the entrance?</legend>
+        <p>Stand at the door and use your location, or choose the spot on the map.</p>
+        <button type="button" id="use-location">Use my location</button>
+        <button type="button" id="pick-point" aria-pressed="false">Choose on the map</button>
+        <p id="point-status" class="route-note" role="status"></p>
+      </fieldset>
+      <fieldset class="kind-entrance">
+        <legend>About the entrance</legend>
+        <div class="field"><label for="step-free">Step-free (no steps, a ramp, or level)?</label>
+          <select id="step-free"><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label for="automatic-door">Automatic door</label>
+          <select id="automatic-door"><option value="">Not sure</option><option value="yes">Yes, opens by itself</option><option value="button">Yes, with a push button</option><option value="no">No</option></select></div>
+        <div class="field"><label for="button-where">Where's the button? (if there is one)</label><input type="text" id="button-where"></div>
+      </fieldset>
+
+      <fieldset id="path-draw" class="kind-path" hidden>
+        <legend>The path</legend>
+        <p>Tap along the path on the map (its ends join paths already there), or walk it and record it.</p>
+        <button type="button" id="draw" aria-pressed="false">Tap points on the map</button>
+        <button type="button" id="record" aria-pressed="false">Record as I walk</button>
+        <button type="button" id="undo">Undo last point</button>
+        <button type="button" id="clear-path">Clear</button>
+        <p id="path-status" class="route-note" role="status"></p>
+      </fieldset>
+      <fieldset class="kind-path" hidden>
+        <legend>About the path</legend>
+        <div class="field"><label for="path-step-free">Usable by a wheelchair, with no steps?</label>
+          <select id="path-step-free"><option value="yes">Yes</option><option value="no">No</option></select></div>
+        <div class="field"><label for="surface">Surface</label>
+          <select id="surface"><option value="">Not sure</option><option>asphalt</option><option>concrete</option><option>brick or pavers</option><option>gravel</option><option>grass</option></select></div>
+        <div class="field"><label for="curb-ramps">Curb ramps where it meets a street or drive</label>
+          <select id="curb-ramps"><option value="">Not sure, or none needed</option><option value="yes">Yes</option><option value="no">No, a raised curb</option></select></div>
+      </fieldset>
+
+      <div class="field">
+        <label for="note">Note</label>
+        <textarea id="note" rows="3" aria-describedby="note-help"></textarea>
+        <p id="note-help" class="route-note">Anything that helps: which side of the building, a slope, a heavy door, hours.</p>
+      </div>
+      <button type="button" id="submit" class="primary">Add to the map</button>
+      <p id="submit-status" class="status" role="status"></p>
+      <h3>Added from this device</h3>
+      <ul id="mine" class="plain-list"></ul>
+    </section>
+
+    <section id="review" aria-labelledby="review-title" hidden>
+      <h2 id="review-title">Review entries</h2>
+      <p>Verify an entry when you've checked it (on the ground, or with someone who knows), or reject it. Verified
+        entries are used as checked straight away; run <code>node scripts/import-contributions.mjs</code> to make them
+        permanent in the data files.</p>
+      <div class="field">
+        <label for="admin">Admin passcode</label>
+        <input type="password" id="admin" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="reviewer">Your name</label>
+        <input type="text" id="reviewer" autocomplete="name">
+      </div>
+      <button type="button" id="load-entries">Load entries</button>
+      <p id="review-status" class="status" role="status"></p>
+      <div id="entries"></div>
+    </section>
+  </div>
+  <div id="map" class="review-map" role="region" aria-label="Map (choose points here; everything is also in the form)"></div>
+</main>
+<script type="module" src="src/js/contribute.js"></script>
+</body>
+</html>

@@ -116,6 +116,7 @@ function openBuildingInfo(properties) {
     <h2 id="building-name">${escapeText(buildingName)}</h2>
     ${descriptionHtml}
     ${typeof buildingSurroundingsHtml === 'function' ? buildingSurroundingsHtml(buildingName) : ''}
+    ${typeof buildingNotesHtml === 'function' ? buildingNotesHtml(buildingName) : ''}
     ${directionsHtml}
     <p><button type="button" class="report-link" data-report-building="${escapeText(buildingName)}">Report a problem with this building</button></p>
   `;
