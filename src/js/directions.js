@@ -158,7 +158,7 @@ async function setupDirections(map) {
     routing.fromChosen = true; // the student picked a start, so keep it even if it's "My location" and that fails
     updateRoute(map);
   });
-  to.addEventListener('change', () => updateRoute(map));
+  to.addEventListener('change', () => { routing.toInside = null; updateRoute(map); });
 
   // Show only the map features along the route, or all of them
   document.addEventListener('change', (e) => {
@@ -673,6 +673,7 @@ function setView(view) {
     document.getElementById('chip-more').textContent = 'More…';
   }
   panel.querySelector('.where-to').hidden = view === 'walk';
+  if (typeof showWalkViewToggle === 'function') showWalkViewToggle(view === 'walk');
 }
 
 function currentView() {
@@ -878,7 +879,9 @@ async function updateRoute(map) {
     return showResult('');
   }
   if (!routing.autoStart) setView('route');
-  const title = toValue === PLACE && routing.place ? routing.place.label : toValue === MY_LOCATION ? 'your location' : toValue;
+  // Going to something in a building, found by its name: "To Lower Live, in John M. Corcoran Commons"
+  const inside = routing.toInside?.building === toValue ? `${routing.toInside.name}, in ${toValue}` : null;
+  const title = toValue === PLACE && routing.place ? routing.place.label : toValue === MY_LOCATION ? 'your location' : inside || toValue;
   document.getElementById('route-title').textContent = `To ${title}`;
   if (!fromValue) return askForStart('<p>Choose where you’re starting from, under From.</p>');
   if (fromValue === toValue) return askForStart('<p>The start and destination are the same. Choose a different start, under From.</p>');

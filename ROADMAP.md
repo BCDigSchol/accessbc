@@ -21,6 +21,40 @@ What's planned next, and what each item needs. Roughly in priority order within 
   others report (today, your own reports affect only your device), expiring after a day or two unless confirmed.
 - The same Sheet for other data staff keep up to date: building hours, closures.
 
+## Food places by name
+
+- Where to? already finds the food places named in five buildings' descriptions ("Lower Live" offers John M.
+  Corcoran Commons), but most aren't named, and some flags are wrong: Corcoran Commons is marked as having no
+  dining hall, so Find nearby food skips it.
+- Add every food place (BC Dining's list): its name, building, floor and entrance, hours, and whether it takes meal
+  plans. Then search finds it by name, Find nearby lists it by name ("Lower Live, in Corcoran Commons"), and
+  directions end at the right door.
+- Hours come from BC Dining's site; with building hours (below), routes can say "closes at 8 pm".
+
+## Walking surveys: proving paths, on foot
+
+Students (or the team) walk paths assigned to them, and the walk proves the path, corrects it, or adds what's
+missing. A good next step, building on the contribute page, which already records a walk with GPS.
+
+- **Assignments:** the team picks paths to check (unverified ones, entrance links, gaps from the
+  [data review page](review.html)) and assigns them, through the contributions Sheet. A student opens their list on
+  the contribute page and walks one: the map shows the path, and the walk is recorded as they go.
+- **Proving it:** the recorded walk is compared with the mapped path. If it stays within GPS accuracy all the way,
+  the path is confirmed (who walked it, when, with which mobility aid or none). If it wanders off, it's a correction
+  to review. Two walks agreeing count for more than one.
+- **Marking things along the way:** big buttons while walking: steps, a curb with no ramp, steep, narrow, rough
+  surface, a door (automatic or not, where the button is), an elevator, a bench, an obstacle, and an optional photo.
+  Each becomes an entry at that spot, for the team to verify, as volunteers' entries are now.
+- **Inside buildings:** GPS doesn't work indoors, so an indoor walk is recorded as a sequence instead of a line:
+  "in at this entrance → elevator to floor 2 → hallway → out at that entrance", with the time it took and the
+  buttons above ("heavy door here"). That's enough to add an indoor link between two entrances to routing (the
+  route can say "through Fulton Hall, using the elevator") before there are floor plans. Steps counted by the phone
+  can estimate the distance.
+- **How hard:** the assignments, the walking screen and the buttons reuse what's built (the Sheet, the recorder,
+  review). Comparing a walk with a path is simple geometry. Roughly a session or two of work. The limits are GPS
+  accuracy (5 to 10 m between tall buildings, so it confirms that a path exists and connects, not its exact edge;
+  exact lines still come from tracing aerial imagery) and having students to walk.
+
 ## Data to check
 
 - **Entrance links:** 53 links drawn automatically to 49 buildings' entrances: check them on the

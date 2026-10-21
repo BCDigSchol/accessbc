@@ -36,7 +36,13 @@ function nearbyCandidates(graph, kind) {
     const has = new Set(data.buildings.filter((b) => config.fields.some((f) => b.properties[f] === 'Yes')).map((b) => (b.properties.NAME || '').trim()));
     const byBuilding = {};
     for (const e of graph.entrances) if (has.has(e.building)) (byBuilding[e.building] ||= []).push(e.node);
-    candidates = Object.entries(byBuilding).map(([building, nodes]) => ({ label: building, building, nodes, offset: 0, lonlat: graph.nodes[nodes[0]] }));
+    // Food places by name, where the building's description names them ("The Market, The Loft @ Addie's, Lower Live")
+    const food = config.fields.some((f) => f.startsWith('Food_'));
+    const named = (b) => {
+      const feature = food && whereToBuildings.find((f) => (f.properties.NAME || '').trim() === b);
+      return feature ? buildingContents(feature).filter((c) => c.section === 'Dining Options').map((c) => c.name).join(', ') : '';
+    };
+    candidates = Object.entries(byBuilding).map(([building, nodes]) => ({ label: building, building, detail: named(building), nodes, offset: 0, lonlat: graph.nodes[nodes[0]] }));
   } else {
     const features = (routePoints && routePoints[config.source]?.features) || [];
     candidates = [];
@@ -156,7 +162,7 @@ async function findNearby(map) {
     const broken = r.feature && isReportedBroken(r.feature) ? ' <span class="nearby-broken">(reported not working)</span>'
       : r.feature?.properties.Wheelchair === 'no' ? ' <span class="nearby-broken">(not wheelchair accessible)</span>' : '';
     return `<li>
-      <span class="nearby-name">${escapeHtml(r.label)}</span>${broken} <span class="nearby-distance">${how}</span>
+      <span class="nearby-name">${escapeHtml(r.label)}</span>${r.detail ? `: ${escapeHtml(r.detail)}` : ''}${broken} <span class="nearby-distance">${how}</span>
       <span class="nearby-actions">
         ${along && !end ? `<button type="button" data-nearby-stop="${i}" aria-label="Add ${escapeHtml(r.label)} as a stop">Add as a stop</button>` : ''}
         ${end ? '' : `<button type="button" data-nearby-go="${i}" aria-label="Directions to ${escapeHtml(r.label)}">Directions</button>`}
