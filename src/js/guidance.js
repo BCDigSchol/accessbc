@@ -223,12 +223,61 @@ function frameStep(map, step) {
   const bearing = settings.headingUp ? step.heading : 0;
   const pitch = guidancePitch(map);
   seeThroughBuildings(map, true);
+  placeWalkViewToggle();
   const coords = step.coordinates.length > 1 ? step.coordinates : [step.start, step.start];
   const bounds = coords.reduce((b, c) => b.extend(c), new maplibregl.LngLatBounds(coords[0], coords[0]));
   const camera = map.cameraForBounds(bounds, { bearing, padding: unobstructedPadding(map), maxZoom: smallScreen(map) ? 18 : 19 });
   const zoom = Math.max(16.5, Math.min(smallScreen(map) ? 18 : 19, camera ? camera.zoom : 18));
   moveMap(map, 'easeTo', { center: camera ? camera.center : step.start, zoom, bearing, pitch, duration: 800 });
 }
+
+// ---- Perspective or north up ---------------------------------------------------------------------
+// While walking, one button switches between the map turning with you and tilted ("perspective") and flat with
+// north up ("overhead"), as in other map apps. It changes the heading-up and 3D settings together.
+const overheadView = () => !settings.headingUp && !settings.guidance3D;
+
+function showWalkViewToggle(show) {
+  const button = document.getElementById('walk-view-toggle');
+  button.hidden = !show;
+  if (!show) return;
+  button.setAttribute('aria-pressed', String(overheadView()));
+  button.setAttribute('aria-label', overheadView() ? 'North up: on. Switch to the map turning with you' : 'North up: off. Switch to flat, north up');
+  placeWalkViewToggle();
+}
+
+// Just below the directions, on the right (they change height from step to step, so after they're drawn)
+function placeWalkViewToggle() {
+  requestAnimationFrame(() => {
+    const button = document.getElementById('walk-view-toggle');
+    if (button.hidden || !window.map) return;
+    const banner = document.querySelector('.walk-banner')?.getBoundingClientRect();
+    const fullWidth = banner && banner.width > window.innerWidth * 0.6;
+    // Otherwise (a wider screen) below the map's own buttons, top right
+    const controls = document.querySelector('.maplibregl-ctrl-top-right')?.getBoundingClientRect();
+    button.style.top = `${Math.max(fullWidth ? banner.bottom : 0, controls?.height ? controls.bottom : 0) + 12}px`;
+  });
+}
+
+function setOverheadView(map, overhead) {
+  settings.headingUp = settings.guidance3D = !overhead;
+  saveSettings();
+  showWalkViewToggle(true);
+  const step = guide.steps[guide.index];
+  if (!step) return;
+  const fix = guide.watch !== null && guide.lastFix;
+  if (fix) moveMap(map, 'easeTo', { ...followCamera(map, fix.lonlat, step), duration: 600 });
+  else frameStep(map, step);
+  announce(overhead ? 'North up, flat map.' : 'Map turns with you, tilted.');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('walk-view-toggle').addEventListener('click', () => setOverheadView(window.map, !overheadView()));
+  // The N points north as the map turns, like a compass
+  const icon = document.querySelector('.walk-view-icon');
+  const turnIcon = () => { icon.style.transform = `rotate(${-window.map.getBearing()}deg)`; };
+  const waitForMap = setInterval(() => { if (window.map) { clearInterval(waitForMap); window.map.on('rotate', turnIcon); } }, 500);
+  window.addEventListener('resize', placeWalkViewToggle);
+});
 
 // Camera while following you: you in the part of the visible map behind you, so most of it shows the way ahead
 // (low on the screen with heading-up; otherwise opposite the direction you're heading).

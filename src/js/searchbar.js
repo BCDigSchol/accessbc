@@ -10,12 +10,29 @@ let whereToBuildings = []; // all building features, from the GeoJSON rather tha
 // How names are compared when searching: without apostrophes, accents, punctuation or spaces, so "oneill" finds
 // O'Neill Library, "mc elroy" McElroy Commons, and "st mary" St. Mary's Hall
 const searchKey = (s) => String(s).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
-// Names matching what's typed, those starting with it first (the rest keep their order)
+// Names matching what's typed: those starting with it first, then those with a word starting with it ("live"
+// finds Lower Live), then the rest ("lower" in Mayflower), each keeping their order
 function searchMatches(items, query, label = (item) => item.label) {
   const q = searchKey(query);
   if (!q) return [];
-  const keyed = items.map((item) => ({ item, key: searchKey(label(item)) })).filter((x) => x.key.includes(q));
-  return [...keyed.filter((x) => x.key.startsWith(q)), ...keyed.filter((x) => !x.key.startsWith(q))].map((x) => x.item);
+  const tier = (name) => {
+    const key = searchKey(name);
+    if (key.startsWith(q)) return 0;
+    const words = String(name).split(/[\s@&/,()-]+/).map(searchKey).filter(Boolean);
+    if (words.some((_, i) => words.slice(i).join('').startsWith(q))) return 1;
+    return key.includes(q) ? 2 : -1;
+  };
+  const tiered = items.map((item) => ({ item, t: tier(label(item)) })).filter((x) => x.t >= 0);
+  return [0, 1, 2].flatMap((t) => tiered.filter((x) => x.t === t).map((x) => x.item));
+}
+
+// What's named in a building's description, with the heading it's under: [{name, section}] ("Lower Live", "Dining")
+function buildingContents(feature) {
+  let section = '';
+  return (feature.properties.Descriptio || '').split('\n').map((l) => l.trim()).filter(Boolean).flatMap((line) => {
+    if (line.endsWith(':')) { section = line.slice(0, -1); return []; }
+    return [{ name: line, section }];
+  });
 }
 
 function clearWhereTo() {
@@ -28,7 +45,6 @@ function clearWhereTo() {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  const excludedStrings = ['Student Resources:', 'Academic Programs:', 'Dining Options:'];
   const input = document.getElementById('where-to');
   const list = document.getElementById('where-to-list');
   const clearButton = document.getElementById('where-to-clear');
@@ -46,10 +62,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const name = (feature.properties.NAME || '').trim();
       if (!name) return;
       names.add(name);
-      (feature.properties.Descriptio || '').split('\n').forEach((line) => {
-        const resource = line.trim();
-        if (resource && !excludedStrings.includes(resource) && !resources.has(resource)) resources.set(resource, name);
-      });
+      for (const { name: resource, section } of buildingContents(feature)) {
+        if (!resources.has(resource)) resources.set(resource, { building: name, food: section === 'Dining Options' });
+      }
     });
     // T stations, by name ("Reservoir T station")
     const stations = (typeof routePoints !== 'undefined' && routePoints?.['mbta-stations']?.features || [])
@@ -61,7 +76,8 @@ document.addEventListener('DOMContentLoaded', function () {
       ...campuses,
       ...stations,
       ...[...names].sort((a, b) => a.localeCompare(b)).map((label) => ({ label, kind: 'Building', value: label })),
-      ...[...resources].map(([label, building]) => ({ label, kind: `In ${building}`, value: building })),
+      // Food places, offices, departments: straight to their building ("Lower Live, food in John M. Corcoran Commons")
+      ...[...resources].map(([label, { building, food }]) => ({ label, kind: `${food ? 'Food' : 'In'} ${food ? 'in ' : ''}${building}`, value: building, inside: label })),
     ];
   }
 
@@ -156,6 +172,7 @@ document.addEventListener('DOMContentLoaded', function () {
     showBuilding(feature);
     if (!isRoutable(option.value)) return openBuildingInfo(feature.properties);
     routing.place = null;
+    routing.toInside = option.inside ? { name: option.inside, building: option.value } : null;
     document.getElementById('route-to').value = option.value;
     updateRoute(window.map);
     document.getElementById('route-title').focus();
